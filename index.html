@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Freqtrade — Trading Dashboard</title>
+
+<!-- PWA / homescreen -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#07090f" />
+
+<!-- iOS homescreen -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="freqtrade" />
+<link rel="apple-touch-icon" href="icon-180.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png" />
+<link rel="apple-touch-icon" sizes="167x167" href="icon-167.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #07090f;
+    --bg-2:         #0b101a;
+    --panel:        #10172a;
+    --panel-2:      #141d33;
+    --panel-3:      #1a2440;
+    --border:       rgba(255,255,255,.06);
+    --border-2:     rgba(255,255,255,.10);
+    --border-3:     rgba(255,255,255,.16);
+    --text:         #e6ebf5;
+    --text-2:       #b6becf;
+    --muted:        #7d869c;
+    --dim:          #535b71;
+    --accent:       #2bd4c5;
+    --accent-soft:  rgba(43,212,197,.14);
+    --accent-line:  rgba(43,212,197,.28);
+    --up:           #2ad07b;
+    --up-soft:      rgba(42,208,123,.13);
+    --up-line:      rgba(42,208,123,.32);
+    --down:         #ff5d6c;
+    --down-soft:    rgba(255,93,108,.13);
+    --down-line:    rgba(255,93,108,.32);
+    --warn:         #ffb74a;
+    --row-h:        46px;
+    --pad-card:     20px;
+    --gap:          16px;
+    --sans: "Geist", "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+    --mono: "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+  }
+  :root.density-compact { --row-h: 38px; --pad-card: 16px; --gap: 12px; }
+  :root.density-comfy   { --row-h: 54px; --pad-card: 24px; --gap: 20px; }
+  :root.light {
+    --bg:#f4f6fb; --bg-2:#eaeef6; --panel:#ffffff; --panel-2:#f7f9fd; --panel-3:#eef2fa;
+    --border:rgba(15,23,42,.07); --border-2:rgba(15,23,42,.10); --border-3:rgba(15,23,42,.16);
+    --text:#0f1729; --text-2:#3c4661; --muted:#6b7689; --dim:#98a1b3;
+    --accent-soft: rgba(43,212,197,.16); --accent-line: rgba(43,212,197,.36);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-feature-settings: "ss01", "ss02", "cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow: hidden;
+  }
+  #root { height: 100%; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(125,134,156,.22);
+    border-radius: 999px; border: 2px solid transparent; background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(125,134,156,.4); background-clip: content-box; border: 2px solid transparent; }
+  .num { font-family: var(--mono); font-feature-settings: "tnum", "ss01"; font-variant-numeric: tabular-nums; }
+  .mono { font-family: var(--mono); }
+  .muted { color: var(--muted); }
+  .dim { color: var(--dim); }
+  .up { color: var(--up); }
+  .down { color: var(--down); }
+  .accent { color: var(--accent); }
+  .eyebrow {
+    font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500;
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  .chrome { user-select: none; }
+
+  @keyframes shimmer {
+    0%   { opacity: .4; }
+    50%  { opacity: .7; }
+    100% { opacity: .4; }
+  }
+  .skeleton {
+    background: var(--panel-2);
+    border-radius: 4px;
+    animation: shimmer 1.2s ease-in-out infinite;
+  }
+
+  @keyframes ftPulse {
+    0%   { transform: scale(.7); opacity: .55; }
+    70%  { transform: scale(1.6); opacity: 0; }
+    100% { opacity: 0; }
+  }
+
+  .disconnect-banner {
+    background: rgba(255,183,74,.12);
+    border-bottom: 1px solid rgba(255,183,74,.28);
+    color: var(--warn);
+    font-size: 13px;
+    padding: 8px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* ── Dynamic viewport height (iOS Safari address-bar aware) ─────────────── */
+  @supports (height: 100dvh) {
+    html, body, #root { height: 100dvh; }
+  }
+
+  /* ── Mobile density ──────────────────────────────────────────────────────── */
+  @media (max-width: 767px) {
+    :root { --row-h: 44px; --pad-card: 14px; --gap: 10px; }
+    .disconnect-banner { padding: 6px 14px; font-size: 12px; }
+  }
+
+  /* ── Safe-area top fill (behind status bar in PWA fullscreen mode) ──────── */
+  .safe-top {
+    flex-shrink: 0;
+    height: env(safe-area-inset-top, 0px);
+    background: var(--bg);
+  }
+
+  /* ── Mobile bottom nav ───────────────────────────────────────────────────── */
+  .mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    /* No fixed height — let padding govern height so safe area always fills */
+    padding-top: 7px;
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+    background: rgba(11,16,26,.94);
+    border-top: 1px solid var(--border);
+    z-index: 200;
+    justify-content: space-around;
+    align-items: flex-start;
+    -webkit-backdrop-filter: saturate(1.6) blur(20px);
+    backdrop-filter: saturate(1.6) blur(20px);
+  }
+  :root.light .mobile-nav { background: rgba(244,246,251,.94); }
+  @media (max-width: 767px) { .mobile-nav { display: flex; } }
+
+  /* ── Mobile top bar ──────────────────────────────────────────────────────── */
+  .mobile-topbar { display: none; }
+  @media (max-width: 767px) { .mobile-topbar { display: flex; } }
+
+  /* ── Desktop elements hidden on mobile ──────────────────────────────────── */
+  @media (max-width: 767px) {
+    .desktop-only { display: none !important; }
+  }
+  @media (min-width: 768px) {
+    .mobile-only { display: none !important; }
+  }
+</style>
+
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"><div style="position:absolute;inset:0;display:grid;place-items:center;color:#535b71;font:13px 'Geist',sans-serif">Loading…</div></div>
+
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="api.jsx"></script>
+<script type="text/babel" src="views.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Node (if you ever add tooling — not currently used; the dashboard is in-browser Babel)
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+package-lock.json
+
+# Local docker overrides (if any)
+docker-compose.override.yml
+
+# Local env (if any added later)
+.env
+.env.local
