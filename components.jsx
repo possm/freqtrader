@@ -745,7 +745,7 @@ function MobileTradeCard({ t, onPairClick, highlight }) {
 }
 
 // ── Mobile signal card ────────────────────────────────────────────────────────
-function MobileSignalCard({ r, needsCount, onPairClick }) {
+function MobileSignalCard({ r, onPairClick }) {
   if (!r.ok) {
     return (
       <div
@@ -760,7 +760,8 @@ function MobileSignalCard({ r, needsCount, onPairClick }) {
       </div>
     );
   }
-  const summaryTone = r.ready ? "up" : (r.fired >= needsCount - 1 && needsCount > 1) ? "warn" : "default";
+  const summaryText = r.ready ? "ENTRY" : r.total > 0 ? `${r.fired}/${r.total}` : "—";
+  const summaryTone = r.ready ? "up" : (r.fired > 0 && r.total > 0) ? "warn" : "default";
   return (
     <div
       onClick={onPairClick ? () => onPairClick(r.pair) : undefined}
@@ -774,11 +775,11 @@ function MobileSignalCard({ r, needsCount, onPairClick }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
           <span style={{ fontWeight: 600, fontSize: 14 }}>{r.pair}</span>
-          <Chip tone={summaryTone}>{r.fired}/{r.total}{r.ready ? " · READY" : ""}</Chip>
+          <Chip tone={summaryTone}>{summaryText}</Chip>
         </div>
         <div className="muted" style={{ fontSize: 11.5 }}>
           {r.close != null ? `Close: ${fmtPrice(r.close)}` : "—"}
-          {r.cells && r.cells.map(c => ` · ${c.label}: ${c.on ? "✓" : "–"}`).join("")}
+          {r.cells && r.cells.filter(c => c.type === "binary").map(c => ` · ${c.label}: ${c.on ? "✓" : "–"}`).join("")}
         </div>
       </div>
     </div>

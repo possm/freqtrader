@@ -999,147 +999,95 @@ function BW({ row, kind, title, goToChart }) {
 
 // ── Signals view ──────────────────────────────────────────────────────────────
 // Per-pair live indicator state for the active strategy. Reads /api/v1/pair_candles
-// for each pair and evaluates the strategy's entry conditions against the latest
-// analyzed row. Strategy-specific definitions live in STRATEGY_SIGNALS below.
+// per pair and /api/v1/plot_config to discover indicator columns automatically.
+// No per-strategy config needed: columns come from the strategy's plot_config and
+// "READY" is driven by the enter_long (or legacy buy) column in the analyzed candle.
 
-// Helper: coerce a value that may be 0/1, "0"/"1", true/false, 1.0 etc. into a bool.
 const isOne = (v) => v === 1 || v === 1.0 || v === "1" || v === true;
 
-// Signal definitions, keyed by strategy class name (as reported by /api/v1/show_config).
-//
-// Each strategy entry contains:
-//   - timeframe: which timeframe to fetch (overrides bot's default if differs)
-//   - needs: how many signals must fire for entry (defaults to all)
-//   - signals[]: each with { key, label, sub, type, getValue, isFired }
-//       type "price"  → render value as price, green when fired
-//       type "decimal" → render value as 1-decimal number, green when fired
-//       type "binary" → render value as ON/OFF chip, green when fired
-const STRATEGY_SIGNALS = {
-  WolfTrend_EMA: {
-    // Trend-following (live on 8081). Entry FIRES on the EMA20>EMA50 cross while
-    // these 3 state conditions hold. The page shows current STATE, so "3/3 READY"
-    // means the pair is in trend-long territory — the actual buy triggers on the
-    // cross moment, not just on all-3-green.
-    timeframe: "4h",
-    signals: [
-      { key: "ema_up", label: "EMA20>50", sub: "fast over slow", type: "binary",
-        getValue: (c) => (c.ema20 != null && c.ema50 != null) ? (c.ema20 > c.ema50 ? 1 : 0) : null,
-        isFired:  (c) => c.ema20 != null && c.ema50 != null && c.ema20 > c.ema50 },
-      { key: "above200", label: "Price>EMA200", sub: "macro uptrend", type: "binary",
-        getValue: (c) => (c.close != null && c.ema200 != null) ? (c.close > c.ema200 ? 1 : 0) : null,
-        isFired:  (c) => c.close != null && c.ema200 != null && c.close > c.ema200 },
-      { key: "adx", label: "ADX", sub: "> 20", type: "decimal",
-        getValue: (c) => c.adx,
-        isFired:  (c) => c.adx != null && c.adx > 20 },
-    ],
-  },
-  WolfTrend_EMA_hopt_tuned: {
-    // Hyperopt-tuned trend follower (live on 8083). Same logic family as WolfTrend_EMA
-    // but with renamed columns (ema_fast/ema_slow/ema_trend instead of ema20/50/200)
-    // and tuned values: fast=20, slow=71, trend=105, adx_min=15, stop=-2.4%.
-    // Entry fires on ema_fast>ema_slow cross while these 3 states hold.
-    timeframe: "4h",
-    signals: [
-      { key: "ema_up", label: "EMA fast>slow", sub: "20 over 71", type: "binary",
-        getValue: (c) => (c.ema_fast != null && c.ema_slow != null) ? (c.ema_fast > c.ema_slow ? 1 : 0) : null,
-        isFired:  (c) => c.ema_fast != null && c.ema_slow != null && c.ema_fast > c.ema_slow },
-      { key: "above_trend", label: "Price>EMA105", sub: "macro uptrend", type: "binary",
-        getValue: (c) => (c.close != null && c.ema_trend != null) ? (c.close > c.ema_trend ? 1 : 0) : null,
-        isFired:  (c) => c.close != null && c.ema_trend != null && c.close > c.ema_trend },
-      { key: "adx", label: "ADX", sub: "> 15", type: "decimal",
-        getValue: (c) => c.adx,
-        isFired:  (c) => c.adx != null && c.adx > 15 },
-    ],
-  },
-  WolfMR_4h_btc_noMFI: {
-    // Production-deployed variant of WolfMR_4h_btc with MFI removed.
-    // Entry: close < bb_lowerband AND rsi < 30 AND btc_uptrend_4h == 1.
-    timeframe: "4h",
-    signals: [
-      { key: "bb",  label: "BB Lower", sub: "close < lower", type: "price",
-        getValue: (c) => c.bb_lowerband,
-        isFired:  (c) => c.close != null && c.bb_lowerband != null && c.close < c.bb_lowerband },
-      { key: "rsi", label: "RSI", sub: "< 30", type: "decimal",
-        getValue: (c) => c.rsi,
-        isFired:  (c) => c.rsi != null && c.rsi < 30 },
-      { key: "btc", label: "BTC 4h", sub: "uptrend filter", type: "binary",
-        getValue: (c) => c.btc_uptrend_4h,
-        isFired:  (c) => isOne(c.btc_uptrend_4h) },
-    ],
-  },
-  WolfMR_4h_btc: {
-    timeframe: "4h",
-    signals: [
-      { key: "bb",  label: "BB Lower", sub: "close < lower", type: "price",
-        getValue: (c) => c.bb_lowerband,
-        isFired:  (c) => c.close != null && c.bb_lowerband != null && c.close < c.bb_lowerband },
-      { key: "rsi", label: "RSI", sub: "< 30", type: "decimal",
-        getValue: (c) => c.rsi,
-        isFired:  (c) => c.rsi != null && c.rsi < 30 },
-      { key: "mfi", label: "MFI", sub: "< 30", type: "decimal",
-        getValue: (c) => c.mfi,
-        isFired:  (c) => c.mfi != null && c.mfi < 30 },
-      { key: "btc", label: "BTC 4h", sub: "uptrend filter", type: "binary",
-        getValue: (c) => c.btc_uptrend_4h,
-        isFired:  (c) => isOne(c.btc_uptrend_4h) },
-    ],
-  },
-  WolfCustomSwing: {
-    timeframe: "15m",
-    needs: 3,                    // "at least 3 of 4 armed" per the strategy doc
-    signals: [
-      { key: "rsi",  label: "RSI armed", sub: "RSI ≤ 25 in 5 candles", type: "binary",
-        getValue: (c) => c.rsi_armed,
-        isFired:  (c) => isOne(c.rsi_armed) },
-      { key: "bb",   label: "BB armed",  sub: "close ≤ lower in 5",    type: "binary",
-        getValue: (c) => c.bb_armed,
-        isFired:  (c) => isOne(c.bb_armed) },
-      { key: "macd", label: "MACD armed", sub: "bull cross in 5",       type: "binary",
-        getValue: (c) => c.macd_armed,
-        isFired:  (c) => isOne(c.macd_armed) },
-      { key: "ema",  label: "EMA200 1h", sub: "close > 1h EMA200",      type: "binary",
-        getValue: (c) => (c.close != null && c.ema200_1h != null) ? (c.close > c.ema200_1h ? 1 : 0) : null,
-        isFired:  (c) => c.close != null && c.ema200_1h != null && c.close > c.ema200_1h },
-    ],
-  },
-  WolfQuantEdge: {
-    // Phase-3-validated regime-gated breakout (live on 8082, dry-run). ALL 3 must fire for entry:
-    // 4h Keltner volatility-expansion (in Kaufman-ER trend regime) + BTC above a *rising* 4h
-    // EMA50 (macro gate) + 1h close > 1h EMA20 (entry-timing confirm). Base TF is 1h; the 4h
-    // columns are merged into each 1h analyzed candle, so we fetch at the base TF.
-    timeframe: "1h",
-    signals: [
-      { key: "kelt_bo", label: "4h Keltner BO", sub: "upper + ATR expand + trend", type: "binary",
-        getValue: (c) => c.kelt_bo_4h,
-        isFired:  (c) => isOne(c.kelt_bo_4h) },
-      { key: "btc",     label: "BTC macro",     sub: "above *rising* 4h EMA50",    type: "binary",
-        getValue: (c) => c.btc_up_strict_4h,
-        isFired:  (c) => isOne(c.btc_up_strict_4h) },
-      { key: "ema20",   label: "1h trigger",    sub: "close > 1h EMA20",           type: "binary",
-        getValue: (c) => (c.close != null && c.ema20 != null) ? (c.close > c.ema20 ? 1 : 0) : null,
-        isFired:  (c) => c.close != null && c.ema20 != null && c.close > c.ema20 },
-    ],
-  },
-};
+// Freqtrade OHLCV and system columns — never treated as strategy indicators.
+const SIGNAL_SKIP_COLS = new Set([
+  "date", "open", "high", "low", "close", "volume",
+  "enter_long", "exit_long", "enter_short", "exit_short",
+  "enter_tag", "exit_tag",
+  "buy", "sell", "buy_tag",
+]);
+
+// Snake_case column name → readable label with known abbreviations uppercased.
+function fmtColLabel(col) {
+  return col
+    .replace(/_/g, " ")
+    .replace(/\b(ema|rsi|macd|mfi|adx|atr|cci|sma|wma|bb|kc|kelt|btc)\b/gi, s => s.toUpperCase())
+    .replace(/\b(\w)/g, c => c.toUpperCase());
+}
+
+// Infer display type from actual candle values across multiple pairs.
+function classifyCol(col, candles, inMainPlot) {
+  const vals = candles.map(c => c[col]).filter(v => v != null);
+  if (!vals.length) return inMainPlot ? "price" : "decimal";
+  if (vals.every(v => v === 0 || v === 1 || v === true || v === false)) return "binary";
+  return inMainPlot ? "price" : "decimal";
+}
+
+// Build signal definitions from plot_config + candle data — no per-strategy code needed.
+// Falls back to all non-system candle columns (capped at 12, binary-first) if no plot_config.
+function buildSignalDefs(plotCfg, rows) {
+  const candles = rows.filter(r => r.ok && r.data?.candle).map(r => r.data.candle);
+  const defs = [];
+  const seen = new Set();
+
+  function addCol(col, sub, inMainPlot) {
+    if (seen.has(col) || SIGNAL_SKIP_COLS.has(col)) return;
+    if (candles.length && !(col in candles[0])) return;
+    seen.add(col);
+    const type = classifyCol(col, candles, inMainPlot);
+    defs.push({
+      key: col, label: fmtColLabel(col), sub,
+      type,
+      getValue: (c) => c[col],
+      isFired: type === "binary" ? (c) => isOne(c[col]) : () => false,
+    });
+  }
+
+  const hasPlotCfg = plotCfg && (
+    Object.keys(plotCfg.main_plot || {}).length + Object.keys(plotCfg.subplots || {}).length > 0
+  );
+
+  if (hasPlotCfg) {
+    for (const col of Object.keys(plotCfg.main_plot || {})) addCol(col, "overlay", true);
+    for (const [name, cols] of Object.entries(plotCfg.subplots || {})) {
+      for (const col of Object.keys(cols || {})) addCol(col, name, false);
+    }
+  }
+
+  return defs;
+}
+
+// True if the strategy is signaling a long entry on this candle.
+function getEntrySignal(c) {
+  if (c.enter_long != null) return isOne(c.enter_long);
+  if (c.buy != null) return isOne(c.buy);
+  return false;
+}
 
 function SignalsView({ data, baseUrl, isMobile, goToChart }) {
   const stratName = data?.bot?.strategy || data?.strats?.[0] || null;
-  const stratDef  = stratName ? STRATEGY_SIGNALS[stratName] : null;
-  const timeframe = stratDef?.timeframe || data?.bot?.timeframe || "4h";
-  const signalDefs = stratDef?.signals || [];
-  const needsCount = stratDef?.needs ?? signalDefs.length;
+  const timeframe = data?.bot?.timeframe || "4h";
 
   const [signals, setSignals] = vUseState({
-    loading: true, rows: [], lastUpdated: null, error: null,
+    loading: true, rows: [], plotCfg: null, lastUpdated: null, error: null,
   });
 
   const refresh = React.useCallback(async () => {
     if (!baseUrl) return;
     setSignals(s => ({ ...s, loading: true, error: null }));
     try {
-      const pairs = await fetchWhitelist(baseUrl);
+      const [pairs, plotCfg] = await Promise.all([
+        fetchWhitelist(baseUrl),
+        fetchPlotConfig(baseUrl),
+      ]);
       const rows = await fetchAllPairSignals(baseUrl, pairs, timeframe);
-      setSignals({ loading: false, rows, lastUpdated: Date.now(), error: null });
+      setSignals({ loading: false, rows, plotCfg, lastUpdated: Date.now(), error: null });
     } catch (e) {
       setSignals(s => ({ ...s, loading: false, error: e.message || "Failed to load signals" }));
     }
@@ -1152,30 +1100,30 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
     return () => clearInterval(id);
   }, [refresh]);
 
-  // Decode each pair's raw candle into displayable per-signal state.
+  const signalDefs = vUseMemo(
+    () => buildSignalDefs(signals.plotCfg, signals.rows),
+    [signals.plotCfg, signals.rows]
+  );
+
   const processed = vUseMemo(() => signals.rows.map(r => {
-    if (!r.ok || !r.data?.candle) {
-      return { pair: r.pair, ok: false, error: r.error };
-    }
+    if (!r.ok || !r.data?.candle) return { pair: r.pair, ok: false, error: r.error };
     const c = r.data.candle;
     const cells = signalDefs.map(def => ({
-      key: def.key,
-      label: def.label,
-      type: def.type,
-      value: def.getValue(c),
-      on: def.isFired(c),
+      key: def.key, label: def.label, type: def.type,
+      value: def.getValue(c), on: def.isFired(c),
     }));
-    const fired = cells.filter(x => x.on).length;
+    const binaryFired = cells.filter(x => x.on).length;
+    const binaryTotal = cells.filter(x => x.type === "binary").length;
     return {
       pair: r.pair, ok: true, candle: c,
-      close: c.close, rsi: c.rsi,    // used for sort tiebreak
-      cells, fired, total: signalDefs.length,
-      ready: fired >= needsCount && signalDefs.length > 0,
+      close: c.close, rsi: c.rsi,
+      cells, fired: binaryFired, total: binaryTotal,
+      ready: getEntrySignal(c),
       lastAnalyzed: r.data.lastAnalyzed,
     };
-  }), [signals.rows, signalDefs, needsCount]);
+  }), [signals.rows, signalDefs]);
 
-  // Sort: ready first, then most-fired, then most oversold by RSI, errors last.
+  // Sort: entry signal first, then most binary signals on, then most oversold by RSI, errors last.
   const sorted = vUseMemo(() => {
     const arr = [...processed];
     arr.sort((a, b) => {
@@ -1190,9 +1138,11 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
   }, [processed]);
 
   const readyCount = processed.filter(p => p.ok && p.ready).length;
-  const subtitle = stratDef
-    ? `${stratName} · ${timeframe} · needs ${needsCount}/${signalDefs.length} · ${processed.length} pair${processed.length === 1 ? "" : "s"} · ${readyCount} ready to fire`
-    : `${stratName || "—"} · ${timeframe} · ${processed.length} pair${processed.length === 1 ? "" : "s"}`;
+  const hasPlotCfg = signals.plotCfg != null && (
+    Object.keys(signals.plotCfg?.main_plot || {}).length +
+    Object.keys(signals.plotCfg?.subplots || {}).length > 0
+  );
+  const subtitle = `${stratName || "—"} · ${timeframe} · ${processed.length} pair${processed.length === 1 ? "" : "s"} · ${readyCount} entry signal${readyCount === 1 ? "" : "s"}`;
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
@@ -1213,16 +1163,16 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
         )}
         pad={false}
       >
-        {!stratDef && stratName && (
+        {signals.rows.length > 0 && !hasPlotCfg && (
           <div style={{
             margin: "12px 18px", padding: "9px 12px",
             background: "rgba(255,183,74,.12)", border: "1px solid rgba(255,183,74,.32)",
-            color: "var(--warn)", borderRadius: 8, fontSize: 13.5,
+            color: "var(--warn)", borderRadius: 8, fontSize: 13,
             display: "flex", alignItems: "center", gap: 8,
           }}>
             <Icon name="warn" size={14}/>
-            No signal definitions for <strong style={{ fontFamily: "var(--mono)" }}>{stratName}</strong>.
-            Add an entry to <code>STRATEGY_SIGNALS</code> in <code>views.jsx</code> to enable per-pair signals for this strategy.
+            No <code>plot_config</code> defined for <strong style={{ fontFamily: "var(--mono)" }}>{stratName}</strong>.
+            Add a <code>plot_config</code> to your strategy to show indicator columns here.
           </div>
         )}
 
@@ -1248,7 +1198,7 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
           </div>
         ) : isMobile ? (
           <div style={{ padding: "0 14px" }}>
-            {sorted.map(r => <MobileSignalCard key={r.pair} r={r} needsCount={needsCount} onPairClick={goToChart}/>)}
+            {sorted.map(r => <MobileSignalCard key={r.pair} r={r} onPairClick={goToChart}/>)}
           </div>
         ) : (
           <div style={{ overflow: "auto" }}>
@@ -1268,7 +1218,7 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
                 </tr>
               </thead>
               <tbody>
-                {sorted.map(r => <SignalRow key={r.pair} r={r} needsCount={needsCount} goToChart={goToChart}/>)}
+                {sorted.map(r => <SignalRow key={r.pair} r={r} goToChart={goToChart}/>)}
               </tbody>
             </table>
           </div>
@@ -1302,9 +1252,8 @@ function SignalHeaderCell({ label, sub, align, w }) {
   );
 }
 
-function SignalRow({ r, needsCount, goToChart }) {
+function SignalRow({ r, goToChart }) {
   if (!r.ok) {
-    // colSpan covers pair + close + N signal cells + signal-summary cell.
     return (
       <tr>
         <td style={TD}><PairLabel pair={r.pair} size={22} onClick={goToChart}/></td>
@@ -1315,7 +1264,8 @@ function SignalRow({ r, needsCount, goToChart }) {
     );
   }
   const bg = r.ready ? "rgba(42,208,123,.05)" : undefined;
-  const summaryTone = r.ready ? "up" : (r.fired >= needsCount - 1 && needsCount > 1) ? "warn" : "default";
+  const summaryText = r.ready ? "ENTRY" : r.total > 0 ? `${r.fired}/${r.total}` : "—";
+  const summaryTone = r.ready ? "up" : (r.fired > 0 && r.total > 0) ? "warn" : "default";
   return (
     <tr style={{ background: bg }}>
       <td style={TD}><PairLabel pair={r.pair} size={22} onClick={goToChart}/></td>
@@ -1324,9 +1274,7 @@ function SignalRow({ r, needsCount, goToChart }) {
       </td>
       {r.cells.map(cell => <SignalCell key={cell.key} cell={cell}/>)}
       <td style={{ ...TD, textAlign: "right" }}>
-        <Chip tone={summaryTone}>
-          {r.fired}/{r.total}{r.ready ? " · READY" : ""}
-        </Chip>
+        <Chip tone={summaryTone}>{summaryText}</Chip>
       </td>
     </tr>
   );
