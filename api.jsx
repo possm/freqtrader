@@ -193,7 +193,7 @@ function buildSummary(profit, trades, positions) {
   const closedTrades = trades.filter(t => t.status === "closed");
   const wins   = closedTrades.filter(t => t.pnlAbs > 0);
   const losses  = closedTrades.filter(t => t.pnlAbs <= 0);
-  const totalPnl = profit?.profit_all_coin ?? closedTrades.reduce((a, t) => a + t.pnlAbs, 0);
+  const totalPnl = profit?.profit_closed_coin ?? closedTrades.reduce((a, t) => a + t.pnlAbs, 0);
   const totalVol  = closedTrades.reduce((a, t) => a + Math.abs(t.entry * t.size), 0);
   const avgWin    = wins.length   ? wins.reduce((a, t) => a + t.pnlAbs, 0) / wins.length   : 0;
   const avgLoss   = losses.length ? losses.reduce((a, t) => a + t.pnlAbs, 0) / losses.length : 0;
@@ -215,7 +215,7 @@ function buildSummary(profit, trades, positions) {
   const sorted = closedTrades.slice().sort((a, b) => b.pnlAbs - a.pnlAbs);
   return {
     totalPnl,
-    roiPct: profit?.profit_all_percent ?? ((totalPnl / (profit?.holding_value ?? 10000)) * 100),
+    roiPct: profit?.profit_closed_percent ?? ((totalPnl / (profit?.holding_value ?? 10000)) * 100),
     winRate: closedTrades.length ? (wins.length / closedTrades.length) * 100 : 0,
     lossRate: closedTrades.length ? (losses.length / closedTrades.length) * 100 : 0,
     trades: closedTrades.length,
