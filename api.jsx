@@ -168,16 +168,17 @@ function mapReason(r) {
   return "Strategy exit";
 }
 
-function buildEquity(dailyStats, currentBalance, totalPnl) {
+function buildEquity(dailyStats, currentBalance, totalPnl, unrealizedPnl = 0) {
   // dailyStats from /daily: array of {date, abs_profit, ...}
   // Freqtrade returns newest-first — sort ascending so we accumulate oldest→newest.
   if (!dailyStats || dailyStats.length === 0) return [];
   const sorted = [...dailyStats].sort((a, b) => new Date(a.date) - new Date(b.date));
   const startBalance = (currentBalance ?? 0) - (totalPnl ?? 0);
   let cumulative = startBalance;
-  return sorted.map((d) => {
+  return sorted.map((d, i) => {
     cumulative += (d.abs_profit ?? 0);
-    return { date: d.date, v: Math.max(0, cumulative) };
+    const isLast = i === sorted.length - 1;
+    return { date: d.date, v: Math.max(0, cumulative + (isLast ? unrealizedPnl : 0)) };
   });
 }
 
@@ -306,7 +307,8 @@ function useFreqtradeData(baseUrl) {
       const summary = buildSummary(profitRes, allTrades, positions);
       const bot = buildBot(configRes, balanceRes, positions);
       setCurrency(bot.stake);
-      const equity = buildEquity(dailyRes?.data ?? [], bot.balance, summary.totalPnl);
+      const unrealizedPnl = positions.reduce((a, p) => a + p.pnlAbs, 0);
+      const equity = buildEquity(dailyRes?.data ?? [], bot.balance, summary.totalPnl, unrealizedPnl);
       const strats = [...new Set(allTrades.map(t => t.strategy).filter(Boolean))];
       // /api/v1/locks shape: { lock_count, locks: [{ pair, lock_end_timestamp, reason, side, ... }] }
       const locksArr = Array.isArray(locksRes?.locks) ? locksRes.locks : (Array.isArray(locksRes) ? locksRes : []);
