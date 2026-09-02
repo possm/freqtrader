@@ -639,45 +639,41 @@ function BotStatus({ bot, trades, locks = [], setTab, goToTrade }) {
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <Mini label="Exchange" value={bot.exchange}/>
-        <Mini label="Mode" value={<Chip tone="accent">{bot.mode}</Chip>}/>
+      <div style={{ display: "flex", gap: 16 }}>
         <Mini label="Stake" value={bot.stake} mono/>
-        <Mini label="Slots" value={`${bot.usedSlots} / ${bot.openSlots}`} mono/>
-      </div>
-
-      <div>
-        <div className="muted" style={{ fontSize: 11.5, letterSpacing: ".09em", textTransform: "uppercase", marginBottom: 6 }}>
-          Slot utilization
-        </div>
-        <div style={{ height: 6, background: "var(--panel-3)", borderRadius: 99, overflow: "hidden" }}>
-          <div style={{ width: slotPct + "%", height: "100%", background: "linear-gradient(90deg, var(--accent), var(--up))" }}/>
+        <div style={{ flex: 1 }}>
+          <Mini label="Slots" value={`${bot.usedSlots} / ${bot.openSlots}`} mono/>
+          <div style={{ height: 4, background: "var(--panel-3)", borderRadius: 99, overflow: "hidden", marginTop: 6 }}>
+            <div style={{ width: slotPct + "%", height: "100%", background: "linear-gradient(90deg, var(--accent), var(--up))" }}/>
+          </div>
         </div>
       </div>
 
       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-        <div className="muted" style={{ fontSize: 11.5, letterSpacing: ".09em", textTransform: "uppercase", marginBottom: 8 }}>
+        <div className="muted" style={{ fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>
           Recent activity
         </div>
         {recent.length === 0 ? <span className="muted" style={{ fontSize: 13 }}>No recent trades</span> : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
             {recent.map(t => (
               <div key={t.id}
                    onClick={goToTrade ? () => goToTrade(t.id) : undefined}
                    title={goToTrade ? "View trade in history" : undefined}
                    style={{
-                     display: "flex", alignItems: "center", gap: 10,
-                     padding: "8px 0", borderBottom: "1px solid var(--border)",
+                     display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+                     padding: "5px 0", borderBottom: "1px solid var(--border)",
                      cursor: goToTrade ? "pointer" : "default",
                    }}>
-                <PairToken pair={t.pair} size={20}/>
-                <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 13 }}>{t.pair}</span>
-                  <span className="muted" style={{ fontSize: 11.8 }}>closed · {t.reason} · {fmtTimeAgo(t.closedAt)}</span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 600 }}>{t.pair.split('/')[0]}</span>
+                  <span className="muted" style={{ fontSize: 11.5 }}>{t.reason}</span>
                 </div>
-                <span className="num" style={{ fontSize: 13, fontWeight: 600, color: t.pnlAbs >= 0 ? "var(--up)" : "var(--down)" }}>
-                  {fmtPct(t.pnlPct)}
-                </span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <span className="muted" style={{ fontSize: 11 }}>{fmtTimeAgo(t.closedAt)}</span>
+                  <span className="num" style={{ fontSize: 12.5, fontWeight: 600, color: t.pnlAbs >= 0 ? "var(--up)" : "var(--down)" }}>
+                    {fmtPct(t.pnlPct)}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
