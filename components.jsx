@@ -762,8 +762,27 @@ function KpiCard({ label, value, sub, tone, spark, info, big, loading, style }) 
 }
 
 // ── Mobile position card ──────────────────────────────────────────────────────
-function MobilePositionCard({ p, onPairClick }) {
+function MobilePositionCard({ p, onPairClick, refresh }) {
   const pos = p.pnlAbs >= 0;
+  const [selling, setSelling] = useState(false);
+
+  const onSell = async (e) => {
+    e.stopPropagation();
+    if (selling) return;
+    if (!window.confirm(`Are you sure you want to force sell ${p.pair} at market price?`)) return;
+    try {
+      setSelling(true);
+      const cfg = window.loadConfig?.() || JSON.parse(localStorage.getItem("ft_config") || "{}");
+      await window.forceExit(cfg?.url || "", p.id);
+      if (refresh) await refresh();
+    } catch (err) {
+      console.error("Force exit failed", err);
+      alert("Failed to force exit position.");
+    } finally {
+      setSelling(false);
+    }
+  };
+
   return (
     <div
       onClick={onPairClick ? () => onPairClick(p.pair) : undefined}
@@ -786,8 +805,16 @@ function MobilePositionCard({ p, onPairClick }) {
           </span>
           <PnlPill pct={p.pnlPct} size="sm"/>
         </div>
-        <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>
-          {p.strategy} · {fmtDuration(Date.now() - p.openedAt)}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+          <span className="muted" style={{ fontSize: 11.5 }}>
+            {p.strategy} · {fmtDuration(Date.now() - p.openedAt)}
+          </span>
+          <button onClick={onSell} disabled={selling} style={{
+            background: "transparent", border: "1px solid var(--border-3)", color: "var(--text)", 
+            padding: "2px 8px", borderRadius: 4, fontSize: 11, cursor: "pointer", pointerEvents: "auto"
+          }}>
+            {selling ? "..." : "Sell"}
+          </button>
         </div>
       </div>
     </div>

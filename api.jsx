@@ -395,6 +395,15 @@ async function deleteLock(baseUrl, lockId) {
   return ftFetch(baseUrl, `/api/v1/locks/${lockId}`, { method: "DELETE" });
 }
 
+// Force exit a trade by id — used by the dashboard's "sell" action.
+async function forceExit(baseUrl, tradeId) {
+  return ftFetch(baseUrl, `/api/v1/forceexit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tradeid: tradeId })
+  });
+}
+
 // ── Signals (per-pair indicator state) ────────────────────────────────────────
 // Fetches the live analyzed dataframe for a single pair and returns the latest
 // row as a {column: value} object. Freqtrade's /pair_candles response shape:
@@ -469,7 +478,7 @@ async function fetchPlotConfig(baseUrl) {
 Object.assign(window, {
   loadConfig, saveConfig, clearConfig,
   login, refreshAccessToken, ensureToken, useFreqtradeData,
-  deleteLock,
+  deleteLock, forceExit,
   fetchPairCandles, fetchAllPairSignals, fetchWhitelist, fetchChartCandles,
   fetchPlotConfig,
 });

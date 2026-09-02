@@ -10,10 +10,28 @@ const TD = { padding: "0 14px", borderBottom: "1px solid var(--border)", whiteSp
 //                         POSITIONS TABLE + EXPAND
 // ════════════════════════════════════════════════════════════════════════════
 
-function PositionsTable({ rows, expandable = true, compact = false, goToChart }) {
+function PositionsTable({ rows, expandable = true, compact = false, goToChart, refresh }) {
   const [sort, setSort] = vUseState({ key: "pnlPct", dir: "desc" });
   const [expanded, setExpanded] = vUseState(null);
+  const [selling, setSelling] = vUseState(null);
   const sorted = vUseMemo(() => applySort(rows, sort), [rows, sort]);
+
+  const onSell = async (e, p) => {
+    e.stopPropagation();
+    if (selling) return;
+    if (!window.confirm(`Are you sure you want to force sell ${p.pair} at market price?`)) return;
+    try {
+      setSelling(p.id);
+      const cfg = loadConfig();
+      await forceExit(cfg?.url || "", p.id);
+      if (refresh) await refresh();
+    } catch (err) {
+      console.error("Force exit failed", err);
+      alert("Failed to force exit position.");
+    } finally {
+      setSelling(null);
+    }
+  };
 
   if (rows.length === 0) {
     return (
@@ -37,6 +55,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart })
             {!compact && <ColHead sortKey="notional" sort={sort} setSort={setSort} align="right">Amount</ColHead>}
             <ColHead sortKey="pnlAbs" sort={sort} setSort={setSort} align="right">PNL €</ColHead>
             <ColHead sortKey="pnlPct" sort={sort} setSort={setSort} align="right">PNL %</ColHead>
+            <ColHead align="right" style={{ width: 60 }}>Action</ColHead>
             <ColHead align="right" style={{ width: 40 }}></ColHead>
           </tr>
         </thead>
@@ -84,13 +103,18 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart })
                       {fmtPct(p.pnlPct)}
                     </span>
                   </td>
+                  <td style={{ ...TD, textAlign: "right" }}>
+                    <Btn size="sm" tone="ghost" disabled={selling === p.id} onClick={(e) => onSell(e, p)}>
+                      {selling === p.id ? "..." : "Sell"}
+                    </Btn>
+                  </td>
                   <td style={{ ...TD, textAlign: "right", color: "var(--muted)" }}>
                     {expandable && <Icon name={isOpen ? "chevron-up" : "chevron-down"} size={14}/>}
                   </td>
                 </tr>
                 {expandable && isOpen && (
                   <tr style={{ background: "var(--panel-2)" }}>
-                    <td colSpan={compact ? 8 : 10} style={{ padding: 0, borderBottom: "1px solid var(--border)" }}>
+                    <td colSpan={compact ? 9 : 11} style={{ padding: 0, borderBottom: "1px solid var(--border)" }}>
                       <ExpandedPosition p={p} slDist={slDist} tpDist={tpDist}/>
                     </td>
                   </tr>
@@ -407,8 +431,8 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
           {isMobile
             ? (filtered.length === 0
                 ? <div style={{ padding: "20px 0", color: "var(--muted)", fontSize: 14, textAlign: "center" }}>No open positions</div>
-                : filtered.map(p => <MobilePositionCard key={p.id} p={p} onPairClick={goToChart}/>))
-            : <PositionsTable rows={filtered} expandable={true} compact={false} goToChart={goToChart}/>
+                : filtered.map(p => <MobilePositionCard key={p.id} p={p} onPairClick={goToChart} refresh={data.refresh}/>))
+            : <PositionsTable rows={filtered} expandable={true} compact={false} goToChart={goToChart} refresh={data.refresh}/>
           }
         </Card>
       </div>
@@ -697,7 +721,7 @@ function PositionsView({ data, goToChart }) {
                 <Btn icon="download" size="sm" tone="ghost">Export</Btn>
               </div>
             }>
-        <PositionsTable rows={filtered} goToChart={goToChart}/>
+        <PositionsTable rows={filtered} goToChart={goToChart} refresh={data.refresh}/>
       </Card>
     </div>
   );
