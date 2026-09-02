@@ -288,13 +288,13 @@ function TradesTable({ rows, goToChart, highlightId }) {
         <thead>
           <tr style={{ background: "var(--panel)", position: "sticky", top: 0, zIndex: 1 }}>
             <ColHead sortKey="id" sort={sort} setSort={setSort}>ID</ColHead>
-            <ColHead sortKey="closedAt" sort={sort} setSort={setSort}>Date</ColHead>
+            <ColHead sortKey="closedAt" sort={sort} setSort={setSort}>Age</ColHead>
             <ColHead sortKey="pair" sort={sort} setSort={setSort}>Pair</ColHead>
             <ColHead sortKey="size" sort={sort} setSort={setSort} align="right">Size</ColHead>
             <ColHead sortKey="exit" sort={sort} setSort={setSort} align="right">Price</ColHead>
             <ColHead sortKey="notional" sort={sort} setSort={setSort} align="right">Value</ColHead>
             <ColHead sortKey="pnlPct" sort={sort} setSort={setSort} align="right">Result</ColHead>
-            <ColHead sortKey="reason" sort={sort} setSort={setSort}>Reason</ColHead>
+            <ColHead sortKey="reason" sort={sort} setSort={setSort} align="right">Reason</ColHead>
             <ColHead align="right" style={{ width: 40 }}></ColHead>
           </tr>
         </thead>
@@ -310,7 +310,7 @@ function TradesTable({ rows, goToChart, highlightId }) {
                   <span style={{ fontSize: 13 }}>#{t.id}</span>
                 </td>
                 <td style={TD}>
-                  <TableStack top={fmtTime(t.closedAt)} sub={fmtDuration(t.durMin * 60000)} align="left" />
+                  <TableStack top={fmtDuration(t.durMin * 60000)} sub={fmtTime(t.closedAt)} align="left" />
                 </td>
                 <td style={TD}><PairLabel pair={t.pair} size={26} onClick={goToChart}/></td>
                 <td style={{ ...TD, textAlign: "right" }} className="num">
@@ -328,7 +328,7 @@ function TradesTable({ rows, goToChart, highlightId }) {
                 <td style={{ ...TD, textAlign: "right" }}>
                   <TableStack top={fmtPct(t.pnlPct)} sub={fmtSignedUsd(t.pnlAbs)} topColor={pnlColor(t.pnlPct)} topBold />
                 </td>
-                <td style={TD}>
+                <td style={{ ...TD, textAlign: "right" }}>
                   <Chip tone={t.reason === "ROI" || t.reason === "Take-profit" ? "up" : t.reason === "Stop-loss" ? "down" : "default"}>
                     {t.reason}
                   </Chip>
