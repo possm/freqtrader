@@ -49,9 +49,9 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
             <ColHead sortKey="id" sort={sort} setSort={setSort}>ID</ColHead>
             <ColHead sortKey="openedAt" sort={sort} setSort={setSort}>Age</ColHead>
             <ColHead sortKey="pair" sort={sort} setSort={setSort}>Pair</ColHead>
+            {!compact && <ColHead sortKey="size" sort={sort} setSort={setSort} align="right">Size</ColHead>}
             <ColHead sortKey="current" sort={sort} setSort={setSort} align="right">Price</ColHead>
             {!compact && <ColHead sortKey="notional" sort={sort} setSort={setSort} align="right">Value</ColHead>}
-            {!compact && <ColHead sortKey="size" sort={sort} setSort={setSort} align="right">Size</ColHead>}
             <ColHead sortKey="pnlPct" sort={sort} setSort={setSort} align="right">Result</ColHead>
             <ColHead align="right" style={{ width: 60 }}>Action</ColHead>
             <ColHead align="right" style={{ width: 40 }}></ColHead>
@@ -74,6 +74,14 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                     <span className="num" style={{ fontSize: 13 }}>{fmtDuration(Date.now() - p.openedAt)}</span>
                   </td>
                   <td style={TD}><PairLabel pair={p.pair} size={26} onClick={goToChart}/></td>
+                  {!compact && (
+                    <td style={{ ...TD, textAlign: "right" }} className="num">
+                      <span style={{ fontSize: 13.5 }}>
+                        {p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })}
+                      </span>
+                      <span className="muted" style={{ fontSize: 11, marginLeft: 4 }}>{p.pair.split("/")[0]}</span>
+                    </td>
+                  )}
                   <td style={{ ...TD, textAlign: "right" }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
                       <span className="num" style={{ fontSize: 13.5, color: pos ? "var(--up)" : "var(--down)" }}>{fmtPrice(p.current)}</span>
@@ -90,14 +98,6 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                           {fmtUsd(p.stakeAmount)}
                         </span>
                       </div>
-                    </td>
-                  )}
-                  {!compact && (
-                    <td style={{ ...TD, textAlign: "right" }} className="num">
-                      <span style={{ fontSize: 13.5 }}>
-                        {p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })}
-                      </span>
-                      <span className="muted" style={{ fontSize: 11, marginLeft: 4 }}>{p.pair.split("/")[0]}</span>
                     </td>
                   )}
                   <td style={{ ...TD, textAlign: "right" }}>
