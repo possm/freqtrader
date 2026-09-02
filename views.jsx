@@ -83,32 +83,15 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                     </td>
                   )}
                   <td style={{ ...TD, textAlign: "right" }}>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                      <span className="num" style={{ fontSize: 13.5, color: pnlColor(p.pnlPct) }}>{fmtPrice(p.current)}</span>
-                      <span className="num muted" style={{ fontSize: 11.5 }}>
-                        {fmtPrice(p.entry)}
-                      </span>
-                    </div>
+                    <TableStack top={fmtPrice(p.current)} sub={fmtPrice(p.entry)} topColor={pnlColor(p.pnlPct)} />
                   </td>
                   {!compact && (
                     <td style={{ ...TD, textAlign: "right" }}>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                        <span className="num" style={{ fontSize: 13.5 }}>{fmtUsd(p.notional)}</span>
-                        <span className="num muted" style={{ fontSize: 11.5 }}>
-                          {fmtUsd(p.stakeAmount)}
-                        </span>
-                      </div>
+                      <TableStack top={fmtUsd(p.notional)} sub={fmtUsd(p.stakeAmount)} />
                     </td>
                   )}
                   <td style={{ ...TD, textAlign: "right" }}>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                      <span className="num" style={{ fontSize: 14, fontWeight: 600, color: pnlColor(p.pnlPct) }}>
-                        {fmtPct(p.pnlPct)}
-                      </span>
-                      <span className="num muted" style={{ fontSize: 11.5 }}>
-                        {fmtSignedUsd(p.pnlAbs)}
-                      </span>
-                    </div>
+                    <TableStack top={fmtPct(p.pnlPct)} sub={fmtSignedUsd(p.pnlAbs)} topColor={pnlColor(p.pnlPct)} topBold />
                   </td>
                   <td style={{ ...TD, textAlign: "right" }}>
                     <Btn size="sm" tone="ghost" disabled={selling === p.id} onClick={(e) => onSell(e, p)}>
@@ -339,30 +322,13 @@ function TradesTable({ rows, goToChart, highlightId }) {
                   <span className="muted" style={{ fontSize: 11, marginLeft: 4 }}>{t.pair.split("/")[0]}</span>
                 </td>
                 <td style={{ ...TD, textAlign: "right" }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                    <span className="num" style={{ fontSize: 13.5, color: pnlColor(t.pnlPct) }}>{fmtPrice(t.exit)}</span>
-                    <span className="num muted" style={{ fontSize: 11.5 }}>
-                      {fmtPrice(t.entry)}
-                    </span>
-                  </div>
+                  <TableStack top={fmtPrice(t.exit)} sub={fmtPrice(t.entry)} topColor={pnlColor(t.pnlPct)} />
                 </td>
                 <td style={{ ...TD, textAlign: "right" }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                    <span className="num" style={{ fontSize: 13.5 }}>{fmtUsd(t.notional)}</span>
-                    <span className="num muted" style={{ fontSize: 11.5 }}>
-                      {fmtUsd(t.stakeAmount)}
-                    </span>
-                  </div>
+                  <TableStack top={fmtUsd(t.notional)} sub={fmtUsd(t.stakeAmount)} />
                 </td>
                 <td style={{ ...TD, textAlign: "right" }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                    <span className="num" style={{ fontSize: 14, fontWeight: 600, color: pnlColor(t.pnlPct) }}>
-                      {fmtPct(t.pnlPct)}
-                    </span>
-                    <span className="num muted" style={{ fontSize: 11.5 }}>
-                      {fmtSignedUsd(t.pnlAbs)}
-                    </span>
-                  </div>
+                  <TableStack top={fmtPct(t.pnlPct)} sub={fmtSignedUsd(t.pnlAbs)} topColor={pnlColor(t.pnlPct)} topBold />
                 </td>
                 <td style={TD}>
                   <Chip tone={t.reason === "ROI" || t.reason === "Take-profit" ? "up" : t.reason === "Stop-loss" ? "down" : "default"}>

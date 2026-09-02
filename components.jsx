@@ -287,6 +287,20 @@ function PnlPill({ value, pct, size = "md" }) {
   );
 }
 
+// ── Table Cell Stack ──────────────────────────────────────────────────────────
+function TableStack({ top, sub, topColor, topBold = false, align = "right" }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: align === "right" ? "flex-end" : "flex-start", padding: "4px 0" }}>
+      <span className="num" style={{ fontSize: topBold ? 14 : 13.5, fontWeight: topBold ? 600 : undefined, color: topColor }}>
+        {top}
+      </span>
+      <span className="num muted" style={{ fontSize: 11.5 }}>
+        {sub}
+      </span>
+    </div>
+  );
+}
+
 // ── Sparkline ─────────────────────────────────────────────────────────────────
 function Sparkline({ data, width = 96, height = 28, color, fill = true, strokeWidth = 1.4 }) {
   if (!data || data.length < 2) return <span/>;
@@ -764,6 +778,40 @@ function KpiCard({ label, value, sub, tone, spark, info, big, loading, style }) 
   );
 }
 
+
+// ── Mobile row card ───────────────────────────────────────────────────────────
+function MobileRowCard({ pair, pnlAbs, highlight, onClick, children }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (highlight && ref.current) ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlight]);
+
+  return (
+    <div
+      ref={ref}
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "center", gap: 12, padding: highlight ? "12px 8px" : "12px 0",
+        borderBottom: "1px solid var(--border)",
+        cursor: onClick ? "pointer" : "default",
+        background: highlight ? "var(--accent-soft)" : undefined,
+        boxShadow: highlight ? "inset 2px 0 0 var(--accent)" : undefined,
+        borderRadius: highlight ? 6 : undefined,
+      }}>
+      <PairToken pair={pair} size={36}/>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
+          <span style={{ fontWeight: 600, fontSize: 14.5 }}>{pair}</span>
+          <span className="num" style={{ fontSize: 15, fontWeight: 700, color: pnlColor(pnlAbs) }}>
+            {fmtSignedUsd(pnlAbs)}
+          </span>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // ── Mobile position card ──────────────────────────────────────────────────────
 function MobilePositionCard({ p, onPairClick, refresh }) {
   const pos = p.pnlAbs >= 0;
@@ -787,80 +835,41 @@ function MobilePositionCard({ p, onPairClick, refresh }) {
   };
 
   return (
-    <div
-      onClick={onPairClick ? () => onPairClick(p.pair) : undefined}
-      style={{
-        display: "flex", alignItems: "center", gap: 12, padding: "12px 0",
-        borderBottom: "1px solid var(--border)",
-        cursor: onPairClick ? "pointer" : "default",
-      }}>
-      <PairToken pair={p.pair} size={38}/>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
-          <span style={{ fontWeight: 600, fontSize: 14.5 }}>{p.pair}</span>
-          <span className="num" style={{ fontSize: 15, fontWeight: 700, color: pnlColor(p.pnlAbs) }}>
-            {fmtSignedUsd(p.pnlAbs)}
-          </span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span className="num muted" style={{ fontSize: 12 }}>
-            {fmtPrice(p.entry)} → <span style={{ color: pnlColor(p.pnlPct) }}>{fmtPrice(p.current)}</span>
-          </span>
-          <PnlPill pct={p.pnlPct} size="sm"/>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
-          <span className="muted" style={{ fontSize: 11.5 }}>
-            {p.strategy} · {fmtDuration(Date.now() - p.openedAt)}
-          </span>
-          <button onClick={onSell} disabled={selling} style={{
-            background: "transparent", border: "1px solid var(--border-3)", color: "var(--text)", 
-            padding: "2px 8px", borderRadius: 4, fontSize: 11, cursor: "pointer", pointerEvents: "auto"
-          }}>
-            {selling ? "..." : "Sell"}
-          </button>
-        </div>
+    <MobileRowCard pair={p.pair} pnlAbs={p.pnlAbs} onClick={onPairClick ? () => onPairClick(p.pair) : undefined}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span className="num muted" style={{ fontSize: 12 }}>
+          {fmtPrice(p.entry)} → <span style={{ color: pnlColor(p.pnlPct) }}>{fmtPrice(p.current)}</span>
+        </span>
+        <PnlPill pct={p.pnlPct} size="sm"/>
       </div>
-    </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+        <span className="muted" style={{ fontSize: 11.5 }}>
+          {p.strategy} · {fmtDuration(Date.now() - p.openedAt)}
+        </span>
+        <button onClick={onSell} disabled={selling} style={{
+          background: "transparent", border: "1px solid var(--border-3)", color: "var(--text)", 
+          padding: "2px 8px", borderRadius: 4, fontSize: 11, cursor: "pointer", pointerEvents: "auto"
+        }}>
+          {selling ? "..." : "Sell"}
+        </button>
+      </div>
+    </MobileRowCard>
   );
 }
 
 // ── Mobile trade card ─────────────────────────────────────────────────────────
 function MobileTradeCard({ t, onPairClick, highlight }) {
   const pos = t.pnlAbs >= 0;
-  const ref = useRef(null);
-  // The deep-linked card scrolls itself into view; only one card is highlighted.
-  useEffect(() => {
-    if (highlight && ref.current) ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [highlight]);
   return (
-    <div
-      ref={ref}
-      onClick={onPairClick ? () => onPairClick(t.pair) : undefined}
-      style={{
-        display: "flex", alignItems: "center", gap: 12, padding: "12px 8px",
-        borderBottom: "1px solid var(--border)",
-        cursor: onPairClick ? "pointer" : "default",
-        background: highlight ? "var(--accent-soft)" : undefined,
-        boxShadow: highlight ? "inset 2px 0 0 var(--accent)" : undefined,
-        borderRadius: highlight ? 6 : undefined,
-      }}>
-      <PairToken pair={t.pair} size={36}/>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
-          <span style={{ fontWeight: 600, fontSize: 14 }}>{t.pair}</span>
-          <span className="num" style={{ fontSize: 15, fontWeight: 700, color: pnlColor(pos) }}>
-            {fmtSignedUsd(t.pnlAbs)}
-          </span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span className="muted" style={{ fontSize: 12 }}>{fmtTimeAgo(t.closedAt)}</span>
-          <Chip tone={pnlTone(t.pnlPct)}>{fmtPct(t.pnlPct)}</Chip>
-        </div>
-        <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>
-          {t.reason} · {fmtDuration(t.durMin * 60000)}
-        </div>
+    <MobileRowCard pair={t.pair} pnlAbs={t.pnlAbs} highlight={highlight} onClick={onPairClick ? () => onPairClick(t.pair) : undefined}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span className="muted" style={{ fontSize: 12 }}>{fmtTimeAgo(t.closedAt)}</span>
+        <Chip tone={pnlTone(t.pnlPct)}>{fmtPct(t.pnlPct)}</Chip>
       </div>
-    </div>
+      <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>
+        {t.reason} · {fmtDuration(t.durMin * 60000)}
+      </div>
+    </MobileRowCard>
   );
 }
 
@@ -925,7 +934,7 @@ Object.assign(window, {
   fmtDuration, fmtTimeAgo, fmtTime,
   setCurrency, getCurrency,
   sparkSeries, mulberry32, hashStr,
-  Icon, PairToken, PairLabel, Card, PnlPill, Sparkline, StatusDot,
+  Icon, PairToken, PairLabel, Card, PnlPill, TableStack, Sparkline, StatusDot,
   EquityChart, DailyBars, WinLossDonut,
   ColHead, Segmented, Chip, Btn, SearchInput, KpiCard, applySort,
   useBreakpoint,
