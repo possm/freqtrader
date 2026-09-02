@@ -32,7 +32,8 @@ const fmtMoney = (n, decimals = 2) => {
   if (n == null || isNaN(n)) return "—";
   const sign = n < 0 ? "-" : "";
   const v = Math.abs(n);
-  return sign + v.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  const locale = typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US";
+  return sign + v.toLocaleString(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 };
 const fmtUsd        = (n, d = 2) => _currencySymbol + fmtMoney(n, d);
 const fmtSignedUsd  = (n, d = 2) => (n >= 0 ? "+" : "−") + _currencySymbol + fmtMoney(Math.abs(n), d);
@@ -40,9 +41,10 @@ const fmtPct        = (n, d = 2) => (n >= 0 ? "+" : "−") + Math.abs(n).toFixed
 
 const fmtPrice = (n) => {
   if (n == null) return "—";
-  if (n >= 1000) return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (n >= 1)    return n.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 4 });
-  return n.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 5 });
+  const locale = typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US";
+  if (n >= 1000) return n.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (n >= 1)    return n.toLocaleString(locale, { minimumFractionDigits: 3, maximumFractionDigits: 4 });
+  return n.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 5 });
 };
 
 const fmtCompact = (n) => {

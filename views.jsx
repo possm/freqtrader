@@ -66,7 +66,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart })
                   </td>
                   {!compact && (
                     <td style={{ ...TD, textAlign: "right" }} className="num">
-                      <span style={{ fontSize: 13.5 }}>{p.size.toLocaleString("en-US", { maximumFractionDigits: 4 })}</span>
+                      <span style={{ fontSize: 13.5 }}>{p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })}</span>
                     </td>
                   )}
                   {!compact && (
@@ -123,7 +123,7 @@ function ExpandedPosition({ p, slDist, tpDist }) {
         <KV label="Direction" value={<Chip tone="up" icon="up">{p.side.toUpperCase()}</Chip>} raw/>
         <KV label="Entry" value={fmtPrice(p.entry)} mono/>
         <KV label="Mark" value={fmtPrice(p.current)} mono valueColor={pos ? "var(--up)" : "var(--down)"}/>
-        <KV label="Volume" value={`${p.size.toLocaleString("en-US", { maximumFractionDigits: 4 })} ${p.pair.split("/")[0]}`} mono/>
+        <KV label="Volume" value={`${p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })} ${p.pair.split("/")[0]}`} mono/>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -1420,17 +1420,22 @@ function CandleChart({ data, mainPlot, positions, heikinAshi }) {
     if (!el || !window.LightweightCharts) return;
     const LC = window.LightweightCharts;
 
+    const style = getComputedStyle(document.documentElement);
+    const bg = style.getPropertyValue("--panel").trim() || "#10172a";
+    const text = style.getPropertyValue("--text-2").trim() || "#b6becf";
+    const gridLine = style.getPropertyValue("--border-2").trim() || "rgba(255,255,255,0.04)";
+
     const chart = LC.createChart(el, {
       width:  Math.max(el.clientWidth,  300),
       height: Math.max(el.clientHeight, 300),
-      layout: { background: { type: "solid", color: "#10172a" }, textColor: "#b6becf", fontSize: 12 },
+      layout: { background: { type: "solid", color: bg }, textColor: text, fontSize: 12 },
       grid: {
-        vertLines: { color: "rgba(255,255,255,0.04)" },
-        horzLines: { color: "rgba(255,255,255,0.04)" },
+        vertLines: { color: gridLine },
+        horzLines: { color: gridLine },
       },
       crosshair: { mode: LC.CrosshairMode.Normal },
-      rightPriceScale: { borderColor: "rgba(255,255,255,0.10)", scaleMargins: { top: 0.06, bottom: 0.20 } },
-      timeScale: { borderColor: "rgba(255,255,255,0.10)", timeVisible: true, secondsVisible: false },
+      rightPriceScale: { borderColor: gridLine, scaleMargins: { top: 0.06, bottom: 0.20 } },
+      timeScale: { borderColor: gridLine, timeVisible: true, secondsVisible: false },
     });
     chartRef.current = chart;
 

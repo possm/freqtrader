@@ -286,71 +286,97 @@ function useFreqtradeData(baseUrl) {
     lastUpdated: null,
   });
 
-  const fetchAll = React.useCallback(async () => {
+  const rawRef = React.useRef({
+    status: [], trades: null, profit: null, daily: null, balance: null, config: null, locks: null
+  });
+
+  const processData = React.useCallback(() => {
+    const { status, trades, profit, daily, balance, config, locksRes } = rawRef.current;
+    
+    const positions = (Array.isArray(status) ? status : []).map(mapPosition);
+    const allTrades = (trades?.trades ?? []).map(mapTrade);
+    const closedTrades = allTrades.filter(t => t.status === "closed");
+    const unrealizedPnl = positions.reduce((a, p) => a + p.pnlAbs, 0);
+
+    const sortedDaily = [...(daily?.data ?? [])].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const dailyArr = sortedDaily.map((d, i, arr) => ({
+      date: d.date, daysAgo: arr.length - 1 - i,
+      v: d.abs_profit ?? 0,
+      unrealized: i === arr.length - 1 ? unrealizedPnl : 0,
+    }));
+
+    const summary = buildSummary(profit, allTrades, positions);
+    const bot = buildBot(config, balance, positions);
+    setCurrency(bot.stake);
+    const equity = buildEquity(daily?.data ?? [], bot.balance, summary.totalPnl, unrealizedPnl);
+    const strats = [...new Set(allTrades.map(t => t.strategy).filter(Boolean))];
+    
+    const locksArr = Array.isArray(locksRes?.locks) ? locksRes.locks : (Array.isArray(locksRes) ? locksRes : []);
+    const locks = locksArr.map(l => ({
+      id: l.id, pair: l.pair, side: l.side || "*", reason: l.reason || "—",
+      until: l.lock_end_timestamp ?? (l.lock_end_time ? new Date(l.lock_end_time).getTime() : null),
+    })).filter(l => !l.until || l.until > Date.now()).sort((a, b) => (a.until ?? 0) - (b.until ?? 0));
+
+    setState({
+      positions, trades: closedTrades, equity, daily: dailyArr,
+      summary, bot, strats, locks,
+      loading: false, error: null, lastUpdated: Date.now(),
+    });
+  }, []);
+
+  const fetchFast = React.useCallback(async () => {
     if (!baseUrl) return;
     try {
-      const [statusRes, tradesRes, profitRes, dailyRes, balanceRes, configRes, locksRes] = await Promise.all([
+      const [status, balance] = await Promise.all([
         ftFetch(baseUrl, "/api/v1/status"),
-        ftFetch(baseUrl, "/api/v1/trades?limit=500"),
-        ftFetch(baseUrl, "/api/v1/profit").catch(() => null),
-        ftFetch(baseUrl, "/api/v1/daily?timescale=30").catch(() => null),
         ftFetch(baseUrl, "/api/v1/balance").catch(() => null),
-        ftFetch(baseUrl, "/api/v1/show_config").catch(() => null),
-        ftFetch(baseUrl, "/api/v1/locks").catch(() => null),
       ]);
-
-      const positions = (Array.isArray(statusRes) ? statusRes : []).map(mapPosition);
-      const allTrades = (tradesRes?.trades ?? []).map(mapTrade);
-      const closedTrades = allTrades.filter(t => t.status === "closed");
-      const unrealizedPnl = positions.reduce((a, p) => a + p.pnlAbs, 0);
-
-      // Build daily bars from /daily response — sort ascending (oldest first)
-      const sortedDaily = [...(dailyRes?.data ?? [])].sort((a, b) => new Date(a.date) - new Date(b.date));
-      const dailyArr = sortedDaily.map((d, i, arr) => ({
-        date: d.date,
-        daysAgo: arr.length - 1 - i,   // 0 = today (last entry)
-        v: d.abs_profit ?? 0,
-        unrealized: i === arr.length - 1 ? unrealizedPnl : 0,
-      }));
-
-      const summary = buildSummary(profitRes, allTrades, positions);
-      const bot = buildBot(configRes, balanceRes, positions);
-      setCurrency(bot.stake);
-      const equity = buildEquity(dailyRes?.data ?? [], bot.balance, summary.totalPnl, unrealizedPnl);
-      const strats = [...new Set(allTrades.map(t => t.strategy).filter(Boolean))];
-      // /api/v1/locks shape: { lock_count, locks: [{ pair, lock_end_timestamp, reason, side, ... }] }
-      const locksArr = Array.isArray(locksRes?.locks) ? locksRes.locks : (Array.isArray(locksRes) ? locksRes : []);
-      const locks = locksArr.map(l => ({
-        id: l.id,
-        pair: l.pair,
-        side: l.side || "*",
-        reason: l.reason || "—",
-        until: l.lock_end_timestamp ?? (l.lock_end_time ? new Date(l.lock_end_time).getTime() : null),
-      })).filter(l => !l.until || l.until > Date.now())
-        .sort((a, b) => (a.until ?? 0) - (b.until ?? 0));
-
-      setState({
-        positions, trades: closedTrades, equity,
-        daily: dailyArr, summary, bot, strats, locks,
-        loading: false, error: null, lastUpdated: Date.now(),
-      });
+      rawRef.current.status = status;
+      rawRef.current.balance = balance;
+      processData();
     } catch (err) {
-      // ftFetch already attempts refresh + re-login on 401; if we still get
-      // a 401 here, the stored credentials are actually invalid.
       setState(prev => ({
-        ...prev,
-        loading: false,
+        ...prev, loading: false,
         error: err.code === 401 ? "auth" : (err.message || "Connection error"),
       }));
     }
-  }, [baseUrl]);
+  }, [baseUrl, processData]);
+
+  const fetchSlow = React.useCallback(async () => {
+    if (!baseUrl) return;
+    try {
+      const [trades, profit, daily, config, locksRes] = await Promise.all([
+        ftFetch(baseUrl, "/api/v1/trades?limit=500"),
+        ftFetch(baseUrl, "/api/v1/profit").catch(() => null),
+        ftFetch(baseUrl, "/api/v1/daily?timescale=30").catch(() => null),
+        ftFetch(baseUrl, "/api/v1/show_config").catch(() => null),
+        ftFetch(baseUrl, "/api/v1/locks").catch(() => null),
+      ]);
+      rawRef.current.trades = trades;
+      rawRef.current.profit = profit;
+      rawRef.current.daily = daily;
+      rawRef.current.config = config;
+      rawRef.current.locksRes = locksRes;
+      processData();
+    } catch (err) {
+      // Fast poll handles auth errors mostly, but catch here too.
+    }
+  }, [baseUrl, processData]);
+
+  const fetchAll = React.useCallback(async () => {
+    await Promise.all([fetchFast(), fetchSlow()]);
+  }, [fetchFast, fetchSlow]);
 
   React.useEffect(() => {
     if (!baseUrl) return;
     fetchAll();
-    const id = setInterval(fetchAll, POLL_INTERVAL);
-    return () => clearInterval(id);
-  }, [fetchAll, baseUrl]);
+    const fastId = setInterval(fetchFast, 5000);
+    const slowId = setInterval(fetchSlow, 60000);
+    return () => {
+      clearInterval(fastId);
+      clearInterval(slowId);
+    };
+  }, [fetchAll, fetchFast, fetchSlow, baseUrl]);
 
   return { ...state, refresh: fetchAll };
 }
