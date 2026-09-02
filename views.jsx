@@ -75,9 +75,9 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                   <td style={TD}><PairLabel pair={p.pair} size={26} onClick={goToChart}/></td>
                   <td style={{ ...TD, textAlign: "right" }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                      <span className="num" style={{ fontSize: 13.5 }}>{fmtPrice(p.entry)}</span>
+                      <span className="num" style={{ fontSize: 13.5 }}>{fmtUsd(p.stakeAmount)}</span>
                       <span className="num muted" style={{ fontSize: 11.5 }}>
-                        {fmtUsd(p.stakeAmount)}
+                        {fmtPrice(p.entry)}
                       </span>
                     </div>
                   </td>
