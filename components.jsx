@@ -39,6 +39,9 @@ const fmtUsd        = (n, d = 2) => _currencySymbol + fmtMoney(n, d);
 const fmtSignedUsd  = (n, d = 2) => (n >= 0 ? "+" : "−") + _currencySymbol + fmtMoney(Math.abs(n), d);
 const fmtPct        = (n, d = 2) => (n >= 0 ? "+" : "−") + Math.abs(n).toFixed(d) + "%";
 
+const pnlColor = (v) => (v === true || (typeof v === "number" && v >= 0)) ? "var(--up)" : "var(--down)";
+const pnlTone = (v) => (v === true || (typeof v === "number" && v >= 0)) ? "up" : "down";
+
 const fmtPrice = (n) => {
   if (n == null) return "—";
   const locale = typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US";
@@ -274,7 +277,7 @@ function PnlPill({ value, pct, size = "md" }) {
       display: "inline-flex", alignItems: "center", gap: dims.gap,
       padding: dims.pad, borderRadius: 6,
       background: pos ? "var(--up-soft)" : "var(--down-soft)",
-      color: pos ? "var(--up)" : "var(--down)",
+      color: pnlColor(pos),
       fontSize: dims.fs, fontWeight: 600,
       fontFamily: "var(--mono)", fontVariantNumeric: "tabular-nums",
     }}>
@@ -429,16 +432,16 @@ function EquityChart({ data, height = 260 }) {
         {hasUnrealized && (
           <g>
             <path d={`M ${xs(plotData.length - 1)},${ys(today.v)} C ${xs(plotData.length - 1)+6},${ys(today.v)} ${nextX-6},${nextY} ${nextX},${nextY}`} 
-                  fill="none" stroke={today.unrealized > 0 ? "var(--up)" : "var(--down)"} 
+                  fill="none" stroke={pnlColor(today.unrealized)} 
                   strokeWidth="2.5" strokeDasharray="4 4" />
-            <circle cx={nextX} cy={nextY} r="3.5" fill="var(--bg)" stroke={today.unrealized > 0 ? "var(--up)" : "var(--down)"} strokeWidth="2.5"/>
-            <circle cx={nextX} cy={nextY} r="6" fill={today.unrealized > 0 ? "var(--up)" : "var(--down)"} opacity="0.2"/>
+            <circle cx={nextX} cy={nextY} r="3.5" fill="var(--bg)" stroke={pnlColor(today.unrealized)} strokeWidth="2.5"/>
+            <circle cx={nextX} cy={nextY} r="6" fill={pnlColor(today.unrealized)} opacity="0.2"/>
           </g>
         )}
         {hover && (
           <g>
             <line x1={hover.x} x2={hover.x} y1={pad.t} y2={pad.t + innerH} stroke="var(--border-3)" strokeDasharray="2 3"/>
-            <circle cx={hover.x} cy={hover.y} r="4" fill="var(--bg)" stroke={hover.isLive ? (today.unrealized > 0 ? "var(--up)" : "var(--down)") : c} strokeWidth="2"/>
+            <circle cx={hover.x} cy={hover.y} r="4" fill="var(--bg)" stroke={hover.isLive ? (pnlColor(today.unrealized)) : c} strokeWidth="2"/>
           </g>
         )}
       </svg>
@@ -463,7 +466,7 @@ function EquityChart({ data, height = 260 }) {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
                 <span className="muted">Unrealized</span>
-                <span className="num" style={{ fontWeight: 600, color: plotData[hover.i].unrealized >= 0 ? "var(--up)" : "var(--down)" }}>
+                <span className="num" style={{ fontWeight: 600, color: pnlColor(plotData[hover.i].unrealized) }}>
                   {plotData[hover.i].unrealized >= 0 ? "+" : ""}{fmtUsd(plotData[hover.i].unrealized, 0)}
                 </span>
               </div>
@@ -535,7 +538,7 @@ function DailyBars({ data, height = 200 }) {
           const zero = pad.t + innerH / 2;
           const y = d.v >= 0 ? ys(d.v) : zero;
           const h = Math.max(1, Math.abs(ys(d.v) - zero));
-          const c = d.v >= 0 ? "var(--up)" : "var(--down)";
+          const c = pnlColor(d.v);
 
           return (
             <g key={i}>
@@ -795,13 +798,13 @@ function MobilePositionCard({ p, onPairClick, refresh }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
           <span style={{ fontWeight: 600, fontSize: 14.5 }}>{p.pair}</span>
-          <span className="num" style={{ fontSize: 15, fontWeight: 700, color: pos ? "var(--up)" : "var(--down)" }}>
+          <span className="num" style={{ fontSize: 15, fontWeight: 700, color: pnlColor(pos) }}>
             {fmtSignedUsd(p.pnlAbs)}
           </span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span className="num muted" style={{ fontSize: 12 }}>
-            {fmtPrice(p.entry)} → <span style={{ color: pos ? "var(--up)" : "var(--down)" }}>{fmtPrice(p.current)}</span>
+            {fmtPrice(p.entry)} → <span style={{ color: pnlColor(pos) }}>{fmtPrice(p.current)}</span>
           </span>
           <PnlPill pct={p.pnlPct} size="sm"/>
         </div>
@@ -845,7 +848,7 @@ function MobileTradeCard({ t, onPairClick, highlight }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
           <span style={{ fontWeight: 600, fontSize: 14 }}>{t.pair}</span>
-          <span className="num" style={{ fontSize: 15, fontWeight: 700, color: pos ? "var(--up)" : "var(--down)" }}>
+          <span className="num" style={{ fontSize: 15, fontWeight: 700, color: pnlColor(pos) }}>
             {fmtSignedUsd(t.pnlAbs)}
           </span>
         </div>

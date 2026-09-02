@@ -84,7 +84,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                   )}
                   <td style={{ ...TD, textAlign: "right" }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                      <span className="num" style={{ fontSize: 13.5, color: pos ? "var(--up)" : "var(--down)" }}>{fmtPrice(p.current)}</span>
+                      <span className="num" style={{ fontSize: 13.5, color: pnlColor(pos) }}>{fmtPrice(p.current)}</span>
                       <span className="num muted" style={{ fontSize: 11.5 }}>
                         {fmtPrice(p.entry)}
                       </span>
@@ -102,7 +102,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                   )}
                   <td style={{ ...TD, textAlign: "right" }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                      <span className="num" style={{ fontSize: 14, fontWeight: 600, color: pos ? "var(--up)" : "var(--down)" }}>
+                      <span className="num" style={{ fontSize: 14, fontWeight: 600, color: pnlColor(pos) }}>
                         {fmtPct(p.pnlPct)}
                       </span>
                       <span className="num muted" style={{ fontSize: 11.5 }}>
@@ -154,7 +154,7 @@ function ExpandedPosition({ p, slDist, tpDist }) {
         <KV label="Opened" value={fmtTime(p.openedAt)} sub={fmtDuration(Date.now() - p.openedAt) + " ago"}/>
         <KV label="Direction" value={<Chip tone={p.side === "long" ? "up" : "down"} icon={p.side === "long" ? "up" : "down"}>{p.side.toUpperCase()}</Chip>} raw/>
         <KV label="Entry Price" value={fmtPrice(p.entry)} mono/>
-        <KV label="Current Price" value={fmtPrice(p.current)} mono valueColor={pos ? "var(--up)" : "var(--down)"}/>
+        <KV label="Current Price" value={fmtPrice(p.current)} mono valueColor={pnlColor(pos)}/>
         <KV label="Position Size" value={fmtUsd(p.notional)} sub={`${p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })} ${p.pair.split("/")[0]}`} mono/>
       </div>
 
@@ -200,13 +200,13 @@ function SLTPBars({ p }) {
         }}/>
         <SLTick x={pct(p.sl)} color="var(--down)" />
         <SLTick x={pct(p.entry)} color="var(--muted)" />
-        <SLTick x={pct(p.current)} color={p.pnlAbs >= 0 ? "var(--up)" : "var(--down)"} big />
+        <SLTick x={pct(p.current)} color={pnlColor(p.pnlAbs)} big />
         <SLTick x={pct(p.tp)} color="var(--up)" />
       </div>
       <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4, fontSize: 11.5 }}>
         <SLStop label="STOP"   v={p.sl}      color="var(--down)"                                  align="left"/>
         <SLStop label="ENTRY"  v={p.entry}   color="var(--muted)"                                 align="center"/>
-        <SLStop label="MARK"   v={p.current} color={p.pnlAbs >= 0 ? "var(--up)" : "var(--down)"} align="center"/>
+        <SLStop label="MARK"   v={p.current} color={pnlColor(p.pnlAbs)} align="center"/>
         <SLStop label="TARGET" v={p.tp}      color="var(--up)"                                    align="right"/>
       </div>
     </div>
@@ -248,7 +248,7 @@ function PositionPriceChart({ p, series }) {
   const ys = (v) => pad.t + innerH - ((v - yMin) / (yMax - yMin)) * innerH;
   const xs = (i) => pad.l + (i / (series.length - 1)) * innerW;
   const pos = p.pnlAbs >= 0;
-  const c = pos ? "var(--up)" : "var(--down)";
+  const c = pnlColor(pos);
   const line = series.map((v, i) => `${i ? "L" : "M"}${xs(i)} ${ys(v)}`).join(" ");
   const area = line + ` L${xs(series.length-1)} ${pad.t + innerH} L${xs(0)} ${pad.t + innerH} Z`;
   return (
@@ -340,7 +340,7 @@ function TradesTable({ rows, goToChart, highlightId }) {
                 </td>
                 <td style={{ ...TD, textAlign: "right" }}>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                    <span className="num" style={{ fontSize: 13.5, color: pos ? "var(--up)" : "var(--down)" }}>{fmtPrice(t.exit)}</span>
+                    <span className="num" style={{ fontSize: 13.5, color: pnlColor(pos) }}>{fmtPrice(t.exit)}</span>
                     <span className="num muted" style={{ fontSize: 11.5 }}>
                       {fmtPrice(t.entry)}
                     </span>
@@ -356,7 +356,7 @@ function TradesTable({ rows, goToChart, highlightId }) {
                 </td>
                 <td style={{ ...TD, textAlign: "right" }}>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                    <span className="num" style={{ fontSize: 14, fontWeight: 600, color: pos ? "var(--up)" : "var(--down)" }}>
+                    <span className="num" style={{ fontSize: 14, fontWeight: 600, color: pnlColor(pos) }}>
                       {fmtPct(t.pnlPct)}
                     </span>
                     <span className="num muted" style={{ fontSize: 11.5 }}>
@@ -406,12 +406,12 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
       <div style={{ display: "grid", gap: "var(--gap)",
                     gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5, 1fr)" }}>
         <KpiCard label="Total P&L" loading={loading}
-                 tone={summary?.totalPnl >= 0 ? "up" : "down"}
+                 tone={pnlTone(summary?.totalPnl)}
                  value={summary ? fmtSignedUsd(summary.totalPnl) : "—"}
                  sub={summary ? `ROI ${fmtPct(summary.roiPct)}` : "—"}
                  spark={pnlSpark} big info="Total closed profit over all time."/>
         <KpiCard label="Unrealized" loading={loading}
-                 tone={positions.reduce((a, p) => a + p.pnlAbs, 0) >= 0 ? "up" : "down"}
+                 tone={pnlTone(positions.reduce((a, p) => a + p.pnlAbs, 0))}
                  value={fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0))}
                  sub={`${positions.length} position${positions.length !== 1 ? "s" : ""}`}/>
         <KpiCard label="Balance" loading={loading}
@@ -670,7 +670,7 @@ function BotStatus({ bot, trades, locks = [], setTab, goToTrade }) {
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                   <span className="muted" style={{ fontSize: 11 }}>{fmtTimeAgo(t.closedAt)}</span>
-                  <span className="num" style={{ fontSize: 12.5, fontWeight: 600, color: t.pnlAbs >= 0 ? "var(--up)" : "var(--down)" }}>
+                  <span className="num" style={{ fontSize: 12.5, fontWeight: 600, color: pnlColor(t.pnlAbs) }}>
                     {fmtPct(t.pnlPct)}
                   </span>
                 </div>
@@ -714,7 +714,7 @@ function PositionsView({ data, goToChart }) {
     <div style={{ display: "grid", gridTemplateRows: "auto 1fr", gap: "var(--gap)", height: "100%", minHeight: 0 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--gap)" }}>
         <KpiCard label="Open positions" loading={loading} value={filtered.length} sub={bot ? `${bot.openSlots - filtered.length} slots free` : "—"}/>
-        <KpiCard label="Unrealized P&L" loading={loading} tone={totalPnl >= 0 ? "up" : "down"}
+        <KpiCard label="Unrealized P&L" loading={loading} tone={pnlTone(totalPnl)}
                  value={fmtSignedUsd(totalPnl)} sub={`across ${filtered.length} positions`}/>
         <KpiCard label="Total exposure" loading={loading}
                  value={fmtUsd(totalNotional)}
@@ -799,7 +799,7 @@ function TradesView({ data, isMobile, goToChart, focusTradeId, clearFocus }) {
       <div style={{ display: "grid", gap: "var(--gap)",
                     gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)" }}>
         <KpiCard label="Trades" loading={loading} value={filtered.length} sub={`window · ${range}`}/>
-        <KpiCard label="Realized P&L" loading={loading} tone={totalPnl >= 0 ? "up" : "down"}
+        <KpiCard label="Realized P&L" loading={loading} tone={pnlTone(totalPnl)}
                  value={fmtSignedUsd(totalPnl)}
                  sub={`avg ${fmtSignedUsd(totalPnl / (filtered.length || 1))}`}/>
         <KpiCard label="Win rate" loading={loading} tone="up" value={winRate.toFixed(1) + "%"}
@@ -855,20 +855,20 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
         <Card title="Financial Performance" sub="All-time bottom line">
           {loading || !s ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div className="num" style={{ fontSize: isMobile ? 32 : 44, fontWeight: 600, color: (s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)) >= 0 ? "var(--up)" : "var(--down)", letterSpacing: "-.015em", lineHeight: 1.1 }}>
+              <div className="num" style={{ fontSize: isMobile ? 32 : 44, fontWeight: 600, color: pnlColor(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)), letterSpacing: "-.015em", lineHeight: 1.1 }}>
                 {fmtSignedUsd(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0))}
               </div>
               
               <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", borderTop: "1px dashed var(--border)", paddingTop: 16 }}>
                 <div>
                   <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Closed Profit</div>
-                  <div className="num" style={{ fontSize: 16, fontWeight: 500, color: s.totalPnl >= 0 ? "var(--up)" : "var(--down)" }}>
+                  <div className="num" style={{ fontSize: 16, fontWeight: 500, color: pnlColor(s.totalPnl) }}>
                     {fmtSignedUsd(s.totalPnl)}
                   </div>
                 </div>
                 <div>
                   <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Unrealized</div>
-                  <div className="num" style={{ fontSize: 16, fontWeight: 500, color: (positions?.reduce((a, p) => a + p.pnlAbs, 0) >= 0) ? "var(--up)" : "var(--down)" }}>
+                  <div className="num" style={{ fontSize: 16, fontWeight: 500, color: pnlColor(positions?.reduce((a, p) => a + p.pnlAbs, 0)) }}>
                     {positions ? fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0)) : "—"}
                   </div>
                 </div>
@@ -962,17 +962,17 @@ function StrategyTable({ stats }) {
             <tr key={s.name}>
               <td style={TD}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ width: 6, height: 24, background: s.pnl >= 0 ? "var(--up)" : "var(--down)", borderRadius: 2 }}/>
+                  <span style={{ width: 6, height: 24, background: pnlColor(s.pnl), borderRadius: 2 }}/>
                   <span style={{ fontSize: 13.5, fontWeight: 500 }}>{s.name}</span>
                 </div>
               </td>
               <td style={{ ...TD, textAlign: "right", color: "var(--text-2)" }} className="num">{s.trades}</td>
               <td style={{ ...TD, textAlign: "right" }} className="num">{s.winRate.toFixed(1)}%</td>
               <td style={{ ...TD, textAlign: "right" }}>
-                <span className="num" style={{ color: s.avgPct >= 0 ? "var(--up)" : "var(--down)" }}>{fmtPct(s.avgPct)}</span>
+                <span className="num" style={{ color: pnlColor(s.avgPct) }}>{fmtPct(s.avgPct)}</span>
               </td>
               <td style={{ ...TD, textAlign: "right" }}>
-                <span className="num" style={{ fontWeight: 600, color: s.pnl >= 0 ? "var(--up)" : "var(--down)" }}>
+                <span className="num" style={{ fontWeight: 600, color: pnlColor(s.pnl) }}>
                   {fmtSignedUsd(s.pnl)}
                 </span>
               </td>
@@ -997,7 +997,7 @@ function BarTrace({ v, max }) {
         position: "absolute", top: 0, bottom: 0,
         left: pos ? "50%" : `calc(50% - ${pct / 2}%)`,
         width: `${pct / 2}%`,
-        background: pos ? "var(--up)" : "var(--down)",
+        background: pnlColor(pos),
       }}/>
     </div>
   );
@@ -1023,16 +1023,16 @@ function BW({ row, kind, title, goToChart }) {
         display: "flex", flexDirection: "column", gap: 6,
         cursor: goToChart ? "pointer" : "default",
       }}>
-      <span style={{ fontSize: 11.5, letterSpacing: ".08em", textTransform: "uppercase", color: kind === "up" ? "var(--up)" : "var(--down)", fontWeight: 600 }}>{title}</span>
+      <span style={{ fontSize: 11.5, letterSpacing: ".08em", textTransform: "uppercase", color: pnlColor(kind === "up"), fontWeight: 600 }}>{title}</span>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <PairToken pair={row.pair} size={22}/>
         <span style={{ fontSize: 13.5, fontWeight: 500 }}>{row.pair}</span>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <span className="num" style={{ fontSize: 19, fontWeight: 600, color: kind === "up" ? "var(--up)" : "var(--down)" }}>
+        <span className="num" style={{ fontSize: 19, fontWeight: 600, color: pnlColor(kind === "up") }}>
           {fmtSignedUsd(row.pnlAbs)}
         </span>
-        <span className="num" style={{ fontSize: 13, color: kind === "up" ? "var(--up)" : "var(--down)", opacity: .85 }}>
+        <span className="num" style={{ fontSize: 13, color: pnlColor(kind === "up"), opacity: .85 }}>
           {fmtPct(row.pnlPct)}
         </span>
       </div>
