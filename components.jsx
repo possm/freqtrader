@@ -265,7 +265,7 @@ function Card({ title, sub, right, children, pad = true, style }) {
 
 // ── PnL pill ─────────────────────────────────────────────────────────────────
 function PnlPill({ value, pct, size = "md" }) {
-  const pos = value >= 0;
+  const pos = (value ?? pct) >= 0;
   const dims = size === "sm"
     ? { fs: 11, pad: "2px 7px", gap: 4, ic: 11 }
     : { fs: 12.5, pad: "3px 9px", gap: 5, ic: 13 };
