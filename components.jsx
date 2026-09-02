@@ -863,11 +863,15 @@ function MobileTradeCard({ t, onPairClick, highlight }) {
   return (
     <MobileRowCard pair={t.pair} pnlAbs={t.pnlAbs} highlight={highlight} onClick={onPairClick ? () => onPairClick(t.pair) : undefined}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span className="muted" style={{ fontSize: 12 }}>{fmtTimeAgo(t.closedAt)}</span>
-        <Chip tone={pnlTone(t.pnlPct)}>{fmtPct(t.pnlPct)}</Chip>
+        <span className="num muted" style={{ fontSize: 12 }}>
+          {fmtPrice(t.entry)} → <span style={{ color: pnlColor(t.pnlPct) }}>{fmtPrice(t.exit)}</span>
+        </span>
+        <PnlPill pct={t.pnlPct} size="sm"/>
       </div>
-      <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>
-        {t.reason} · {fmtDuration(t.durMin * 60000)}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+        <span className="muted" style={{ fontSize: 11.5 }}>
+          {t.reason} · {fmtTimeAgo(t.closedAt)}
+        </span>
       </div>
     </MobileRowCard>
   );
