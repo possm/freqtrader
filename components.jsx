@@ -277,7 +277,7 @@ function PnlPill({ value, pct, size = "md" }) {
       display: "inline-flex", alignItems: "center", gap: dims.gap,
       padding: dims.pad, borderRadius: 6,
       background: pos ? "var(--up-soft)" : "var(--down-soft)",
-      color: pnlColor(p.pnlAbs),
+      color: pnlColor(value ?? pct),
       fontSize: dims.fs, fontWeight: 600,
       fontFamily: "var(--mono)", fontVariantNumeric: "tabular-nums",
     }}>
