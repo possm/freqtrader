@@ -360,7 +360,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                  tone={summary?.totalPnl >= 0 ? "up" : "down"}
                  value={summary ? fmtSignedUsd(summary.totalPnl) : "—"}
                  sub={summary ? `ROI ${fmtPct(summary.roiPct)}` : "—"}
-                 spark={pnlSpark} big info/>
+                 spark={pnlSpark} big info="Total closed profit over all time."/>
         <KpiCard label="Unrealized" loading={loading}
                  tone={positions.reduce((a, p) => a + p.pnlAbs, 0) >= 0 ? "up" : "down"}
                  value={fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0))}
@@ -368,16 +368,16 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
         <KpiCard label="Balance" loading={loading}
                  value={bot ? fmtUsd(bot.balance) : "—"}
                  sub={bot ? `${fmtUsd(bot.available)} free · ${fmtUsd(bot.allocated)} alloc` : "—"}
-                 spark={balSpark} info/>
+                 spark={balSpark} info="Total equity (including unrealized profit)."/>
         <KpiCard label="Win rate" loading={loading}
                  tone="up"
                  value={summary ? summary.winRate.toFixed(1) + "%" : "—"}
                  sub={summary ? `${summary.wins}W · ${summary.losses}L` : "—"}
-                 spark={winSpark} info/>
+                 spark={winSpark} info="Percentage of closed trades that were profitable."/>
         <KpiCard label="Profit factor" loading={loading}
                  value={summary ? summary.profitFactor.toFixed(2) : "—"}
                  sub={summary ? `avg win ${fmtUsd(summary.avgWin)}` : "—"}
-                 spark={pfSpark} info
+                 spark={pfSpark} info="Gross winning profit divided by gross losing profit."
                  style={isMobile ? { gridColumn: "1 / -1" } : undefined}/>
       </div>
 

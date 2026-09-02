@@ -741,7 +741,11 @@ function KpiCard({ label, value, sub, tone, spark, info, big, loading, style }) 
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--muted)" }}>
         <span style={{ fontSize: 12.5, letterSpacing: ".06em", textTransform: "uppercase", fontWeight: 500 }}>{label}</span>
-        {info && <Icon name="info" size={12} style={{ opacity: .55 }}/>}
+        {info && (
+          <span title={typeof info === 'string' ? info : undefined} style={{ cursor: "help", display: "inline-flex" }}>
+            <Icon name="info" size={12} style={{ opacity: .55 }}/>
+          </span>
+        )}
       </div>
       {loading ? (
         <div className="skeleton" style={{ height: big ? 36 : 28, width: "60%", marginTop: 4 }}/>
