@@ -16,3 +16,7 @@ trigger: always_on
 - **Dashboard Definitions**: In `api.jsx`, the variable `summary.totalPnl` must always represent strictly *Closed Profit*. Net Profit is calculated on-the-fly in the UI by adding `unrealizedPnl`.
 - **Daily P&L Chart**: The Daily P&L bars (`DailyBars`) must strictly show closed profit only. Do not overlay or include unrealized profits in this specific chart.
 - **Chronological Plotting**: Freqtrade's historical endpoints (like `/daily`) return data oldest-first. Time-series charts (like `EquityChart` and `DailyBars`) must always plot chronologically from left (oldest) to right (newest/today).
+
+## Testing & Refactoring
+- **Refactoring JSX**: Do NOT use greedy multiline regex scripts (e.g., Python `re.sub` with `re.DOTALL`) to batch-replace code across JSX files. Component scopes change rapidly, and greedy regex often swallows component boundaries or injects undefined variables. Rely on precise block-level replacements using the standard `replace_file_content` tool.
+- **Responsive Testing**: The dashboard has heavily diverging mobile (`< 768px`) and desktop UI branches. When writing Puppeteer scripts to verify rendering or debug crashes, ALWAYS test both desktop and mobile viewports (e.g., `page.setViewport({ width: 375, height: 667, isMobile: true })`) to ensure no platform-specific crashes are missed.
