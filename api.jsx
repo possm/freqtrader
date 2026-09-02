@@ -150,6 +150,8 @@ function mapTrade(t) {
     strategy: t.strategy || "—",
     side: (t.is_short ? "short" : "long"),
     entry, exit, size, durMin,
+    stakeAmount: t.stake_amount ?? (entry * size),
+    notional: exit * size,
     openedAt: t.open_timestamp,
     closedAt: t.close_timestamp ?? Date.now(),
     pnlAbs: t.profit_abs ?? 0,

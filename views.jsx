@@ -305,15 +305,13 @@ function TradesTable({ rows, goToChart, highlightId }) {
         <thead>
           <tr style={{ background: "var(--panel)", position: "sticky", top: 0, zIndex: 1 }}>
             <ColHead sortKey="id" sort={sort} setSort={setSort}>ID</ColHead>
-            <ColHead sortKey="openedAt" sort={sort} setSort={setSort}>Opened</ColHead>
-            <ColHead sortKey="closedAt" sort={sort} setSort={setSort}>Closed</ColHead>
+            <ColHead sortKey="closedAt" sort={sort} setSort={setSort}>Date</ColHead>
             <ColHead sortKey="pair" sort={sort} setSort={setSort}>Pair</ColHead>
-            <ColHead sortKey="entry" sort={sort} setSort={setSort} align="right">Entry</ColHead>
-            <ColHead sortKey="exit" sort={sort} setSort={setSort} align="right">Exit</ColHead>
-            <ColHead sortKey="durMin" sort={sort} setSort={setSort} align="right">Duration</ColHead>
-            <ColHead sortKey="pnlAbs" sort={sort} setSort={setSort} align="right">PNL €</ColHead>
-            <ColHead sortKey="pnlPct" sort={sort} setSort={setSort} align="right">PNL %</ColHead>
-            <ColHead sortKey="reason" sort={sort} setSort={setSort}>Exit reason</ColHead>
+            <ColHead sortKey="size" sort={sort} setSort={setSort} align="right">Size</ColHead>
+            <ColHead sortKey="exit" sort={sort} setSort={setSort} align="right">Price</ColHead>
+            <ColHead sortKey="notional" sort={sort} setSort={setSort} align="right">Value</ColHead>
+            <ColHead sortKey="pnlPct" sort={sort} setSort={setSort} align="right">Result</ColHead>
+            <ColHead sortKey="reason" sort={sort} setSort={setSort}>Reason</ColHead>
             <ColHead align="right" style={{ width: 36 }}></ColHead>
           </tr>
         </thead>
@@ -328,29 +326,43 @@ function TradesTable({ rows, goToChart, highlightId }) {
                   <span style={{ fontSize: 13 }}>#{t.id}</span>
                 </td>
                 <td style={TD}>
-                  <span style={{ fontSize: 13.3 }}>{fmtTime(t.openedAt)}</span>
-                </td>
-                <td style={TD}>
                   <div style={{ display: "flex", flexDirection: "column" }}>
                     <span style={{ fontSize: 13.3 }}>{fmtTime(t.closedAt)}</span>
-                    <span className="muted" style={{ fontSize: 11.8 }}>{fmtTimeAgo(t.closedAt)}</span>
+                    <span className="muted" style={{ fontSize: 11.8 }}>{fmtDuration(t.durMin * 60000)}</span>
                   </div>
                 </td>
-                <td style={TD}><PairLabel pair={t.pair} size={22} onClick={goToChart}/></td>
-                <td style={{ ...TD, textAlign: "right" }} className="num">{fmtPrice(t.entry)}</td>
-                <td style={{ ...TD, textAlign: "right" }} className="num">{fmtPrice(t.exit)}</td>
-                <td style={{ ...TD, textAlign: "right", color: "var(--text-2)" }} className="num">
-                  {fmtDuration(t.durMin * 60000)}
-                </td>
+                <td style={TD}><PairLabel pair={t.pair} size={26} onClick={goToChart}/></td>
                 <td style={{ ...TD, textAlign: "right" }} className="num">
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: pos ? "var(--up)" : "var(--down)" }}>
-                    {fmtSignedUsd(t.pnlAbs)}
+                  <span style={{ fontSize: 13.5 }}>
+                    {t.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })}
                   </span>
+                  <span className="muted" style={{ fontSize: 11, marginLeft: 4 }}>{t.pair.split("/")[0]}</span>
                 </td>
-                <td style={{ ...TD, textAlign: "right" }} className="num">
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: pos ? "var(--up)" : "var(--down)" }}>
-                    {fmtPct(t.pnlPct)}
-                  </span>
+                <td style={{ ...TD, textAlign: "right" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
+                    <span className="num" style={{ fontSize: 13.5, color: pos ? "var(--up)" : "var(--down)" }}>{fmtPrice(t.exit)}</span>
+                    <span className="num muted" style={{ fontSize: 11.5 }}>
+                      {fmtPrice(t.entry)}
+                    </span>
+                  </div>
+                </td>
+                <td style={{ ...TD, textAlign: "right" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
+                    <span className="num" style={{ fontSize: 13.5 }}>{fmtUsd(t.notional)}</span>
+                    <span className="num muted" style={{ fontSize: 11.5 }}>
+                      {fmtUsd(t.stakeAmount)}
+                    </span>
+                  </div>
+                </td>
+                <td style={{ ...TD, textAlign: "right" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
+                    <span className="num" style={{ fontSize: 14, fontWeight: 600, color: pos ? "var(--up)" : "var(--down)" }}>
+                      {fmtPct(t.pnlPct)}
+                    </span>
+                    <span className="num muted" style={{ fontSize: 11.5 }}>
+                      {fmtSignedUsd(t.pnlAbs)}
+                    </span>
+                  </div>
                 </td>
                 <td style={TD}>
                   <Chip tone={t.reason === "ROI" || t.reason === "Take-profit" ? "up" : t.reason === "Stop-loss" ? "down" : "default"}>
