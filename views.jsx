@@ -796,7 +796,7 @@ function TradesView({ data, isMobile, goToChart, focusTradeId, clearFocus }) {
 // ════════════════════════════════════════════════════════════════════════════
 
 function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart }) {
-  const { equity, daily, summary, bot, trades, loading } = data;
+  const { equity, daily, summary, bot, trades, positions, loading } = data;
 
   const s = summary;
 
@@ -804,7 +804,7 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
     <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0,
                   gridTemplateRows: "auto auto auto" }}>
       <div style={{ display: "grid", gap: "var(--gap)",
-                    gridTemplateColumns: isMobile ? "1fr 1fr" : "1.4fr 1fr 1fr 1fr" }}>
+                    gridTemplateColumns: isMobile ? "1fr 1fr" : "1.4fr 1fr 1fr 1fr 1fr" }}>
         <Card style={{ padding: 0, gridColumn: isMobile ? "1 / -1" : undefined }} pad={false}>
           <div style={{ padding: "16px 18px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
             <span className="eyebrow">All-time profit</span>
@@ -824,6 +824,10 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
             </div>
           </div>
         </Card>
+        <KpiCard label="Unrealized" loading={loading}
+                 tone={positions?.reduce((a, p) => a + p.pnlAbs, 0) >= 0 ? "up" : "down"}
+                 value={positions ? fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0)) : "—"}
+                 sub={positions ? `${positions.length} position${positions.length !== 1 ? "s" : ""}` : "—"}/>
         <KpiCard label="Profit factor" loading={loading}
                  value={s ? s.profitFactor.toFixed(2) : "—"} sub="wins ÷ losses"/>
         <KpiCard label="Win / loss ratio" loading={loading} tone="up"
