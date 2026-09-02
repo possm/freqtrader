@@ -71,7 +71,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                     <span style={{ fontSize: 13 }}>#{p.id}</span>
                   </td>
                   <td style={TD}>
-                    <span className="num" style={{ fontSize: 13 }}>{fmtDuration(Date.now() - p.openedAt)}</span>
+                    <TableStack top={fmtDuration(Date.now() - p.openedAt)} sub={fmtTime(p.openedAt)} align="left" />
                   </td>
                   <td style={TD}><PairLabel pair={p.pair} size={26} onClick={goToChart}/></td>
                   {!compact && (
@@ -295,7 +295,7 @@ function TradesTable({ rows, goToChart, highlightId }) {
             <ColHead sortKey="notional" sort={sort} setSort={setSort} align="right">Value</ColHead>
             <ColHead sortKey="pnlPct" sort={sort} setSort={setSort} align="right">Result</ColHead>
             <ColHead sortKey="reason" sort={sort} setSort={setSort}>Reason</ColHead>
-            <ColHead align="right" style={{ width: 36 }}></ColHead>
+            <ColHead align="right" style={{ width: 40 }}></ColHead>
           </tr>
         </thead>
         <tbody>
@@ -304,15 +304,13 @@ function TradesTable({ rows, goToChart, highlightId }) {
             const isFocus = highlightId != null && String(t.id) === String(highlightId);
             return (
               <tr key={t.id} ref={isFocus ? focusRef : undefined}
-                  style={isFocus ? { background: "var(--accent-soft)", boxShadow: "inset 2px 0 0 var(--accent)" } : undefined}>
+                  onClick={() => goToChart && goToChart(t.pair)}
+                  style={{ cursor: goToChart ? "pointer" : "default", ...(isFocus ? { background: "var(--accent-soft)", boxShadow: "inset 2px 0 0 var(--accent)" } : {}) }}>
                 <td style={{ ...TD, color: "var(--muted)" }} className="num">
                   <span style={{ fontSize: 13 }}>#{t.id}</span>
                 </td>
                 <td style={TD}>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span style={{ fontSize: 13.3 }}>{fmtTime(t.closedAt)}</span>
-                    <span className="muted" style={{ fontSize: 11.8 }}>{fmtDuration(t.durMin * 60000)}</span>
-                  </div>
+                  <TableStack top={fmtTime(t.closedAt)} sub={fmtDuration(t.durMin * 60000)} align="left" />
                 </td>
                 <td style={TD}><PairLabel pair={t.pair} size={26} onClick={goToChart}/></td>
                 <td style={{ ...TD, textAlign: "right" }} className="num">
