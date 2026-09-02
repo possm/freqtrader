@@ -803,48 +803,54 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
   return (
     <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0,
                   gridTemplateRows: "auto auto auto" }}>
-      <div style={{ display: "grid", gap: "var(--gap)",
-                    gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fit, minmax(170px, 1fr))" }}>
-        <Card style={{ padding: 0, gridColumn: isMobile ? "1 / -1" : "span 2" }} pad={false}>
-          <div style={{ padding: "16px 18px 14px", display: "flex", flexDirection: "column", gap: 6, height: "100%" }}>
-            <span className="eyebrow">All-time profit</span>
-            {loading ? <div className="skeleton" style={{ height: isMobile ? 32 : 44, width: "60%", marginTop: 4 }}/> : (
-              <div className="num" style={{ fontSize: isMobile ? 29 : 39, fontWeight: 600, color: (s?.totalPnl ?? 0) >= 0 ? "var(--up)" : "var(--down)", letterSpacing: "-.015em" }}>
-                {s ? fmtSignedUsd(s.totalPnl) : "—"}
+      
+      <div style={{ display: "grid", gap: "var(--gap)", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+        
+        {/* FINANCIALS */}
+        <Card title="Financial Performance" sub="All-time bottom line">
+          {loading || !s ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div className="num" style={{ fontSize: isMobile ? 32 : 44, fontWeight: 600, color: (s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)) >= 0 ? "var(--up)" : "var(--down)", letterSpacing: "-.015em", lineHeight: 1.1 }}>
+                {fmtSignedUsd(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0))}
               </div>
-            )}
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {s && <PnlPill pct={s.roiPct} value={s.totalPnl}/>}
-              <span className="muted" style={{ fontSize: 12 }}>
-                {s ? `${s.trades} trades` : ""}
-              </span>
-            </div>
-            <div style={{ marginTop: 4 }}>
-              <Sparkline data={equity.map(e => e.v)} width={300} height={36}/>
-            </div>
-            <div style={{ flexGrow: 1 }} />
-            {!loading && s && (
-              <div style={{ marginTop: 4, fontSize: 12, display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px dashed var(--border)", paddingTop: 8 }}>
-                <span className="muted">Net (incl. unrealized)</span>
-                <span className="num" style={{ fontWeight: 600, color: (s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)) >= 0 ? "var(--up)" : "var(--down)" }}>
-                  {fmtSignedUsd(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0))}
-                </span>
+              
+              <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", borderTop: "1px dashed var(--border)", paddingTop: 16 }}>
+                <div>
+                  <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Closed Profit</div>
+                  <div className="num" style={{ fontSize: 16, fontWeight: 500, color: s.totalPnl >= 0 ? "var(--up)" : "var(--down)" }}>
+                    {fmtSignedUsd(s.totalPnl)}
+                  </div>
+                </div>
+                <div>
+                  <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Unrealized</div>
+                  <div className="num" style={{ fontSize: 16, fontWeight: 500, color: (positions?.reduce((a, p) => a + p.pnlAbs, 0) >= 0) ? "var(--up)" : "var(--down)" }}>
+                    {positions ? fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0)) : "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Trades</div>
+                  <div className="num" style={{ fontSize: 16, fontWeight: 500 }}>
+                    {s.trades}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </Card>
-        <KpiCard label="Unrealized" loading={loading}
-                 tone={positions?.reduce((a, p) => a + p.pnlAbs, 0) >= 0 ? "up" : "down"}
-                 value={positions ? fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0)) : "—"}
-                 sub={positions ? `${positions.length} position${positions.length !== 1 ? "s" : ""}` : "—"}/>
-        <KpiCard label="Profit factor" loading={loading}
-                 value={s ? s.profitFactor.toFixed(2) : "—"} sub="wins ÷ losses"/>
-        <KpiCard label="Win / loss ratio" loading={loading} tone="up"
-                 value={s && s.avgLoss !== 0 ? (s.avgWin / Math.abs(s.avgLoss)).toFixed(2) : "—"}
-                 sub={s ? `${fmtUsd(s.avgWin)} vs ${fmtUsd(Math.abs(s.avgLoss))}` : "—"}/>
-        <KpiCard label="Sharpe (est.)"
-                 value={s && daily.length > 1 ? calcSharpe(daily).toFixed(2) : "—"}
-                 sub="trailing 30d"/>
+
+        {/* STRATEGY */}
+        <Card title="Strategy Metrics" sub="Win rate & expectancy">
+          {loading || !s ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
+            <div style={{ display: "flex", alignItems: "center", gap: 24, flex: 1, minHeight: 0 }}>
+              <WinLossDonut wins={s.wins} losses={s.losses} size={isMobile ? 100 : 132} stroke={isMobile ? 11 : 14}/>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
+                <SplitRow color="var(--accent)" label="Profit Factor" count={s.profitFactor.toFixed(2)} sub="gross win ÷ gross loss" />
+                <SplitRow color="var(--up)" label="Expectancy" count={fmtSignedUsd((s.avgWin * s.winRate + s.avgLoss * s.lossRate) / 100)} sub="avg per trade" />
+                <SplitRow color="var(--muted)" label="Avg Win / Loss" count={`${fmtUsd(s.avgWin)} / ${fmtUsd(Math.abs(s.avgLoss))}`} sub="winning vs losing" />
+              </div>
+            </div>
+          )}
+        </Card>
       </div>
 
       <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0,
@@ -858,30 +864,9 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
         </Card>
       </div>
 
-      <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0,
-                    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
-        <Card title="Win / loss split">
-          {s ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 18, flex: 1, minHeight: 0 }}>
-              <WinLossDonut wins={s.wins} losses={s.losses} size={isMobile ? 100 : 132} stroke={isMobile ? 11 : 14}/>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
-                <SplitRow color="var(--up)" label="Wins" count={s.wins}
-                          sub={`avg ${fmtUsd(s.avgWin)} · ${s.winRate.toFixed(1)}%`}/>
-                <SplitRow color="var(--down)" label="Losses" count={s.losses}
-                          sub={`avg ${fmtUsd(Math.abs(s.avgLoss))} · ${s.lossRate.toFixed(1)}%`}/>
-                <div style={{ height: 1, background: "var(--border)" }}/>
-                <SplitRow color="var(--accent)" label="Expectancy"
-                          count={fmtSignedUsd((s.avgWin * s.winRate + s.avgLoss * s.lossRate) / 100)}
-                          sub="per trade, weighted"/>
-              </div>
-            </div>
-          ) : <div style={{ flex: 1, display: "grid", placeItems: "center" }}><span className="muted" style={{ fontSize: 13 }}>Loading…</span></div>}
-        </Card>
-
-        <Card title="Best & worst">
-          {s ? <BestWorst summary={s} goToChart={goToChart}/> : null}
-        </Card>
-      </div>
+      <Card title="Best & worst trades">
+        {s ? <BestWorst summary={s} goToChart={goToChart}/> : <div className="skeleton" style={{ height: 80, width: "100%" }}/>}
+      </Card>
     </div>
   );
 }
@@ -975,7 +960,7 @@ function BarTrace({ v, max }) {
 
 function BestWorst({ summary: s, goToChart }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1, minHeight: 0 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, flex: 1, minHeight: 0 }}>
       {s.best  && <BW row={s.best}  kind="up"   title="Best trade"  goToChart={goToChart}/>}
       {s.worst && <BW row={s.worst} kind="down" title="Worst trade" goToChart={goToChart}/>}
     </div>
