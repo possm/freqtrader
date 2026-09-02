@@ -346,10 +346,9 @@ function EquityChart({ data, height = 260 }) {
     </div>
   );
 
-  // data is sorted oldest→newest; reverse so newest (today) is on the LEFT
-  const plotData = [...data].reverse();
+  const plotData = data; // Left = Oldest, Right = Newest
 
-  const pad = { l: 62, r: 16, t: 14, b: 28 };
+  const pad = { l: 62, r: 28, t: 14, b: 28 }; // increased pad.r from 16 to 28
   const innerW = Math.max(0, w - pad.l - pad.r);
   const innerH = height - pad.t - pad.b;
   const min = Math.min(...plotData.map(d => Math.min(d.v, d.v + (d.unrealized || 0))));
@@ -367,23 +366,37 @@ function EquityChart({ data, height = 260 }) {
   const fmtDateLabel = (dateStr) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return d.toLocaleDateString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { month: "short", day: "numeric" });
   };
 
   const onMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const x = clientX - rect.left;
+    // We allow hovering slightly into the right padding to catch the live unrealized point
     const i = Math.max(0, Math.min(plotData.length - 1, Math.round(((x - pad.l) / innerW) * (plotData.length - 1))));
-    if (x >= pad.l && x <= w - pad.r) setHover({ i, x: xs(i), y: ys(plotData[i].v) });
+    
+    // If hovering way off to the right, just lock to the last point
+    if (x >= pad.l && x <= w - 8) {
+      // Find exact X of the point, but if it's the last point and it has unrealized, offset it
+      let px = xs(i);
+      let py = ys(plotData[i].v);
+      if (i === plotData.length - 1 && plotData[i].unrealized && x > px) {
+        px += 14;
+        py = ys(plotData[i].v + plotData[i].unrealized);
+      }
+      setHover({ i, x: px, y: py, isLive: (i === plotData.length - 1 && x > xs(i)) });
+    }
     else setHover(null);
   };
 
-  // newest is index 0 (left), oldest is last (right)
-  const up = plotData[0].v >= plotData[plotData.length - 1].v;
+  // newest is last (right)
+  const up = plotData[plotData.length - 1].v >= plotData[0].v;
   const c = up ? "var(--up)" : "var(--down)";
-  const today = plotData[0];
+  const today = plotData[plotData.length - 1];
   const hasUnrealized = !!today.unrealized;
+  const nextX = xs(plotData.length - 1) + 14;
+  const nextY = ys(today.v + today.unrealized);
 
   return (
     <div ref={wrapRef} style={{ width: "100%", position: "relative" }}>
@@ -396,7 +409,7 @@ function EquityChart({ data, height = 260 }) {
         </defs>
         {yTicks.map((v, i) => (
           <g key={i}>
-            <line x1={pad.l} x2={w - pad.r} y1={ys(v)} y2={ys(v)} stroke="var(--border)" />
+            <line x1={pad.l} x2={w - 12} y1={ys(v)} y2={ys(v)} stroke="var(--border)" />
             <text x={pad.l - 8} y={ys(v) + 4} textAnchor="end" fontSize="11.5" fill="var(--muted)" fontFamily="var(--mono)">
               {_currencySymbol}{Math.round(v).toLocaleString()}
             </text>
@@ -404,7 +417,7 @@ function EquityChart({ data, height = 260 }) {
         ))}
         {[0, .33, .66, 1].map((t, i) => {
           const idx = Math.round(t * (plotData.length - 1));
-          const label = idx === 0 ? "today" : fmtDateLabel(plotData[idx].date);
+          const label = idx === plotData.length - 1 ? "today" : fmtDateLabel(plotData[idx].date);
           return (
             <text key={i} x={xs(idx)} y={height - 8} textAnchor="middle" fontSize="11.5" fill="var(--muted)">
               {label}
@@ -415,14 +428,17 @@ function EquityChart({ data, height = 260 }) {
         <path d={line} stroke={c} strokeWidth="2" fill="none" strokeLinecap="round"/>
         {hasUnrealized && (
           <g>
-            <line x1={xs(0)} x2={xs(0)} y1={ys(today.v)} y2={ys(today.v + today.unrealized)} stroke={today.unrealized > 0 ? "var(--up)" : "var(--down)"} strokeWidth="2" strokeDasharray="3 3"/>
-            <circle cx={xs(0)} cy={ys(today.v + today.unrealized)} r="3.5" fill="var(--bg)" stroke={today.unrealized > 0 ? "var(--up)" : "var(--down)"} strokeWidth="2"/>
+            <path d={`M ${xs(plotData.length - 1)},${ys(today.v)} C ${xs(plotData.length - 1)+6},${ys(today.v)} ${nextX-6},${nextY} ${nextX},${nextY}`} 
+                  fill="none" stroke={today.unrealized > 0 ? "var(--up)" : "var(--down)"} 
+                  strokeWidth="2.5" strokeDasharray="4 4" />
+            <circle cx={nextX} cy={nextY} r="3.5" fill="var(--bg)" stroke={today.unrealized > 0 ? "var(--up)" : "var(--down)"} strokeWidth="2.5"/>
+            <circle cx={nextX} cy={nextY} r="6" fill={today.unrealized > 0 ? "var(--up)" : "var(--down)"} opacity="0.2"/>
           </g>
         )}
         {hover && (
           <g>
             <line x1={hover.x} x2={hover.x} y1={pad.t} y2={pad.t + innerH} stroke="var(--border-3)" strokeDasharray="2 3"/>
-            <circle cx={hover.x} cy={hover.y} r="4" fill="var(--bg)" stroke={c} strokeWidth="2"/>
+            <circle cx={hover.x} cy={hover.y} r="4" fill="var(--bg)" stroke={hover.isLive ? (today.unrealized > 0 ? "var(--up)" : "var(--down)") : c} strokeWidth="2"/>
           </g>
         )}
       </svg>
@@ -430,14 +446,14 @@ function EquityChart({ data, height = 260 }) {
         <div style={{
           position: "absolute",
           left: Math.min(w - 180, Math.max(0, hover.x + 12)), 
-          top: Math.max(8, hover.y - (plotData[hover.i].unrealized ? 90 : 42)),
+          top: Math.max(8, hover.y - ((hover.isLive || plotData[hover.i].unrealized) ? 90 : 42)),
           background: "var(--panel-3)", border: "1px solid var(--border-2)",
           borderRadius: 8, padding: "8px 12px", fontSize: 12.5,
           pointerEvents: "none", boxShadow: "0 6px 20px rgba(0,0,0,.4)",
           whiteSpace: "nowrap", zIndex: 10
         }}>
           <div className="muted" style={{ fontSize: 11.5, marginBottom: 4 }}>
-            {hover.i === 0 ? "today" : fmtDateLabel(plotData[hover.i].date)}
+            {hover.i === plotData.length - 1 ? (hover.isLive ? "live (net)" : "today (closed)") : fmtDateLabel(plotData[hover.i].date)}
           </div>
           {plotData[hover.i].unrealized ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
