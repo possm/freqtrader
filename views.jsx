@@ -804,9 +804,9 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
     <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0,
                   gridTemplateRows: "auto auto auto" }}>
       <div style={{ display: "grid", gap: "var(--gap)",
-                    gridTemplateColumns: isMobile ? "1fr 1fr" : "1.4fr 1fr 1fr 1fr 1fr" }}>
-        <Card style={{ padding: 0, gridColumn: isMobile ? "1 / -1" : undefined }} pad={false}>
-          <div style={{ padding: "16px 18px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
+                    gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fit, minmax(170px, 1fr))" }}>
+        <Card style={{ padding: 0, gridColumn: isMobile ? "1 / -1" : "span 2" }} pad={false}>
+          <div style={{ padding: "16px 18px 14px", display: "flex", flexDirection: "column", gap: 6, height: "100%" }}>
             <span className="eyebrow">All-time profit</span>
             {loading ? <div className="skeleton" style={{ height: isMobile ? 32 : 44, width: "60%", marginTop: 4 }}/> : (
               <div className="num" style={{ fontSize: isMobile ? 29 : 39, fontWeight: 600, color: (s?.totalPnl ?? 0) >= 0 ? "var(--up)" : "var(--down)", letterSpacing: "-.015em" }}>
@@ -822,6 +822,15 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
             <div style={{ marginTop: 4 }}>
               <Sparkline data={equity.map(e => e.v)} width={300} height={36}/>
             </div>
+            <div style={{ flexGrow: 1 }} />
+            {!loading && s && (
+              <div style={{ marginTop: 4, fontSize: 12, display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px dashed var(--border)", paddingTop: 8 }}>
+                <span className="muted">Net (incl. unrealized)</span>
+                <span className="num" style={{ fontWeight: 600, color: (s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)) >= 0 ? "var(--up)" : "var(--down)" }}>
+                  {fmtSignedUsd(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0))}
+                </span>
+              </div>
+            )}
           </div>
         </Card>
         <KpiCard label="Unrealized" loading={loading}

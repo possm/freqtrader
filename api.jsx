@@ -178,7 +178,11 @@ function buildEquity(dailyStats, currentBalance, totalPnl, unrealizedPnl = 0) {
   return sorted.map((d, i) => {
     cumulative += (d.abs_profit ?? 0);
     const isLast = i === sorted.length - 1;
-    return { date: d.date, v: Math.max(0, cumulative + (isLast ? unrealizedPnl : 0)) };
+    return { 
+      date: d.date, 
+      v: Math.max(0, cumulative),
+      unrealized: isLast ? unrealizedPnl : 0
+    };
   });
 }
 
@@ -295,6 +299,7 @@ function useFreqtradeData(baseUrl) {
       const positions = (Array.isArray(statusRes) ? statusRes : []).map(mapPosition);
       const allTrades = (tradesRes?.trades ?? []).map(mapTrade);
       const closedTrades = allTrades.filter(t => t.status === "closed");
+      const unrealizedPnl = positions.reduce((a, p) => a + p.pnlAbs, 0);
 
       // Build daily bars from /daily response — sort ascending (oldest first)
       const sortedDaily = [...(dailyRes?.data ?? [])].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -302,12 +307,12 @@ function useFreqtradeData(baseUrl) {
         date: d.date,
         daysAgo: arr.length - 1 - i,   // 0 = today (last entry)
         v: d.abs_profit ?? 0,
+        unrealized: i === arr.length - 1 ? unrealizedPnl : 0,
       }));
 
       const summary = buildSummary(profitRes, allTrades, positions);
       const bot = buildBot(configRes, balanceRes, positions);
       setCurrency(bot.stake);
-      const unrealizedPnl = positions.reduce((a, p) => a + p.pnlAbs, 0);
       const equity = buildEquity(dailyRes?.data ?? [], bot.balance, summary.totalPnl, unrealizedPnl);
       const strats = [...new Set(allTrades.map(t => t.strategy).filter(Boolean))];
       // /api/v1/locks shape: { lock_count, locks: [{ pair, lock_end_timestamp, reason, side, ... }] }
