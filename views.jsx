@@ -367,7 +367,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                  sub={`${positions.length} position${positions.length !== 1 ? "s" : ""}`}/>
         <KpiCard label="Balance" loading={loading}
                  value={bot ? fmtUsd(bot.balance) : "—"}
-                 sub={bot ? `${fmtUsd(bot.available)} avail` : "—"}
+                 sub={bot ? `${fmtUsd(bot.available)} free · ${fmtUsd(bot.allocated)} alloc` : "—"}
                  spark={balSpark} info/>
         <KpiCard label="Win rate" loading={loading}
                  tone="up"
