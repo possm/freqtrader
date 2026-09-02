@@ -50,6 +50,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
             <ColHead sortKey="openedAt" sort={sort} setSort={setSort}>Age</ColHead>
             <ColHead sortKey="pair" sort={sort} setSort={setSort}>Pair</ColHead>
             <ColHead sortKey="entry" sort={sort} setSort={setSort} align="right">Entry</ColHead>
+            {!compact && <ColHead sortKey="size" sort={sort} setSort={setSort} align="right">Size</ColHead>}
             {!compact && <ColHead sortKey="stakeAmount" sort={sort} setSort={setSort} align="right">Cost</ColHead>}
             <ColHead sortKey="pnlPct" sort={sort} setSort={setSort} align="right">Result</ColHead>
             <ColHead align="right" style={{ width: 60 }}>Action</ColHead>
@@ -76,6 +77,12 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                   <td style={{ ...TD, textAlign: "right" }} className="num">{fmtPrice(p.entry)}</td>
                   {!compact && (
                     <td style={{ ...TD, textAlign: "right" }} className="num">
+                      <span style={{ fontSize: 13.5 }}>{p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })}</span>
+                      <span className="muted" style={{ fontSize: 11, marginLeft: 4 }}>{p.pair.split("/")[0]}</span>
+                    </td>
+                  )}
+                  {!compact && (
+                    <td style={{ ...TD, textAlign: "right" }} className="num">
                       <span style={{ fontSize: 13.5 }}>{fmtUsd(p.stakeAmount)}</span>
                     </td>
                   )}
@@ -100,7 +107,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                 </tr>
                 {expandable && isOpen && (
                   <tr style={{ background: "var(--panel-2)" }}>
-                    <td colSpan={compact ? 7 : 8} style={{ padding: 0, borderBottom: "1px solid var(--border)" }}>
+                    <td colSpan={compact ? 7 : 9} style={{ padding: 0, borderBottom: "1px solid var(--border)" }}>
                       <ExpandedPosition p={p} slDist={slDist} tpDist={tpDist}/>
                     </td>
                   </tr>
