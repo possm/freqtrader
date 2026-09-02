@@ -132,43 +132,49 @@ function ExpandedPosition({ p, slDist, tpDist }) {
   const pos = p.pnlAbs >= 0;
   const series = vUseMemo(() => sparkSeries(p.entry, p.current, 80, p.id + "x"), [p.id, p.entry, p.current]);
   return (
-    <div style={{ padding: "18px 22px 22px", display: "grid", gridTemplateColumns: "1.6fr 1fr 1fr", gap: 22, borderTop: "1px solid var(--border)" }}>
-      <div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-          <span className="eyebrow">Position trend · last 6h</span>
+    <div style={{ padding: "20px 24px", display: "grid", gridTemplateColumns: "1.6fr 1.1fr 1fr", gap: 32, borderTop: "1px solid var(--border)" }}>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase" }}>Trend (last 6h)</span>
         </div>
-        <PositionPriceChart p={p} series={series}/>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <span className="eyebrow">Position details</span>
-        <KV label="Trade ID" value={p.id} mono/>
-        <KV label="Opened" value={fmtTime(p.openedAt)}/>
-        <KV label="Direction" value={<Chip tone="up" icon="up">{p.side.toUpperCase()}</Chip>} raw/>
-        <KV label="Entry" value={fmtPrice(p.entry)} mono/>
-        <KV label="Mark" value={fmtPrice(p.current)} mono valueColor={pos ? "var(--up)" : "var(--down)"}/>
-        <KV label="Volume" value={`${p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })} ${p.pair.split("/")[0]}`} mono/>
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <PositionPriceChart p={p} series={series}/>
+        </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <span className="eyebrow">Risk management</span>
-        <SLTPBars p={p}/>
-        <div className="muted" style={{ fontSize: 12.3, marginTop: 4 }}>
-          R/R <span className="num accent">{(Math.abs(slDist) > 0 ? tpDist / Math.abs(slDist) : 0).toFixed(2)}</span>
-          {" · "}distance to SL <span className="num down">{slDist.toFixed(2)}%</span>
-          {" · "}distance to TP <span className="num up">+{tpDist.toFixed(2)}%</span>
+        <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase", marginBottom: -2 }}>Position Details</span>
+        <KV label="Opened" value={fmtTime(p.openedAt)} sub={fmtDuration(Date.now() - p.openedAt) + " ago"}/>
+        <KV label="Direction" value={<Chip tone={p.side === "long" ? "up" : "down"} icon={p.side === "long" ? "up" : "down"}>{p.side.toUpperCase()}</Chip>} raw/>
+        <KV label="Entry Price" value={fmtPrice(p.entry)} mono/>
+        <KV label="Current Price" value={fmtPrice(p.current)} mono valueColor={pos ? "var(--up)" : "var(--down)"}/>
+        <KV label="Position Size" value={fmtUsd(p.notional)} sub={`${p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })} ${p.pair.split("/")[0]}`} mono/>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase", marginBottom: -2 }}>Risk Management</span>
+        <div style={{ marginBottom: 4 }}>
+          <SLTPBars p={p}/>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+          <KV label="Risk / Reward" value={(Math.abs(slDist) > 0 ? tpDist / Math.abs(slDist) : 0).toFixed(2)} mono />
+          <KV label="Distance to Stop Loss" value={`${slDist.toFixed(2)}%`} valueColor="var(--down)" mono />
+          <KV label="Distance to Target" value={`+${tpDist.toFixed(2)}%`} valueColor="var(--up)" mono />
         </div>
       </div>
     </div>
   );
 }
 
-function KV({ label, value, mono, raw, valueColor }) {
+function KV({ label, value, sub, mono, raw, valueColor }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-      <span className="muted" style={{ fontSize: 12.5 }}>{label}</span>
-      {raw ? value :
-        <span className={mono ? "num" : ""} style={{ fontSize: 13.5, color: valueColor || "var(--text)", fontWeight: mono ? 500 : 400 }}>{value}</span>}
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+      <span className="muted" style={{ fontSize: 13, paddingTop: 1 }}>{label}</span>
+      <div style={{ textAlign: "right" }}>
+        {raw ? value :
+          <div className={mono ? "num" : ""} style={{ fontSize: 14, color: valueColor || "var(--text)", fontWeight: mono ? 600 : 400 }}>{value}</div>}
+        {sub && <div className="muted num" style={{ fontSize: 12, marginTop: 2 }}>{sub}</div>}
+      </div>
     </div>
   );
 }
