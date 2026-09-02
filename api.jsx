@@ -254,16 +254,23 @@ function formatExchangeName(raw) {
 
 function buildBot(config, balance, positions) {
   const maxSlots = config?.max_open_trades ?? 10;
+  const stakeCurr = config?.stake_currency ?? "USDT";
+  let avail = 0;
+  if (balance?.currencies && Array.isArray(balance.currencies)) {
+    const c = balance.currencies.find(x => x.currency === stakeCurr);
+    if (c) avail = c.free;
+  }
+
   return {
     name: config?.bot_name ?? "freqtrade",
     status: "running",
     exchange: formatExchangeName(config?.exchange),
     mode: config?.dry_run ? "Dry" : "Live",
-    stake: config?.stake_currency ?? "USDT",
+    stake: stakeCurr,
     openSlots: maxSlots < 0 ? 99 : maxSlots,
     usedSlots: positions.length,
     balance: balance?.total ?? 0,
-    available: balance?.free ?? 0,
+    available: avail,
     uptime: "—",
     timeframe: config?.timeframe ?? "4h",
     strategy: config?.strategy ?? null,
