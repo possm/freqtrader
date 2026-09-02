@@ -50,8 +50,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
             <ColHead sortKey="openedAt" sort={sort} setSort={setSort}>Age</ColHead>
             <ColHead sortKey="pair" sort={sort} setSort={setSort}>Pair</ColHead>
             <ColHead sortKey="entry" sort={sort} setSort={setSort} align="right">Entry</ColHead>
-            {!compact && <ColHead sortKey="notional" sort={sort} setSort={setSort} align="right">Size</ColHead>}
-            {!compact && <ColHead sortKey="stakeAmount" sort={sort} setSort={setSort} align="right">Cost</ColHead>}
+            {!compact && <ColHead sortKey="notional" sort={sort} setSort={setSort} align="right">Current</ColHead>}
             <ColHead sortKey="pnlPct" sort={sort} setSort={setSort} align="right">Result</ColHead>
             <ColHead align="right" style={{ width: 60 }}>Action</ColHead>
             <ColHead align="right" style={{ width: 40 }}></ColHead>
@@ -74,7 +73,14 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                     <span className="num" style={{ fontSize: 13 }}>{fmtDuration(Date.now() - p.openedAt)}</span>
                   </td>
                   <td style={TD}><PairLabel pair={p.pair} size={26} onClick={goToChart}/></td>
-                  <td style={{ ...TD, textAlign: "right" }} className="num">{fmtPrice(p.entry)}</td>
+                  <td style={{ ...TD, textAlign: "right" }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
+                      <span className="num" style={{ fontSize: 13.5 }}>{fmtPrice(p.entry)}</span>
+                      <span className="num muted" style={{ fontSize: 11.5 }}>
+                        {fmtUsd(p.stakeAmount)}
+                      </span>
+                    </div>
+                  </td>
                   {!compact && (
                     <td style={{ ...TD, textAlign: "right" }}>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
@@ -83,11 +89,6 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                           {p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })} {p.pair.split("/")[0]}
                         </span>
                       </div>
-                    </td>
-                  )}
-                  {!compact && (
-                    <td style={{ ...TD, textAlign: "right" }} className="num">
-                      <span style={{ fontSize: 13.5 }}>{fmtUsd(p.stakeAmount)}</span>
                     </td>
                   )}
                   <td style={{ ...TD, textAlign: "right" }}>
@@ -111,7 +112,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                 </tr>
                 {expandable && isOpen && (
                   <tr style={{ background: "var(--panel-2)" }}>
-                    <td colSpan={compact ? 7 : 9} style={{ padding: 0, borderBottom: "1px solid var(--border)" }}>
+                    <td colSpan={compact ? 7 : 8} style={{ padding: 0, borderBottom: "1px solid var(--border)" }}>
                       <ExpandedPosition p={p} slDist={slDist} tpDist={tpDist}/>
                     </td>
                   </tr>
