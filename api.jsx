@@ -173,7 +173,10 @@ function buildEquity(dailyStats, currentBalance, totalPnl, unrealizedPnl = 0) {
   // Freqtrade returns newest-first — sort ascending so we accumulate oldest→newest.
   if (!dailyStats || dailyStats.length === 0) return [];
   const sorted = [...dailyStats].sort((a, b) => new Date(a.date) - new Date(b.date));
-  const startBalance = (currentBalance ?? 0) - (totalPnl ?? 0);
+  // Freqtrade's /balance (currentBalance) already includes the live value of open positions.
+  // To avoid double-counting, we subtract unrealizedPnl to find the true closed starting balance.
+  const closedBalance = (currentBalance ?? 0) - unrealizedPnl;
+  const startBalance = closedBalance - (totalPnl ?? 0);
   let cumulative = startBalance;
   return sorted.map((d, i) => {
     cumulative += (d.abs_profit ?? 0);
