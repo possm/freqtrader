@@ -499,7 +499,7 @@ function DailyBars({ data, height = 200 }) {
   const pad = { l: 52, r: 8, t: 10, b: 22 };
   const innerW = Math.max(0, w - pad.l - pad.r);
   const innerH = height - pad.t - pad.b;
-  const max = Math.max(...data.map(d => Math.max(Math.abs(d.v), Math.abs(d.v + (d.unrealized || 0))))) || 1;
+  const max = Math.max(...data.map(d => Math.abs(d.v))) || 1;
   const yMax = max * 1.1;
   const ys = (v) => pad.t + innerH / 2 - (v / yMax) * (innerH / 2);
   const barW = innerW / data.length - 3;
@@ -507,7 +507,7 @@ function DailyBars({ data, height = 200 }) {
   const fmtDateLabel = (dateStr) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return d.toLocaleDateString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { month: "short", day: "numeric" });
   };
 
   const onMove = (e) => {
@@ -536,21 +536,10 @@ function DailyBars({ data, height = 200 }) {
           const y = d.v >= 0 ? ys(d.v) : zero;
           const h = Math.max(1, Math.abs(ys(d.v) - zero));
           const c = d.v >= 0 ? "var(--up)" : "var(--down)";
-          
-          let uRect = null;
-          if (d.unrealized) {
-            const startY = ys(d.v);
-            const endY = ys(d.v + d.unrealized);
-            const topY = Math.min(startY, endY);
-            const heightU = Math.max(1, Math.abs(startY - endY));
-            const cU = d.unrealized >= 0 ? "var(--up)" : "var(--down)";
-            uRect = <rect x={x} y={topY} width={Math.max(2, barW)} height={heightU} fill={cU} opacity={0.2} rx="1.5" stroke={cU} strokeWidth={1} strokeDasharray="2 2" />;
-          }
 
           return (
             <g key={i}>
               <rect x={x} y={y} width={Math.max(2, barW)} height={h} rx="1.5" fill={c} opacity={Math.abs(d.v) / max * 0.55 + 0.45}/>
-              {uRect}
             </g>
           );
         })}
@@ -573,7 +562,7 @@ function DailyBars({ data, height = 200 }) {
         <div style={{
           position: "absolute",
           left: Math.min(w - 180, Math.max(0, hover.x + 12)), 
-          top: Math.max(8, pad.t + innerH / 2 - (data[hover.i].unrealized ? 90 : 42)),
+          top: Math.max(8, pad.t + innerH / 2 - 42),
           background: "var(--panel-3)", border: "1px solid var(--border-2)",
           borderRadius: 8, padding: "8px 12px", fontSize: 12.5,
           pointerEvents: "none", boxShadow: "0 6px 20px rgba(0,0,0,.4)",
@@ -582,26 +571,7 @@ function DailyBars({ data, height = 200 }) {
           <div className="muted" style={{ fontSize: 11.5, marginBottom: 4 }}>
             {data[hover.i].daysAgo === 0 ? "today" : fmtDateLabel(data[hover.i].date)}
           </div>
-          {data[hover.i].unrealized ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
-                <span className="muted">Closed</span>
-                <span className="num" style={{ fontWeight: 600 }}>{fmtUsd(data[hover.i].v, 0)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
-                <span className="muted">Unrealized</span>
-                <span className="num" style={{ fontWeight: 600, color: data[hover.i].unrealized >= 0 ? "var(--up)" : "var(--down)" }}>
-                  {data[hover.i].unrealized >= 0 ? "+" : ""}{fmtUsd(data[hover.i].unrealized, 0)}
-                </span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginTop: 3, paddingTop: 3, borderTop: "1px dashed var(--border)" }}>
-                <span className="muted">Net Daily</span>
-                <span className="num" style={{ fontWeight: 600 }}>{fmtUsd(data[hover.i].v + data[hover.i].unrealized, 0)}</span>
-              </div>
-            </div>
-          ) : (
-            <div className="num" style={{ fontWeight: 600 }}>{fmtUsd(data[hover.i].v, 0)}</div>
-          )}
+          <div className="num" style={{ fontWeight: 600 }}>{fmtUsd(data[hover.i].v, 0)}</div>
         </div>
       )}
     </div>
