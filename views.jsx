@@ -84,7 +84,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                   )}
                   <td style={{ ...TD, textAlign: "right" }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                      <span className="num" style={{ fontSize: 13.5, color: pnlColor(pos) }}>{fmtPrice(p.current)}</span>
+                      <span className="num" style={{ fontSize: 13.5, color: pnlColor(p.pnlPct) }}>{fmtPrice(p.current)}</span>
                       <span className="num muted" style={{ fontSize: 11.5 }}>
                         {fmtPrice(p.entry)}
                       </span>
@@ -102,7 +102,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                   )}
                   <td style={{ ...TD, textAlign: "right" }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                      <span className="num" style={{ fontSize: 14, fontWeight: 600, color: pnlColor(pos) }}>
+                      <span className="num" style={{ fontSize: 14, fontWeight: 600, color: pnlColor(p.pnlPct) }}>
                         {fmtPct(p.pnlPct)}
                       </span>
                       <span className="num muted" style={{ fontSize: 11.5 }}>
@@ -154,7 +154,7 @@ function ExpandedPosition({ p, slDist, tpDist }) {
         <KV label="Opened" value={fmtTime(p.openedAt)} sub={fmtDuration(Date.now() - p.openedAt) + " ago"}/>
         <KV label="Direction" value={<Chip tone={p.side === "long" ? "up" : "down"} icon={p.side === "long" ? "up" : "down"}>{p.side.toUpperCase()}</Chip>} raw/>
         <KV label="Entry Price" value={fmtPrice(p.entry)} mono/>
-        <KV label="Current Price" value={fmtPrice(p.current)} mono valueColor={pnlColor(pos)}/>
+        <KV label="Current Price" value={fmtPrice(p.current)} mono valueColor={pnlColor(p.pnlPct)}/>
         <KV label="Position Size" value={fmtUsd(p.notional)} sub={`${p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })} ${p.pair.split("/")[0]}`} mono/>
       </div>
 
@@ -248,7 +248,7 @@ function PositionPriceChart({ p, series }) {
   const ys = (v) => pad.t + innerH - ((v - yMin) / (yMax - yMin)) * innerH;
   const xs = (i) => pad.l + (i / (series.length - 1)) * innerW;
   const pos = p.pnlAbs >= 0;
-  const c = pnlColor(pos);
+  const c = pnlColor(p.pnlPct);
   const line = series.map((v, i) => `${i ? "L" : "M"}${xs(i)} ${ys(v)}`).join(" ");
   const area = line + ` L${xs(series.length-1)} ${pad.t + innerH} L${xs(0)} ${pad.t + innerH} Z`;
   return (
@@ -340,7 +340,7 @@ function TradesTable({ rows, goToChart, highlightId }) {
                 </td>
                 <td style={{ ...TD, textAlign: "right" }}>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                    <span className="num" style={{ fontSize: 13.5, color: pnlColor(pos) }}>{fmtPrice(t.exit)}</span>
+                    <span className="num" style={{ fontSize: 13.5, color: pnlColor(t.pnlPct) }}>{fmtPrice(t.exit)}</span>
                     <span className="num muted" style={{ fontSize: 11.5 }}>
                       {fmtPrice(t.entry)}
                     </span>
@@ -356,7 +356,7 @@ function TradesTable({ rows, goToChart, highlightId }) {
                 </td>
                 <td style={{ ...TD, textAlign: "right" }}>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "4px 0" }}>
-                    <span className="num" style={{ fontSize: 14, fontWeight: 600, color: pnlColor(pos) }}>
+                    <span className="num" style={{ fontSize: 14, fontWeight: 600, color: pnlColor(t.pnlPct) }}>
                       {fmtPct(t.pnlPct)}
                     </span>
                     <span className="num muted" style={{ fontSize: 11.5 }}>
@@ -670,7 +670,7 @@ function BotStatus({ bot, trades, locks = [], setTab, goToTrade }) {
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                   <span className="muted" style={{ fontSize: 11 }}>{fmtTimeAgo(t.closedAt)}</span>
-                  <span className="num" style={{ fontSize: 12.5, fontWeight: 600, color: pnlColor(t.pnlAbs) }}>
+                  <span className="num" style={{ fontSize: 12.5, fontWeight: 600, color: pnlColor(t.pnlPct) }}>
                     {fmtPct(t.pnlPct)}
                   </span>
                 </div>

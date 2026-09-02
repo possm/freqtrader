@@ -277,7 +277,7 @@ function PnlPill({ value, pct, size = "md" }) {
       display: "inline-flex", alignItems: "center", gap: dims.gap,
       padding: dims.pad, borderRadius: 6,
       background: pos ? "var(--up-soft)" : "var(--down-soft)",
-      color: pnlColor(pos),
+      color: pnlColor(p.pnlAbs),
       fontSize: dims.fs, fontWeight: 600,
       fontFamily: "var(--mono)", fontVariantNumeric: "tabular-nums",
     }}>
@@ -798,13 +798,13 @@ function MobilePositionCard({ p, onPairClick, refresh }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
           <span style={{ fontWeight: 600, fontSize: 14.5 }}>{p.pair}</span>
-          <span className="num" style={{ fontSize: 15, fontWeight: 700, color: pnlColor(pos) }}>
+          <span className="num" style={{ fontSize: 15, fontWeight: 700, color: pnlColor(p.pnlAbs) }}>
             {fmtSignedUsd(p.pnlAbs)}
           </span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span className="num muted" style={{ fontSize: 12 }}>
-            {fmtPrice(p.entry)} → <span style={{ color: pnlColor(pos) }}>{fmtPrice(p.current)}</span>
+            {fmtPrice(p.entry)} → <span style={{ color: pnlColor(p.pnlPct) }}>{fmtPrice(p.current)}</span>
           </span>
           <PnlPill pct={p.pnlPct} size="sm"/>
         </div>
@@ -854,7 +854,7 @@ function MobileTradeCard({ t, onPairClick, highlight }) {
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span className="muted" style={{ fontSize: 12 }}>{fmtTimeAgo(t.closedAt)}</span>
-          <Chip tone={pos ? "up" : "down"}>{fmtPct(t.pnlPct)}</Chip>
+          <Chip tone={pnlTone(t.pnlPct)}>{fmtPct(t.pnlPct)}</Chip>
         </div>
         <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>
           {t.reason} · {fmtDuration(t.durMin * 60000)}
