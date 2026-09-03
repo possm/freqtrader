@@ -31,8 +31,8 @@
     },
     "exchange": {
         "name": "kraken",
-        "key": "wFZue9EHnTJ5BY2DU0WWGZ8LpfUgXxiAoVtkI+/RQ44Y+Exn8NnXrFCR",
-        "secret": "CcViDwVCN6gtwrL6U81jiBf2R2LkI37R0oRoiytNezzp0KrGeveyHu6zQs/LZ+XEAsopXzAEU76EpvpWHyYk0w==",
+        "key": "",
+        "secret": "",
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [
@@ -71,12 +71,12 @@
         "listen_port": 8080,
         "verbosity": "error",
         "enable_openapi": false,
-        "jwt_secret_key": "somethingrandom",
+        "jwt_secret_key": "",
         "CORS_origins": [
             "*"
         ],
-        "username": "freqtrader",
-        "password": "password"
+        "username": "",
+        "password": ""
     },
     "bot_name": "freqtrade_grid",
     "initial_state": "running",
