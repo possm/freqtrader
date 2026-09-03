@@ -74,7 +74,7 @@
         "verbosity": "error",
         "enable_openapi": false,
         "jwt_secret_key": "somethingrandom",
-        "CORS_origins": [],
+        "CORS_origins": ["*"],
         "username": "freqtrader",
         "password": "password"
     },
