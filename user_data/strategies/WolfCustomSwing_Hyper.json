@@ -1,0 +1,36 @@
+{
+  "strategy_name": "WolfCustomSwing_Hyper",
+  "params": {
+    "max_open_trades": {
+      "max_open_trades": 10
+    },
+    "buy": {
+      "bb_period": 24,
+      "bb_stds": 2.7,
+      "keep_signal_candles": 2,
+      "max_green_pct": 0.017,
+      "rsi_threshold": 26,
+      "signals_required": 4
+    },
+    "sell": {
+      "trailing_arm": 0.011
+    },
+    "roi": {
+      "0": 0.14,
+      "76": 0.12,
+      "238": 0.047,
+      "595": 0
+    },
+    "stoploss": {
+      "stoploss": -0.314
+    },
+    "trailing": {
+      "trailing_stop": true,
+      "trailing_stop_positive": 0.225,
+      "trailing_stop_positive_offset": 0.24,
+      "trailing_only_offset_is_reached": false
+    }
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2026-05-15 08:59:38.844006+00:00"
+}
