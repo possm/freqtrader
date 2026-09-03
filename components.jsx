@@ -46,7 +46,7 @@ const fmtPrice = (n) => {
   if (n == null) return "—";
   const locale = typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US";
   if (n >= 1000) return n.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (n >= 1)    return n.toLocaleString(locale, { minimumFractionDigits: 3, maximumFractionDigits: 4 });
+  if (n >= 1)    return n.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
   return n.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 5 });
 };
 

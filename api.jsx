@@ -136,6 +136,10 @@ function mapPosition(t) {
     notional: current * size,
     openedAt: t.open_timestamp,
     sl, tp, pnlAbs, pnlPct, spark,
+    orders: t.orders || [],
+    entries: t.nr_of_successful_entries ?? t.nr_of_successful_buys ?? 1,
+    exits: t.nr_of_successful_exits ?? t.nr_of_successful_sells ?? 0,
+    maxStake: t.max_stake_amount, // Optional if provided by bot
   };
 }
 
@@ -156,18 +160,20 @@ function mapTrade(t) {
     closedAt: t.close_timestamp ?? Date.now(),
     pnlAbs: t.profit_abs ?? 0,
     pnlPct: (t.profit_ratio ?? 0) * 100,
-    reason: mapReason(t.exit_reason),
+    reason: mapReason(t.exit_reason, t),
     status: "closed",
   };
 }
 
-function mapReason(r) {
-  if (!r) return "Strategy exit";
-  if (r === "roi") return "ROI";
-  if (r === "stop_loss" || r === "stoploss") return "Stop-loss";
-  if (r === "take_profit" || r === "roi_custom") return "Take-profit";
-  if (r === "trailing_stop_loss") return "Trailing stop";
-  if (r === "force_exit" || r === "emergency_exit") return "Force-exit";
+function mapReason(r, t) {
+  const reason = (r || (t && t.sell_reason) || "").toLowerCase();
+  if (!reason) return "Strategy exit";
+  if (reason === "roi") return "ROI";
+  if (reason === "stop_loss" || reason === "stoploss") return "Stop-loss";
+  if (reason === "take_profit" || reason === "roi_custom") return "Take-profit";
+  if (reason === "trailing_stop_loss") return "Trailing stop";
+  if (reason === "force_exit" || reason === "emergency_exit") return "Force-exit";
+  if (reason === "ema_cross_exit") return "EMA Cross";
   return "Strategy exit";
 }
 

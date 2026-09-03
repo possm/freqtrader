@@ -73,7 +73,14 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                   <td style={TD}>
                     <TableStack top={fmtDuration(Date.now() - p.openedAt)} sub={fmtTime(p.openedAt)} align="left" />
                   </td>
-                  <td style={TD}><PairLabel pair={p.pair} size={26} onClick={goToChart}/></td>
+                  <td style={TD}>
+                    <PairLabel pair={p.pair} size={26} onClick={goToChart}/>
+                    {p.entries > 1 && (
+                      <div style={{ fontSize: 10, marginTop: 4, color: "var(--up)", fontWeight: 600, letterSpacing: ".02em", background: "rgba(0, 255, 120, 0.1)", display: "inline-block", padding: "2px 6px", borderRadius: 4 }}>
+                        GRID: {p.entries} LAYERS
+                      </div>
+                    )}
+                  </td>
                   {!compact && (
                     <td style={{ ...TD, textAlign: "right" }} className="num">
                       <span style={{ fontSize: 13.5 }}>
@@ -122,36 +129,71 @@ function ExpandedPosition({ p, slDist, tpDist }) {
   const pos = p.pnlAbs >= 0;
   const series = vUseMemo(() => sparkSeries(p.entry, p.current, 80, p.id + "x"), [p.id, p.entry, p.current]);
   return (
-    <div style={{ padding: "20px 24px", display: "grid", gridTemplateColumns: "1.6fr 1.1fr 1fr", gap: 32, borderTop: "1px solid var(--border)" }}>
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase" }}>Trend (last 6h)</span>
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "20px 24px", display: "grid", gridTemplateColumns: "1.6fr 1.1fr 1fr", gap: 32, borderTop: "1px solid var(--border)" }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase" }}>Trend (last 6h)</span>
+          </div>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <PositionPriceChart p={p} series={series}/>
+          </div>
         </div>
-        <div style={{ flex: 1, minHeight: 0 }}>
-          <PositionPriceChart p={p} series={series}/>
-        </div>
-      </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase", marginBottom: -2 }}>Position Details</span>
-        <KV label="Opened" value={fmtTime(p.openedAt)} sub={fmtDuration(Date.now() - p.openedAt) + " ago"}/>
-        <KV label="Direction" value={<Chip tone={p.side === "long" ? "up" : "down"} icon={p.side === "long" ? "up" : "down"}>{p.side.toUpperCase()}</Chip>} raw/>
-        <KV label="Entry Price" value={fmtPrice(p.entry)} mono/>
-        <KV label="Current Price" value={fmtPrice(p.current)} mono valueColor={pnlColor(p.pnlPct)}/>
-        <KV label="Position Size" value={fmtUsd(p.notional)} sub={`${p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })} ${p.pair.split("/")[0]}`} mono/>
-      </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase", marginBottom: -2 }}>Position Details</span>
+          <KV label="Opened" value={fmtTime(p.openedAt)} sub={fmtDuration(Date.now() - p.openedAt) + " ago"}/>
+          <KV label="Direction" value={<Chip tone={p.side === "long" ? "up" : "down"} icon={p.side === "long" ? "up" : "down"}>{p.side.toUpperCase()}</Chip>} raw/>
+          <KV label="Entry Price" value={fmtPrice(p.entry)} mono/>
+          <KV label="Current Price" value={fmtPrice(p.current)} mono valueColor={pnlColor(p.pnlPct)}/>
+          <KV label="Position Size" value={fmtUsd(p.notional)} sub={`${p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })} ${p.pair.split("/")[0]}`} mono/>
+        </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase", marginBottom: -2 }}>Risk Management</span>
-        <div style={{ marginBottom: 4 }}>
-          <SLTPBars p={p}/>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
-          <KV label="Risk / Reward" value={(Math.abs(slDist) > 0 ? tpDist / Math.abs(slDist) : 0).toFixed(2)} mono />
-          <KV label="Distance to Stop Loss" value={`${slDist.toFixed(2)}%`} valueColor="var(--down)" mono />
-          <KV label="Distance to Target" value={`+${tpDist.toFixed(2)}%`} valueColor="var(--up)" mono />
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase", marginBottom: -2 }}>Risk Management</span>
+          <div style={{ marginBottom: 4 }}>
+            <SLTPBars p={p}/>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+            <KV label="Risk / Reward" value={(Math.abs(slDist) > 0 ? tpDist / Math.abs(slDist) : 0).toFixed(2)} mono />
+            <KV label="Distance to Stop Loss" value={`${slDist.toFixed(2)}%`} valueColor="var(--down)" mono />
+            <KV label="Distance to Target" value={`+${tpDist.toFixed(2)}%`} valueColor="var(--up)" mono />
+          </div>
         </div>
       </div>
+      
+      {/* Order execution history view */}
+      {p.orders && p.orders.length > 0 && (
+        <div style={{ padding: "0 24px 24px", display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase", marginBottom: 12 }}>
+            {p.entries > 1 ? `DCA / Grid Layers (${p.entries} entries)` : "Order History"}
+          </span>
+          <div style={{ background: "var(--bg)", border: "1px solid var(--border-2)", borderRadius: 8, overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: "var(--panel)", borderBottom: "1px solid var(--border-2)" }}>
+                  <th style={{ padding: "8px 12px", textAlign: "left", color: "var(--muted)", fontWeight: 500 }}>Time</th>
+                  <th style={{ padding: "8px 12px", textAlign: "left", color: "var(--muted)", fontWeight: 500 }}>Type</th>
+                  <th style={{ padding: "8px 12px", textAlign: "right", color: "var(--muted)", fontWeight: 500 }}>Amount</th>
+                  <th style={{ padding: "8px 12px", textAlign: "right", color: "var(--muted)", fontWeight: 500 }}>Price</th>
+                  <th style={{ padding: "8px 12px", textAlign: "right", color: "var(--muted)", fontWeight: 500 }}>Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {p.orders.map((o, idx) => (
+                  <tr key={o.order_id || idx} style={{ borderBottom: idx === p.orders.length - 1 ? "none" : "1px solid var(--border-2)" }}>
+                    <td style={{ padding: "8px 12px", color: "var(--dim)" }}>{new Date(o.order_filled_timestamp || o.order_timestamp).toLocaleString()}</td>
+                    <td style={{ padding: "8px 12px", color: o.ft_order_side === "buy" ? "var(--up)" : "var(--down)", fontWeight: 600 }}>{o.ft_order_side.toUpperCase()}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", fontFamily: "var(--mono)" }}>{o.amount.toFixed(4)}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", fontFamily: "var(--mono)" }}>{fmtPrice(o.safe_price || o.price || (o.cost / (o.filled || o.amount)))}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", fontFamily: "var(--mono)" }}>{fmtUsd(o.cost)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -288,7 +330,7 @@ function TradesTable({ rows, goToChart, highlightId }) {
         <thead>
           <tr style={{ background: "var(--panel)", position: "sticky", top: 0, zIndex: 1 }}>
             <ColHead sortKey="id" sort={sort} setSort={setSort}>ID</ColHead>
-            <ColHead sortKey="closedAt" sort={sort} setSort={setSort}>Age</ColHead>
+            <ColHead sortKey="closedAt" sort={sort} setSort={setSort}>Date</ColHead>
             <ColHead sortKey="pair" sort={sort} setSort={setSort}>Pair</ColHead>
             <ColHead sortKey="size" sort={sort} setSort={setSort} align="right">Size</ColHead>
             <ColHead sortKey="exit" sort={sort} setSort={setSort} align="right">Price</ColHead>
@@ -310,7 +352,7 @@ function TradesTable({ rows, goToChart, highlightId }) {
                   <span style={{ fontSize: 13 }}>#{t.id}</span>
                 </td>
                 <td style={TD}>
-                  <TableStack top={fmtDuration(t.durMin * 60000)} sub={fmtTime(t.closedAt)} align="left" />
+                  <TableStack top={fmtTime(t.closedAt)} sub={fmtDuration(t.durMin * 60000)} align="left" />
                 </td>
                 <td style={TD}><PairLabel pair={t.pair} size={26} onClick={goToChart}/></td>
                 <td style={{ ...TD, textAlign: "right" }} className="num">
