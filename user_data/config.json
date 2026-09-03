@@ -10,8 +10,8 @@
     "trading_mode": "spot",
     "margin_mode": "",
     "unfilledtimeout": {
-        "buy": 10,
-        "sell": 10,
+        "entry": 10,
+        "exit": 10,
         "unit": "minutes"
     },
     "entry_pricing": {
