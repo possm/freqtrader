@@ -1,59 +1,69 @@
-# Project: Academic Altcoin Strategy for Freqtrade
+# Project: Aggressive Crypto Strategy for Freqtrade (>=10% Net Profit/Month)
 
 ## Architecture
 - Module/package boundaries, data flow, shared interfaces:
-  - Strategy Module: `user_data/strategies/WolfBreakout_PVB.py` (inherits `IStrategy`, implements Parkinson Volatility Estimator, Donchian Channel, Keltner Channel, ATR Chandelier stop, BTC macro trend filter).
-  - Slippage & Fee Module: `user_data/strategies/kraken_slippage.py` (`KrakenSlippageMixin`) & explicit `--fee 0.0026`.
-  - Config Module: `config_academic_dryrun.json` (dry-run mode, 18 Kraken EUR pairs, port 8082, dedicated DB `tradesv3_academic_dryrun.sqlite` and logfile `freqtrade_academic_dryrun.log`).
-  - Infrastructure: `docker-compose.yml` (service `freqtrade-academic-dryrun` on port 8082, live bot on 8080 untouched).
-  - VPS Execution: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose ..."` and `rsync` per GEMINI.md.
+  - Strategy Module: `user_data/strategies/WolfBreakout_HVRSPB.py` (High-Velocity Relative-Strength Parkinson Breakout).
+    - Parkinson Volatility Ratio (PVR > threshold) for volatility expansion detection.
+    - Relative Strength vs. BTC (24h excess return > 2.5%) for market leadership selection.
+    - Donchian & Keltner dynamic breakout triggers with ADX / volume confirmation.
+    - Asymmetric Payoff Engine: fast invalidation (-1.5% to -2.0% within 4-6h) and aggressive trailing profit runner (+3.5% breakeven lock, trailing high gains).
+    - Maker fee priority (Limit orders) and explicit fee deduction (`--fee 0.0026`).
+  - Risk & Capital Allocation Module:
+    - 1h timeframe on liquid Kraken pairs.
+    - `max_open_trades = 4`, 25% stake allocation per trade (`stake_amount = "unlimited"` or dynamic $W / 4$) to achieve 100% active capital deployment during market trends.
+    - Drawdown governance: Risk Manager approved drawdown ceiling of 30.0% - 35.0% for spot crypto.
+    - Circuit Breakers: MaxDrawdown (30% / 48h halt) and StoplossGuard (4 stops / 24h halt).
+  - Infrastructure & VPS Execution:
+    - Execution on `vps-matthijs-trader`.
+    - Hyperopt using `ProfitDrawDownHyperOptLoss` with `-j 1` on Binance/Kraken 1h data (2024 to present) with `--fee 0.0026`.
+    - Dedicated backtest verification verifying >=10% monthly net profit.
+    - Zero disruption to live production bot on port 8080.
+  - Reporting Module:
+    - `reports/10PERCENT_MONTH_REPORT.md` justifying theory, timeframe, fee hurdle, and Risk Manager drawdown acceptance.
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| 1 | Git Feature Branch | Dedicated branch `feat/academic-altcoin-strategy` | M1 | User Rules |
-| 2 | Parkinson Volatility Estimator | Continuous range variance estimator (Parkinson 1980) | M1 | Academic Research |
-| 3 | Donchian & Keltner Dual Breakout | 20-period Donchian + Keltner ATR expansion channel | M1 | Academic Research |
-| 4 | BTC Macro Regime Gate | BTC/EUR (or BTC/USDT) > EMA200 cross-asset filter | M1 | Academic Research |
-| 5 | Asymmetric Risk Management | Hard stop-loss (-4.5%), Chandelier ATR trailing stop, ROI table | M1 | Academic Research |
-| 6 | Unit Test Suite & Indicator Validation | Static syntax validation and unit tests for indicator calculations | M1 | SWE Standards |
-| 7 | Multi-Cycle Dataset & Fee Configuration | 1h timeframe, timerange 20210101- / 20240101-, explicit `--fee 0.0026` | M2 | Survey Explorer 2 |
-| 8 | Hyperopt Optimization on VPS | Hyperopt execution targeting stoploss, roi, trailing with Sharpe/Profit loss | M2 | R2 Requirement |
-| 9 | Fee-Adjusted Backtest Verification | Backtest verifying >10% net profit after Kraken taker fees | M2 | Acceptance Criteria |
-| 10 | Risk Management & Code Audit | Independent audit for fatal bugs, lookahead bias, memory leaks, live bot isolation | M3 | R3 Requirement |
-| 11 | E2E Testing Suite | Verification of dry-run container config, sqlite DB, API port 8082, entry/exit logic | M3 | Dual Track |
-| 12 | VPS File Synchronization | Safe rsync to `vps-matthijs-trader:~/freqtrade-wolf/` excluding data/logs/sqlite | M4 | GEMINI.md |
-| 13 | Docker Compose Dry-Run Service | Container `freqtrade-academic-dryrun` configured on port 8082 | M4 | Survey Explorer 2 |
-| 14 | VPS Container Deployment & Verification | Start dry-run container, verify >= 3 heartbeats with state='RUNNING' | M4 | Acceptance Criteria |
-| 15 | Academic Strategy Markdown Report | Comprehensive documentation explaining theory, timeframe, and fee hurdle | M5 | Acceptance Criteria |
+| 1 | Git Feature Branch | Dedicated branch `feat/aggressive-10pct-monthly-strategy` | M1 | User Rules |
+| 2 | Relative Strength vs BTC Filter | 24h excess return vs BTC (>2.5%) to select momentum leaders | M1 | Quant Survey |
+| 3 | Parkinson Volatility Expansion | Continuous range variance estimator (PVR) for volatility breakout | M1 | Quant Survey |
+| 4 | Donchian/Keltner Breakout & Momentum | Channel breakout with volume and ADX momentum confirmation | M1 | Quant Survey |
+| 5 | Asymmetric Payoff Engine | Fast invalidation exit + two-tier trailing runner (+3.5% lock, trailing runner) | M1 | Quant Survey |
+| 6 | Unit Test Suite | Comprehensive unit tests for indicators, RS calculation, and edge cases | M1 | SWE Standards |
+| 7 | VPS Hyperopt Infrastructure | Hyperopt script using `ProfitDrawDownHyperOptLoss`, `-j 1`, `--fee 0.0026` | M2 | Data Scientist Survey |
+| 8 | Parameter Optimization on VPS | Optimize buy, roi, stoploss, and trailing spaces over 2024 historical data | M2 | Data Scientist Survey |
+| 9 | Fee-Adjusted Backtest Verification | Verify >=10% net profit per month after Kraken fees (0.26% taker) | M2 | Acceptance Criteria |
+| 10 | Risk Management & Drawdown Audit | Audit risk parameters against the 30-35% drawdown mandate | M3 | Risk Manager Survey |
+| 11 | Challenger & Adversarial Stress Tests | Edge-case simulation, flash crash test, extreme fee sensitivity | M3 | SWE Standards |
+| 12 | Forensic Integrity Audit | Independent check for lookahead bias, dummy facades, and fee bypassing | M3 | Audit Standards |
+| 13 | Risk Manager Markdown Report | `reports/10PERCENT_MONTH_REPORT.md` explaining theory and risk justification | M4 | Acceptance Criteria |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | Strategy Implementation & Local Testing | Branch creation, `WolfBreakout_PVB.py` strategy implementation, unit tests | Survey | DONE |
-| 2 | Data Prep & Hyperopt on VPS | Multi-year Binance/Kraken dataset tuning, hyperopt on VPS, >10% net profit verification | M1 | DONE |
-| 3 | Risk Verification & Code Audit | Independent review, challenger stress tests, forensic integrity audit | M2 | DONE |
-| 4 | VPS Dry Run Deployment & Heartbeats | Sync to VPS, start container on port 8082, verify >= 3 heartbeats | M3 | DONE |
-| 5 | Documentation & Final Reporting | Comprehensive markdown report on theory, timeframe justification, and results | M4 | DONE |
+| 1 | Strategy Implementation & Local Unit Tests | Implement `WolfBreakout_HVRSPB.py` and unit tests in `tests/test_wolfbreakout_hvrspb.py` | Survey | IN_PROGRESS |
+| 2 | VPS Hyperopt & Fee-Adjusted Backtest (>10%/mo) | Sync to VPS, run hyperopt with `-j 1` and `--fee 0.0026`, backtest verifying >=10%/month net profit | M1 | PLANNED |
+| 3 | Risk Governance, Stress Tests & Forensic Audit | Reviewer check, Challenger stress tests, Forensic Auditor integrity check | M2 | PLANNED |
+| 4 | Risk Manager Report & Documentation | Complete `reports/10PERCENT_MONTH_REPORT.md`, verify zero errors, commit cleanly | M3 | PLANNED |
 
 ## Interface Contracts
 ### Strategy ↔ Freqtrade Engine
-- Entry: `populate_entry_trend(dataframe, metadata)` sets `enter_long = 1` when Donchian Upper + Keltner Upper + PVR > 1.13 + Volume + BTC EMA200 are satisfied.
-- Exit: `populate_exit_trend(dataframe, metadata)` sets `exit_long = 1` when candle closes below Donchian Mid.
-- Stoploss: `stoploss = -0.34`, `trailing_stop = True`, `trailing_stop_positive = 0.248`, `trailing_stop_positive_offset = 0.316`.
-- Timeframe: `timeframe = '1h'`. Informative pairs: `('BTC/EUR', '1h')` or `('BTC/USDT', '1h')`.
+- Class Name: `WolfBreakout_HVRSPB` in `user_data/strategies/WolfBreakout_HVRSPB.py`
+- Base Class: `IStrategy`
+- Timeframe: `1h`
+- Informative Pairs: `('BTC/EUR', '1h')` or `('BTC/USDT', '1h')` for Relative Strength benchmarking.
+- Entry Logic: Long entry when:
+  1. Altcoin 24h return exceeds BTC 24h return by threshold (`rs_excess_threshold`, default > 0.025).
+  2. Parkinson Volatility Ratio > threshold (`pvr_threshold`, default > 1.15).
+  3. Close > Donchian Upper (`donchian_upper`) or Keltner Upper.
+  4. Volume > Volume SMA20 * `volume_factor` (default > 1.2).
+- Exit Logic:
+  1. Time/Volatility invalidation: Close < Entry EMA or Donchian Mid after 4 candles.
+  2. Asymmetric trailing stop: Breakeven lock at +3.5%, trailing stop for runner trends.
+  3. Hard stoploss: -0.06 (-6.0%).
+- Order Types: Limit orders (`use_custom_stoploss = False` or dynamic custom stoploss, limit entry and exit where possible for maker fee savings).
 
-### Dry-Run Service ↔ VPS Environment
-- Container name: `freqtrade-wolf-academic-dryrun`
-- Compose service: `freqtrade-academic-dryrun`
-- Port mapping: `192.168.2.4:8082:8080`
-- Config file: `config_academic_dryrun.json` (`"dry_run": true`, `"stake_currency": "EUR"`, `"stake_amount": 75`)
-- DB path: `/freqtrade/user_data/tradesv3_academic_dryrun.sqlite`
-- Log path: `/freqtrade/user_data/logs/freqtrade_academic_dryrun.log`
-
-## Code Layout
-- `user_data/strategies/WolfBreakout_PVB.py` — New academic strategy
-- `tests/test_wolfbreakout_pvb.py` — Unit tests for strategy indicators and edge cases
-- `config_academic_dryrun.json` — Dedicated dry-run configuration for port 8082
-- `docker-compose.yml` — Compose file containing `freqtrade-academic-dryrun` service
-- `reports/ACADEMIC_STRATEGY_REPORT.md` — Final documentation report
+### Code Layout
+- `user_data/strategies/WolfBreakout_HVRSPB.py` — High-Velocity Relative-Strength Parkinson Breakout strategy
+- `tests/test_wolfbreakout_hvrspb.py` — Unit test suite for strategy logic, indicators, and edge cases
+- `reports/10PERCENT_MONTH_REPORT.md` — Comprehensive Risk Manager and Quant rationale report
