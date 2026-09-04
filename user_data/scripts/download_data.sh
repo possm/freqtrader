@@ -53,7 +53,7 @@ for PAIR in ${PAIRS}; do
       --timeframes ${TIMEFRAMES} \
       --timerange "${START}" \
       --pairs "${PAIR}" \
-      --data-format-ohlcv "${DATA_FORMAT}"; then
+      --data-format-ohlcv "${DATA_FORMAT}" --erase; then
     echo ">> ${PAIR} OK"
   else
     echo "!! ${PAIR} FAILED/unavailable on ${EXCHANGE} — skipping"
