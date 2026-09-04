@@ -375,15 +375,16 @@ class TestCausalSeparationAndMutualExclusivity(unittest.TestCase):
         df = generate_synthetic_ohlcv(n_bars=100)
         ind = self.strategy.populate_indicators(df, self.metadata)
 
-        for i in range(30, len(ind)):
-            c = ind.loc[i, "close"]
+        for i in range(len(ind)):
             dh = ind.loc[i, "donchian_high"]
             dm = ind.loc[i, "donchian_mid"]
             ku = ind.loc[i, "keltner_upper"]
             eb = ind.loc[i, "ema_basis"]
 
-            self.assertGreaterEqual(dh, dm)
-            self.assertGreaterEqual(ku, eb)
+            if not np.isnan(dh) and not np.isnan(dm):
+                self.assertGreaterEqual(dh, dm)
+            if not np.isnan(ku) and not np.isnan(eb):
+                self.assertGreaterEqual(ku, eb)
 
 
 class TestStrategyStandaloneInitialization(unittest.TestCase):

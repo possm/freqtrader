@@ -60,22 +60,21 @@ class WolfBreakout_PVB(KrakenSlippageMixin, IStrategy):
     # =========================================================================
     # RISK MANAGEMENT & EXIT PARAMETERS (Baseline Priors)
     # =========================================================================
-    # Hard stoploss (catastrophic circuit breaker)
-    stoploss = -0.045
+    # Hard stoploss (catastrophic circuit breaker optimized via hyperopt)
+    stoploss = -0.34
 
-    # Trailing stop: activates once trade reaches +4.5%, trails 2.5% below peak
+    # Trailing stop: active immediately, locks in trailing stop at 24.8% trailing distance
     trailing_stop = True
-    trailing_stop_positive = 0.025
-    trailing_stop_positive_offset = 0.045
-    trailing_only_offset_is_reached = True
+    trailing_stop_positive = 0.248
+    trailing_stop_positive_offset = 0.316
+    trailing_only_offset_is_reached = False
 
     # Minimal ROI Table (minutes -> profit ratio)
     minimal_roi = {
-        "0": 0.28,      # +28% immediate windfall target
-        "120": 0.16,    # +16% after 2 hours (2 candles)
-        "360": 0.08,    # +8% after 6 hours
-        "720": 0.04,    # +4% after 12 hours
-        "1440": 0.02,   # +2% after 24 hours
+        "0": 0.546,
+        "226": 0.174,
+        "840": 0.088,
+        "1317": 0,
     }
 
     # Stale exit timeout: close positions that fail to follow through within 14 days
@@ -90,15 +89,16 @@ class WolfBreakout_PVB(KrakenSlippageMixin, IStrategy):
          "stop_duration_candles": 24, "max_allowed_drawdown": 0.10},
     ]
 
+
     # =========================================================================
     # HYPEROPTABLE PARAMETER SPACES
     # =========================================================================
-    # Buy space: Channel lookbacks and entry thresholds
-    donchian_period = IntParameter(14, 36, default=20, space="buy", optimize=True)
-    pvr_threshold = DecimalParameter(1.02, 1.35, default=1.10, decimals=2, space="buy", optimize=True)
-    keltner_mult = DecimalParameter(1.20, 2.50, default=1.75, decimals=2, space="buy", optimize=True)
-    volume_factor = DecimalParameter(1.05, 1.50, default=1.20, decimals=2, space="buy", optimize=True)
-    trend_ema_period = IntParameter(80, 220, default=100, space="buy", optimize=True)
+    # Buy space: Channel lookbacks and entry thresholds (defaults set to hyperopt-optimized values)
+    donchian_period = IntParameter(14, 36, default=36, space="buy", optimize=True)
+    pvr_threshold = DecimalParameter(1.02, 1.35, default=1.13, decimals=2, space="buy", optimize=True)
+    keltner_mult = DecimalParameter(1.20, 2.50, default=1.42, decimals=2, space="buy", optimize=True)
+    volume_factor = DecimalParameter(1.05, 1.50, default=1.47, decimals=2, space="buy", optimize=True)
+    trend_ema_period = IntParameter(80, 220, default=155, space="buy", optimize=True)
 
     # Sell space: Modular exit conditions
     exit_donchian_mid = BooleanParameter(default=True, space="sell", optimize=True)

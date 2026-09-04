@@ -1,0 +1,35 @@
+{
+  "strategy_name": "WolfBreakout_PVB",
+  "params": {
+    "max_open_trades": {
+      "max_open_trades": 8
+    },
+    "buy": {
+      "donchian_period": 36,
+      "keltner_mult": 1.42,
+      "pvr_threshold": 1.13,
+      "trend_ema_period": 155,
+      "volume_factor": 1.47
+    },
+    "sell": {
+      "exit_donchian_mid": true,
+      "exit_ema_basis": false
+    },
+    "roi": {
+      "0": 0.546,
+      "226": 0.174,
+      "840": 0.088,
+      "1317": 0
+    },
+    "stoploss": {
+      "stoploss": -0.34
+    },
+    "trailing": {
+      "trailing_stop": true,
+      "trailing_stop_positive": 0.248,
+      "trailing_stop_positive_offset": 0.316,
+      "trailing_only_offset_is_reached": false
+    }
+  },
+  "ft_stratparam_v": 1
+}
