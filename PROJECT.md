@@ -32,9 +32,9 @@
 |---|------|-------|-------------|--------|
 | 1 | Strategy Implementation & Local Testing | Branch creation, `WolfBreakout_PVB.py` strategy implementation, unit tests | Survey | DONE |
 | 2 | Data Prep & Hyperopt on VPS | Multi-year Binance/Kraken dataset tuning, hyperopt on VPS, >10% net profit verification | M1 | DONE |
-| 3 | Risk Verification & Code Audit | Independent review, challenger stress tests, forensic integrity audit | M2 | PLANNED |
-| 4 | VPS Dry Run Deployment & Heartbeats | Sync to VPS, start container on port 8082, verify >= 3 heartbeats | M3 | PLANNED |
-| 5 | Documentation & Final Reporting | Comprehensive markdown report on theory, timeframe justification, and results | M4 | PLANNED |
+| 3 | Risk Verification & Code Audit | Independent review, challenger stress tests, forensic integrity audit | M2 | DONE |
+| 4 | VPS Dry Run Deployment & Heartbeats | Sync to VPS, start container on port 8082, verify >= 3 heartbeats | M3 | DONE |
+| 5 | Documentation & Final Reporting | Comprehensive markdown report on theory, timeframe justification, and results | M4 | DONE |
 
 ## Interface Contracts
 ### Strategy ↔ Freqtrade Engine
