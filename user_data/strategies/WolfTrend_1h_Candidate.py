@@ -16,7 +16,7 @@ class WolfTrend_1h_Candidate(WolfTrend_EMA_hopt_tuned):
     """
     
     timeframe = '1h'
-    stoploss = -0.05
+    stoploss = -0.027
     
     EMA_FAST = 80       # 20 * 4
     EMA_SLOW = 284      # 71 * 4

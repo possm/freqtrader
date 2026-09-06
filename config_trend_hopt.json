@@ -56,11 +56,8 @@
             "ETH/EUR",
             "DOGE/EUR",
             "TRX/EUR",
-            "NEAR/EUR",
             "EGLD/EUR",
-            "XTZ/EUR",
-            "VET/EUR",
-            "ALGO/EUR"
+            "XTZ/EUR"
         ],
         "pair_blacklist": []
     },
