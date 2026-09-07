@@ -1,13 +1,12 @@
 {
-    "max_open_trades": 15,
+    "max_open_trades": 8,
     "stake_currency": "EUR",
-    "stake_amount": 60,
+    "stake_amount": 125,
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "EUR",
-    "dry_run": true,
-    "dry_run_wallet": 900,
+    "dry_run": false,
+    "dry_run_wallet": 1500,
     "cancel_open_orders_on_exit": false,
-    "timeframe": "15m",
     "trading_mode": "spot",
     "margin_mode": "",
     "unfilledtimeout": {
@@ -38,7 +37,7 @@
         "force_entry": "market",
         "force_exit": "market",
         "stoploss": "market",
-        "stoploss_on_exchange": false
+        "stoploss_on_exchange": true
     },
     "exchange": {
         "name": "kraken",
@@ -47,20 +46,18 @@
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [
-            "AAVE/EUR",
+            "XLM/EUR",
+            "XRP/EUR",
             "ADA/EUR",
-            "ARB/EUR",
             "BTC/EUR",
-            "ETH/EUR",
-            "FET/EUR",
-            "INJ/EUR",
-            "KAS/EUR",
             "LINK/EUR",
-            "NEAR/EUR",
-            "OP/EUR",
-            "SOL/EUR",
+            "SUI/EUR",
             "STX/EUR",
-            "TIA/EUR"
+            "ETH/EUR",
+            "DOGE/EUR",
+            "TRX/EUR",
+            "EGLD/EUR",
+            "XTZ/EUR"
         ],
         "pair_blacklist": []
     },
@@ -69,32 +66,48 @@
             "method": "StaticPairList"
         }
     ],
-    "stoploss": -0.02,
-    "trailing_stop": true,
-    "trailing_stop_positive": 0.005,
-    "trailing_stop_positive_offset": 0.015,
-    "trailing_only_offset_is_reached": true,
-    "strategy": "WolfCustomSwingCH",
     "telegram": {
         "enabled": false,
         "token": "",
         "chat_id": ""
     },
     "webhook": {
-        "enabled": false
+        "enabled": true,
+        "url": "http://192.168.1.56:8123/api/webhook/freqtrade_hopt_exit_notification",
+        "format": "json",
+        "retries": 3,
+        "retry_delay": 0.5,
+        "exit": {
+            "pair": "{pair}",
+            "profit_ratio": "{profit_ratio}",
+            "profit_amount": "{profit_amount}",
+            "stake_amount": "{stake_amount}",
+            "stake_currency": "{stake_currency}"
+        }
     },
     "api_server": {
-        "enabled": false,
-        "listen_ip_address": "127.0.0.1",
-        "listen_port": 8081,
-        "username": "",
-        "password": "",
-        "jwt_secret_key": "backtest_only"
+        "enabled": true,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "8c5d1f3a7b9e2d4c6a8f0b2d4e6a8c0e2b4d6a8c0f2e4b6d8a0c2e4f6b8d0a2c",
+        "ws_token": "9b8a7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b",
+        "CORS_origins": [
+            "http://192.168.2.4",
+            "http://192.168.2.4:80",
+            "http://localhost",
+            "http://127.0.0.1"
+        ],
+        "username": "freqtrader",
+        "password": "freqtrader"
     },
-    "bot_name": "wolf_sim_tight_sl",
+    "bot_name": "WolfTrend_EMA_hopt_tuned",
     "initial_state": "running",
     "force_entry_enable": false,
     "internals": {
         "process_throttle_secs": 5
-    }
+    },
+    "logfile": "/freqtrade/user_data/logs/freqtrade_hopt_live.log",
+    "db_url": "sqlite:////freqtrade/user_data/tradesv3_hopt_live.sqlite"
 }

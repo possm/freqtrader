@@ -1,13 +1,12 @@
 {
-    "max_open_trades": 15,
+    "max_open_trades": 10,
     "stake_currency": "EUR",
-    "stake_amount": 60,
+    "stake_amount": 75,
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "EUR",
     "dry_run": true,
-    "dry_run_wallet": 900,
+    "dry_run_wallet": 1500,
     "cancel_open_orders_on_exit": false,
-    "timeframe": "15m",
 
     "trading_mode": "spot",
     "margin_mode": "",
@@ -58,13 +57,17 @@
             "BTC/EUR",
             "ETH/EUR",
             "FET/EUR",
+            "HBAR/EUR",
             "INJ/EUR",
             "KAS/EUR",
             "LINK/EUR",
             "NEAR/EUR",
             "OP/EUR",
+            "POL/EUR",
+            "RENDER/EUR",
             "SOL/EUR",
             "STX/EUR",
+            "SUI/EUR",
             "TIA/EUR"
         ],
         "pair_blacklist": []
@@ -80,8 +83,6 @@
     "trailing_stop_positive_offset": 0.025,
     "trailing_only_offset_is_reached": true,
 
-    "strategy": "WolfCustomSwingCH",
-
     "telegram": {
         "enabled": false,
         "token": "",
@@ -89,19 +90,39 @@
     },
 
     "webhook": {
-        "enabled": false
+        "enabled": true,
+        "url": "http://192.168.1.56:8123/api/webhook/freqtrade_exit_notification",
+        "format": "json",
+        "retries": 3,
+        "retry_delay": 0.5,
+        "exit": {
+            "pair": "{pair}",
+            "profit_ratio": "{profit_ratio}",
+            "profit_amount": "{profit_amount}",
+            "stake_amount": "{stake_amount}",
+            "stake_currency": "{stake_currency}"
+        }
     },
 
     "api_server": {
-        "enabled": false,
-        "listen_ip_address": "127.0.0.1",
-        "listen_port": 8081,
+        "enabled": true,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "",
+        "ws_token": "",
+        "CORS_origins": [
+            "http://192.168.2.4",
+            "http://192.168.2.4:80",
+            "http://localhost",
+            "http://127.0.0.1"
+        ],
         "username": "",
-        "password": "",
-        "jwt_secret_key": "backtest_only"
+        "password": ""
     },
 
-    "bot_name": "wolf_sim_2204039_backtest",
+    "bot_name": "wolf_custom_swing",
     "initial_state": "running",
     "force_entry_enable": false,
     "internals": {

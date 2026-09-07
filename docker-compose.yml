@@ -1,23 +1,108 @@
----
-version: '3'
 services:
   # ─────────────────────────────────────────────────────────────────────────────
-  # 8082 — DRY-RUN: WolfBreakout_PVB academic strategy
-  # Strategy: WolfBreakout_PVB (Parkinson Volatility Breakout + BTC filter)
-  # Whitelist: 18 Kraken EUR pairs
+  # Dashboard (Port 80) — Web UI for multi-bot monitoring
+  # ─────────────────────────────────────────────────────────────────────────────
+  freqtrader-dash:
+    build: ./dashboard
+    image: freqtrader-dash
+    container_name: freqtrader-dash
+    restart: unless-stopped
+    ports:
+      - "${LISTEN_IP:-192.168.2.4}:80:80"
+    networks:
+      - freqtrade-net
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 8080 — LIVE: WolfTrend_1h_Candidate (Trend Following Bot on Kraken Spot)
+  # ─────────────────────────────────────────────────────────────────────────────
+  freqtrade-hopt-live:
+    image: freqtradeorg/freqtrade:stable
+    restart: unless-stopped
+    container_name: freqtrade-wolf-hopt-live
+    env_file:
+      - .env
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+    ports:
+      - "${LISTEN_IP:-192.168.2.4}:8080:8080"
+    command: >
+      trade
+      --logfile /freqtrade/user_data/logs/freqtrade_hopt_live.log
+      --db-url sqlite:////freqtrade/user_data/tradesv3_hopt_live.sqlite
+      --config /freqtrade/user_data/config.json
+      --strategy WolfTrend_1h_Candidate
+    networks:
+      - freqtrade-net
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 8081 — LIVE: StepGrid (Grid Trading Bot on Kraken Spot)
+  # ─────────────────────────────────────────────────────────────────────────────
+  freqtrade-grid:
+    image: freqtradeorg/freqtrade:stable
+    restart: unless-stopped
+    container_name: freqtrade-grid
+    env_file:
+      - .env
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+    ports:
+      - "${LISTEN_IP:-192.168.2.4}:8081:8080"
+    command: >
+      trade
+      --logfile /freqtrade/user_data/logs/freqtrade_grid.log
+      --db-url sqlite:////freqtrade/user_data/tradesv3_grid.sqlite
+      --config /freqtrade/user_data/config_grid.json
+      --strategy StepGrid
+    networks:
+      - freqtrade-net
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 8082 — DRY-RUN: WolfBreakout_PVB (Academic Parkinson Volatility Breakout)
   # ─────────────────────────────────────────────────────────────────────────────
   freqtrade-academic-dryrun:
     image: freqtradeorg/freqtrade:stable
     restart: unless-stopped
     container_name: freqtrade-wolf-academic-dryrun
+    env_file:
+      - .env
     volumes:
       - "./user_data:/freqtrade/user_data"
-      - "./config_academic_dryrun.json:/freqtrade/config_academic_dryrun.json"
     ports:
-      - "192.168.2.4:8082:8080"
+      - "${LISTEN_IP:-192.168.2.4}:8082:8080"
     command: >
       trade
       --logfile /freqtrade/user_data/logs/freqtrade_academic_dryrun.log
       --db-url sqlite:////freqtrade/user_data/tradesv3_academic_dryrun.sqlite
-      --config /freqtrade/config_academic_dryrun.json
+      --config /freqtrade/user_data/config_academic_dryrun.json
       --strategy WolfBreakout_PVB
+    networks:
+      - freqtrade-net
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 8083 — LIVE / DRY-RUN: WolfBreakout_Daily (Daily Macro Breakout Bot)
+  # ─────────────────────────────────────────────────────────────────────────────
+  freqtrade-breakout-daily:
+    image: freqtradeorg/freqtrade:stable
+    restart: unless-stopped
+    container_name: freqtrade-wolf-breakout-daily
+    env_file:
+      - .env
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+    ports:
+      - "${LISTEN_IP:-192.168.2.4}:8083:8080"
+    command: >
+      trade
+      --logfile /freqtrade/user_data/logs/freqtrade_breakout_daily.log
+      --db-url sqlite:////freqtrade/user_data/tradesv3_breakout_daily.sqlite
+      --config /freqtrade/user_data/config_breakout_daily.json
+      --strategy WolfBreakout_Daily
+    networks:
+      - freqtrade-net
+
+networks:
+  freqtrade-net:
+    driver: bridge

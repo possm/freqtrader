@@ -73,7 +73,10 @@
         "enable_openapi": false,
         "jwt_secret_key": "somethingrandom",
         "CORS_origins": [
-            "*"
+            "http://192.168.2.4",
+            "http://192.168.2.4:80",
+            "http://localhost",
+            "http://127.0.0.1"
         ],
         "username": "freqtrader",
         "password": "password"

@@ -71,17 +71,23 @@
         "listen_port": 8080,
         "verbosity": "error",
         "enable_openapi": false,
-        "jwt_secret_key": "",
+        "jwt_secret_key": "e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7",
+        "ws_token": "f7e6d5c4b3a2918273645e4d3c2b1a0f9e8d7c6b5a4938271605f4e3d2c1b0a9",
         "CORS_origins": [
-            "*"
+            "http://192.168.2.4",
+            "http://192.168.2.4:80",
+            "http://localhost",
+            "http://127.0.0.1"
         ],
-        "username": "",
-        "password": ""
+        "username": "freqtrader",
+        "password": "freqtrader"
     },
     "bot_name": "freqtrade_grid",
     "initial_state": "running",
     "force_entry_enable": false,
     "internals": {
         "process_throttle_secs": 5
-    }
+    },
+    "logfile": "/freqtrade/user_data/logs/freqtrade_grid.log",
+    "db_url": "sqlite:////freqtrade/user_data/tradesv3_grid.sqlite"
 }
