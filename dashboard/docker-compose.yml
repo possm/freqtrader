@@ -1,0 +1,8 @@
+services:
+  freqtrader-dash:
+    build: .
+    image: freqtrader-dash
+    container_name: freqtrader-dash
+    restart: unless-stopped
+    ports:
+      - "192.168.2.4:80:80"
