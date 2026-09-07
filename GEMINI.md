@@ -16,12 +16,13 @@ Wanneer je wijzigingen doorvoert in de bots, configuraties of dashboard:
 4. **Valideer Containers**:
    Herstart na de sync altijd de containers op de VPS en check de logs om te valideren dat de services succesvol en zonder fouten laden:
    ```bash
-   ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose up -d freqtrade-hopt-live freqtrade-grid freqtrade-wolf-academic-dryrun freqtrader-dash && sleep 5 && docker compose ps"
+   ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose up -d freqtrade-hopt-live freqtrade-grid freqtrade-academic-dryrun freqtrade-breakout-daily freqtrader-dash && sleep 5 && docker compose ps"
    ```
    Valideer specifieke logs op runtime fouten:
    - Live Trend Bot: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrade-hopt-live"`
    - Grid Bot: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrade-grid"`
-   - Academic Dry-Run Bot: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrade-wolf-academic-dryrun"`
+   - Academic Dry-Run Bot: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrade-academic-dryrun"`
+   - Daily Breakout Bot: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrade-breakout-daily"`
    - Dashboard: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrader-dash"`
 
 ## 3. Dashboard Frontend Specifics (`dashboard/`)
