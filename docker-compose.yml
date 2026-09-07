@@ -1,51 +1,6 @@
+---
+version: '3'
 services:
-  # ─────────────────────────────────────────────────────────────────────────────
-  # 8080 — LIVE production bot: regime-filtered trend follower
-  # Strategy: WTE_btc200 (WolfTrend_EMA_hopt_tuned + BTC>4h EMA200 macro gate)
-  #   Backtest 2021→2026: +138.8% / MaxDD 7.7% / Calmar 18.0 (base was +126% / DD 12.6%
-  #   / Calmar 10) — Pareto improvement: better return AND lower DD in every bad year
-  #   (2022 -7 vs -15, 2025 -12 vs -21, 2026 -7 vs -11) at ~4pp cost to 2024 upside.
-  # Whitelist: 8 trend-curated pairs (SOL, NEAR, FET, HBAR, ADA, BTC, ETH, LINK)
-  # Exit: stoploss -2.4% (tight), no trailing, ROI disabled (rides winners)
-  # ─────────────────────────────────────────────────────────────────────────────
-  freqtrade-hopt-live:
-    image: freqtradeorg/freqtrade:stable
-    restart: unless-stopped
-    container_name: freqtrade-wolf-hopt-live
-    env_file: .env
-    volumes:
-      - "./user_data:/freqtrade/user_data"
-      - "./config_trend_hopt.json:/freqtrade/config.json"
-    ports:
-      - "192.168.2.4:8080:8080"
-    command: >
-      trade
-      --logfile /freqtrade/user_data/logs/freqtrade_hopt_live.log
-      --db-url sqlite:////freqtrade/user_data/tradesv3_hopt_live.sqlite
-      --config /freqtrade/config.json
-      --strategy WolfTrend_1h_Candidate
-
-  # ─────────────────────────────────────────────────────────────────────────────
-  # 8081 — SIM: baseline trend follower (kept for A/B comparison vs live)
-  # Strategy: WolfTrend_EMA (textbook params, -12% stop)
-  # ─────────────────────────────────────────────────────────────────────────────
-#  freqtrade-trend-sim:
-#    image: freqtradeorg/freqtrade:stable
-#    restart: unless-stopped
-#    container_name: freqtrade-wolf-trend-sim
-#    env_file: .env
-#    volumes:
-#      - "./user_data:/freqtrade/user_data"
-#      - "./config_trend.json:/freqtrade/config.json"
-#    ports:
-#      - "192.168.2.4:8081:8080"
-#    command: >
-#      trade
-#      --logfile /freqtrade/user_data/logs/freqtrade_trend.log
-#      --db-url sqlite:////freqtrade/user_data/tradesv3_trend.sqlite
-#      --config /freqtrade/config.json
-#      --strategy WolfTrend_EMA
-
   # ─────────────────────────────────────────────────────────────────────────────
   # 8082 — DRY-RUN: WolfBreakout_PVB academic strategy
   # Strategy: WolfBreakout_PVB (Parkinson Volatility Breakout + BTC filter)
@@ -66,4 +21,3 @@ services:
       --db-url sqlite:////freqtrade/user_data/tradesv3_academic_dryrun.sqlite
       --config /freqtrade/config_academic_dryrun.json
       --strategy WolfBreakout_PVB
-
