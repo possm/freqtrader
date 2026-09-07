@@ -46,24 +46,5 @@ services:
 #      --config /freqtrade/config.json
 #      --strategy WolfTrend_EMA
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # 8082 — DRY-RUN: WolfBreakout_PVB academic strategy
-  # Strategy: WolfBreakout_PVB (Parkinson Volatility Breakout + BTC filter)
-  # Whitelist: 18 Kraken EUR pairs
-  # ─────────────────────────────────────────────────────────────────────────────
-  freqtrade-academic-dryrun:
-    image: freqtradeorg/freqtrade:stable
-    restart: unless-stopped
-    container_name: freqtrade-wolf-academic-dryrun
-    volumes:
-      - "./user_data:/freqtrade/user_data"
-      - "./config_academic_dryrun.json:/freqtrade/config_academic_dryrun.json"
-    ports:
-      - "192.168.2.4:8082:8080"
-    command: >
-      trade
-      --logfile /freqtrade/user_data/logs/freqtrade_academic_dryrun.log
-      --db-url sqlite:////freqtrade/user_data/tradesv3_academic_dryrun.sqlite
-      --config /freqtrade/config_academic_dryrun.json
-      --strategy WolfBreakout_PVB
+
 
