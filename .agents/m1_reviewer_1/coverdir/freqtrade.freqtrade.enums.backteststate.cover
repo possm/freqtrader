@@ -1,0 +1,16 @@
+    1: from enum import Enum
+       
+       
+    2: class BacktestState(Enum):
+    1:     """
+           Bot application states
+           """
+       
+    1:     STARTUP = 1
+    1:     DATALOAD = 2
+    1:     ANALYZE = 3
+    1:     CONVERT = 4
+    1:     BACKTEST = 5
+       
+    1:     def __str__(self):
+>>>>>>         return f"{self.name.lower()}"

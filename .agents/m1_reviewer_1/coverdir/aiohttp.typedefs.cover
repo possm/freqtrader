@@ -1,0 +1,61 @@
+    1: import json
+    1: import os
+    1: from collections.abc import Awaitable, Callable, Iterable, Mapping
+    1: from typing import TYPE_CHECKING, Any, Protocol, Union
+       
+    1: from multidict import CIMultiDict, CIMultiDictProxy, MultiDict, MultiDictProxy, istr
+    1: from yarl import URL, Query as _Query
+       
+    1: Query = _Query
+       
+    1: DEFAULT_JSON_ENCODER = json.dumps
+    1: DEFAULT_JSON_DECODER = json.loads
+       
+    1: if TYPE_CHECKING:
+>>>>>>     _CIMultiDict = CIMultiDict[str]
+>>>>>>     _CIMultiDictProxy = CIMultiDictProxy[str]
+>>>>>>     _MultiDict = MultiDict[str]
+>>>>>>     _MultiDictProxy = MultiDictProxy[str]
+>>>>>>     from http.cookies import BaseCookie, Morsel
+       
+>>>>>>     from .web import Request, StreamResponse
+       else:
+    1:     _CIMultiDict = CIMultiDict
+    1:     _CIMultiDictProxy = CIMultiDictProxy
+    1:     _MultiDict = MultiDict
+    1:     _MultiDictProxy = MultiDictProxy
+       
+    1: Byteish = Union[bytes, bytearray, memoryview]
+    1: JSONEncoder = Callable[[Any], str]
+    1: JSONBytesEncoder = Callable[[Any], bytes]
+    1: JSONDecoder = Callable[[str], Any]
+    2: LooseHeaders = Union[
+    2:     Mapping[str, str],
+    1:     Mapping[istr, str],
+    1:     _CIMultiDict,
+    1:     _CIMultiDictProxy,
+    1:     Iterable[tuple[str | istr, str]],
+       ]
+    1: RawHeaders = tuple[tuple[bytes, bytes], ...]
+    1: StrOrURL = Union[str, URL]
+       
+    1: LooseCookiesMappings = Mapping[str, Union[str, "BaseCookie[str]", "Morsel[Any]"]]
+    2: LooseCookiesIterables = Iterable[
+    1:     tuple[str, Union[str, "BaseCookie[str]", "Morsel[Any]"]]
+       ]
+    2: LooseCookies = Union[
+    2:     LooseCookiesMappings,
+    1:     LooseCookiesIterables,
+    1:     "BaseCookie[str]",
+       ]
+       
+    1: Handler = Callable[["Request"], Awaitable["StreamResponse"]]
+       
+       
+    2: class Middleware(Protocol):
+    1:     def __call__(
+>>>>>>         self, request: "Request", handler: Handler
+>>>>>>     ) -> Awaitable["StreamResponse"]: ...
+       
+       
+    1: PathLike = Union[str, "os.PathLike[str]"]

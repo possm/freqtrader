@@ -1,0 +1,147 @@
+    1: from typing import Any, Literal, TypedDict
+       
+       # Re-export for easier use
+    1: from ccxt.base.types import FundingRate  # noqa: F401
+       
+    1: from freqtrade.enums import CandleType
+       
+       
+   52: class FtHas(TypedDict, total=False):
+    1:     order_time_in_force: list[str]
+    1:     exchange_has_overrides: dict[str, bool]
+    1:     marketOrderRequiresPrice: bool
+       
+           # Stoploss on exchange
+    1:     stoploss_on_exchange: bool
+    1:     stop_price_param: str
+    1:     stop_price_prop: Literal["stopPrice", "stopLossPrice"]
+    1:     stop_price_type_field: str
+    1:     stop_price_type_value_mapping: dict
+    1:     stoploss_order_types: dict[str, str]
+    1:     stoploss_blocks_assets: bool
+    1:     stoploss_query_requires_stop_flag: bool
+    1:     stoploss_algo_order_info_id: str
+           # ohlcv
+    1:     ohlcv_params: dict
+    1:     ohlcv_candle_limit: int
+    1:     ohlcv_has_history: bool
+    1:     ohlcv_partial_candle: bool
+    1:     ohlcv_require_since: bool
+    1:     ohlcv_volume_currency: str
+    1:     ohlcv_candle_limit_per_timeframe: dict[str, int]
+    1:     always_require_api_keys: bool
+           # allow disabling of parallel download-data for specific exchanges
+    1:     download_data_parallel_quick: bool
+           # Tickers
+    1:     tickers_have_quoteVolume: bool
+    1:     tickers_have_percentage: bool
+    1:     tickers_have_bid_ask: bool
+    1:     tickers_have_price: bool
+           # Trades
+    1:     trades_limit: int
+    1:     trades_pagination: str
+    1:     trades_pagination_arg: str
+    1:     trades_has_history: bool
+    1:     trades_pagination_overlap: bool
+           # Orderbook
+    1:     l2_limit_range: list[int] | None
+    1:     l2_limit_range_required: bool
+    1:     l2_limit_upper: int | None
+           # fetch_orders
+    1:     fetch_orders_limit_minutes: int | None
+           # Futures
+    1:     ccxt_futures_name: str  # usually swap
+    1:     mark_ohlcv_price: str
+    1:     mark_ohlcv_timeframe: str
+    1:     funding_fee_timeframe: str
+    1:     funding_fee_candle_limit: int
+    1:     floor_leverage: bool
+    1:     uses_leverage_tiers: bool
+    1:     needs_trading_fees: bool
+           # True if the balance "total" reported for the stake currency is account equity
+           # (wallet balance + unrealized PnL of open positions) instead of plain wallet balance.
+           # See Exchange.balance_includes_unrealized_pnl() for more details.
+    1:     balance_includes_unrealized_pnl: bool
+    1:     order_props_in_contracts: list[Literal["amount", "cost", "filled", "remaining"]]
+       
+    1:     proxy_coin_mapping: dict[str, str]
+       
+           # Websocket control
+    1:     ws_enabled: bool
+       
+           # Delisting check
+    1:     has_delisting: bool
+           # Demo mode - this is not sandbox but an exchange-provided demo mode.
+    1:     supports_demo_trading: bool
+       
+       
+   13: class Ticker(TypedDict):
+    1:     symbol: str
+    1:     ask: float | None
+    1:     askVolume: float | None
+    1:     bid: float | None
+    1:     bidVolume: float | None
+    1:     last: float | None
+    1:     quoteVolume: float | None
+    1:     baseVolume: float | None
+    1:     percentage: float | None
+           # Several more - only listing required.
+       
+       
+    1: Tickers = dict[str, Ticker]
+       
+       
+   10: class OrderBook(TypedDict):
+    1:     symbol: str
+    1:     bids: list[tuple[float, float]]
+    1:     asks: list[tuple[float, float]]
+    1:     timestamp: int | None
+    1:     datetime: str | None
+    1:     nonce: int | None
+       
+       
+    7: class CcxtBalance(TypedDict):
+    1:     free: float
+    1:     used: float
+    1:     total: float
+       
+       
+    1: CcxtBalances = dict[str, CcxtBalance]
+       
+       
+   11: class CcxtPosition(TypedDict):
+    1:     symbol: str
+    1:     side: str
+    1:     contracts: float
+    1:     leverage: float
+    1:     collateral: float | None
+    1:     initialMargin: float | None
+    1:     liquidationPrice: float | None
+       
+       
+    1: CcxtOrder = dict[str, Any]
+       
+       
+   10: class LeverageTier(TypedDict):
+    1:     """
+           Represents a single leverage tier returned by the exchange.
+       
+           Attributes:
+               minNotional: Minimum notional value (quote currency) for which this tier applies.
+               maxNotional: Maximum notional value (quote currency) for which this tier applies.
+                   When ``maxNotional`` is ``None``, the tier is unbounded on the upper side,
+                   i.e. there is no maximum notional limit for this tier
+               maintenanceMarginRate: Maintenance margin rate for this tier (fraction, e.g. 0.005 for 0.5%)
+               maxLeverage: Maximum leverage allowed for this tier
+               maintAmt: Optional fixed maintenance margin amount, if provided by the exchange
+           """
+       
+    1:     minNotional: float
+    1:     maxNotional: float | None
+    1:     maintenanceMarginRate: float
+    1:     maxLeverage: float
+    1:     maintAmt: float | None
+       
+       
+       # pair, timeframe, candleType, OHLCV, drop last?,
+    1: OHLCVResponse = tuple[str, str, CandleType, list, bool]

@@ -1,0 +1,15 @@
+    1: """Warnings and Exceptions that can be raised by special functions."""
+    1: import warnings
+       
+       
+    2: class SpecialFunctionWarning(Warning):
+    1:     """Warning that can be emitted by special functions."""
+    1:     pass
+       
+       
+    1: warnings.simplefilter("always", category=SpecialFunctionWarning)
+       
+       
+    2: class SpecialFunctionError(Exception):
+    1:     """Exception that can be raised by special functions."""
+    1:     pass

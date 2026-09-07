@@ -1,0 +1,13 @@
+    1: from enum import StrEnum
+       
+       
+    2: class MarginMode(StrEnum):
+    1:     """
+           Enum to distinguish between
+           cross margin/futures margin_mode and
+           isolated margin/futures margin_mode
+           """
+       
+    1:     CROSS = "cross"
+    1:     ISOLATED = "isolated"
+    1:     NONE = ""

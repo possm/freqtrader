@@ -1,0 +1,114 @@
+{
+    "max_open_trades": 10,
+    "stake_currency": "EUR",
+    "stake_amount": 75,
+    "tradable_balance_ratio": 0.99,
+    "fiat_display_currency": "EUR",
+    "dry_run": true,
+    "dry_run_wallet": 1500,
+    "cancel_open_orders_on_exit": false,
+    "timeframe": "4h",
+
+    "trading_mode": "spot",
+    "margin_mode": "",
+
+    "unfilledtimeout": {
+        "entry": 5,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+
+    "entry_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+
+    "order_types": {
+        "entry": "market",
+        "exit": "market",
+        "emergency_exit": "market",
+        "force_entry": "market",
+        "force_exit": "market",
+        "stoploss": "market",
+        "stoploss_on_exchange": false
+    },
+
+    "exchange": {
+        "name": "kraken",
+        "key": "",
+        "secret": "",
+        "ccxt_config": {},
+        "ccxt_async_config": {},
+        "pair_whitelist": [
+            "AAVE/EUR",
+            "ARB/EUR",
+            "BTC/EUR",
+            "FET/EUR",
+            "HBAR/EUR",
+            "INJ/EUR",
+            "LINK/EUR",
+            "NEAR/EUR",
+            "RENDER/EUR",
+            "STX/EUR",
+            "TIA/EUR"
+        ],
+        "pair_blacklist": []
+    },
+
+    "pairlists": [
+        { "method": "StaticPairList" }
+    ],
+
+    "telegram": {
+        "enabled": false,
+        "token": "",
+        "chat_id": ""
+    },
+
+    "webhook": {
+        "enabled": true,
+        "url": "http://192.168.1.56:8123/api/webhook/freqtrade_trend_exit_notification",
+        "format": "json",
+        "retries": 3,
+        "retry_delay": 0.5,
+        "exit": {
+            "pair": "{pair}",
+            "profit_ratio": "{profit_ratio}",
+            "profit_amount": "{profit_amount}",
+            "stake_amount": "{stake_amount}",
+            "stake_currency": "{stake_currency}"
+        }
+    },
+
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "8c5d1f3a7b9e2d4c6a8f0b2d4e6a8c0e2b4d6a8c0f2e4b6d8a0c2e4f6b8d0a2c",
+        "ws_token": "9b8a7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b",
+        "CORS_origins": ["http://192.168.2.4", "http://192.168.2.4:80"],
+        "username": "freqtrader",
+        "password": "freqtrader"
+    },
+
+    "bot_name": "WolfTrend_EMA (sim)",
+    "initial_state": "running",
+    "force_entry_enable": false,
+    "internals": {
+        "process_throttle_secs": 5
+    }
+}

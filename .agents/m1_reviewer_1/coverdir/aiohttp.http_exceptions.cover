@@ -1,0 +1,118 @@
+    1: """Low-level http related exceptions."""
+       
+    1: from textwrap import indent
+       
+    1: from .typedefs import _CIMultiDict
+       
+    1: __all__ = ("HttpProcessingError",)
+       
+       
+    2: class HttpProcessingError(Exception):
+    1:     """HTTP error.
+       
+           Shortcut for raising HTTP errors with custom code, message and headers.
+       
+           code: HTTP Error code.
+           message: (optional) Error message.
+           headers: (optional) Headers to be sent in response, a list of pairs
+           """
+       
+    1:     code = 0
+    1:     message = ""
+    1:     headers = None
+       
+    4:     def __init__(
+               self,
+               *,
+    1:         code: int | None = None,
+    1:         message: str = "",
+    1:         headers: _CIMultiDict | None = None,
+>>>>>>     ) -> None:
+>>>>>>         if code is not None:
+>>>>>>             self.code = code
+>>>>>>         self.headers = headers
+>>>>>>         self.message = message
+       
+    1:     def __str__(self) -> str:
+>>>>>>         msg = indent(self.message, "  ")
+>>>>>>         return f"{self.code}, message:\n{msg}"
+       
+    1:     def __repr__(self) -> str:
+>>>>>>         return f"<{self.__class__.__name__}: {self.code}, message={self.message!r}>"
+       
+       
+    2: class BadHttpMessage(HttpProcessingError):
+       
+    1:     code = 400
+    1:     message = "Bad Request"
+       
+    1:     def __init__(self, message: str, *, headers: _CIMultiDict | None = None) -> None:
+>>>>>>         super().__init__(message=message, headers=headers)
+>>>>>>         self.args = (message,)
+       
+       
+    2: class HttpBadRequest(BadHttpMessage):
+       
+    1:     code = 400
+    1:     message = "Bad Request"
+       
+       
+    2: class PayloadEncodingError(BadHttpMessage):
+    1:     """Base class for payload errors"""
+       
+       
+    2: class ContentEncodingError(PayloadEncodingError):
+    1:     """Content encoding error."""
+       
+       
+    2: class TransferEncodingError(PayloadEncodingError):
+    1:     """transfer encoding error."""
+       
+       
+    2: class ContentLengthError(PayloadEncodingError):
+    1:     """Not enough data to satisfy content length header."""
+       
+       
+    2: class DecompressSizeError(PayloadEncodingError):
+    1:     """Deprecated. Removed in v4."""
+       
+       
+    2: class LineTooLong(BadHttpMessage):
+    1:     def __init__(
+               self,
+>>>>>>         line: str | bytes,
+>>>>>>         limit: str | int = "Unknown",
+>>>>>>         actual_size: str = "Unknown",
+>>>>>>     ) -> None:
+>>>>>>         super().__init__(f"Got more than {limit} bytes when reading: {line!r}.")
+>>>>>>         self.args = (line, limit, actual_size)
+       
+       
+    2: class InvalidHeader(BadHttpMessage):
+    1:     def __init__(self, hdr: bytes | str) -> None:
+>>>>>>         hdr_s = hdr.decode(errors="backslashreplace") if isinstance(hdr, bytes) else hdr
+>>>>>>         super().__init__(f"Invalid HTTP header: {hdr!r}")
+>>>>>>         self.hdr = hdr_s
+>>>>>>         self.args = (hdr,)
+       
+       
+    2: class BadStatusLine(BadHttpMessage):
+    1:     def __init__(self, line: str = "", error: str | None = None) -> None:
+>>>>>>         if not isinstance(line, str):
+>>>>>>             line = repr(line)
+>>>>>>         super().__init__(error or f"Bad status line {line!r}")
+>>>>>>         self.args = (line,)
+>>>>>>         self.line = line
+       
+       
+    2: class BadHttpMethod(BadStatusLine):
+    1:     """Invalid HTTP method in status line."""
+       
+    1:     def __init__(self, line: str = "", error: str | None = None) -> None:
+>>>>>>         if error is None and line.startswith("\x16\x03"):
+>>>>>>             error = "Received HTTPS traffic on an HTTP port"
+>>>>>>         super().__init__(line, error or f"Bad HTTP method in status line {line!r}")
+       
+       
+    2: class InvalidURLError(BadHttpMessage):
+    1:     pass

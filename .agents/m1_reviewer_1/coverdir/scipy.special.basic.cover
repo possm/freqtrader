@@ -1,0 +1,84 @@
+       # This file is not meant for public use and will be removed in SciPy v2.0.0.
+       # Use the `scipy.special` namespace for importing the functions
+       # included below.
+       
+    1: from scipy._lib.deprecation import _sub_module_deprecation
+       
+       
+   66: __all__ = [  # noqa: F822
+    1:     'ai_zeros',
+    1:     'assoc_laguerre',
+    1:     'bei_zeros',
+    1:     'beip_zeros',
+    1:     'ber_zeros',
+    1:     'bernoulli',
+    1:     'berp_zeros',
+    1:     'bi_zeros',
+    1:     'comb',
+    1:     'digamma',
+    1:     'diric',
+    1:     'erf_zeros',
+    1:     'euler',
+    1:     'factorial',
+    1:     'factorial2',
+    1:     'factorialk',
+    1:     'fresnel_zeros',
+    1:     'fresnelc_zeros',
+    1:     'fresnels_zeros',
+    1:     'gamma',
+    1:     'h1vp',
+    1:     'h2vp',
+    1:     'hankel1',
+    1:     'hankel2',
+    1:     'iv',
+    1:     'ivp',
+    1:     'jn_zeros',
+    1:     'jnjnp_zeros',
+    1:     'jnp_zeros',
+    1:     'jnyn_zeros',
+    1:     'jv',
+    1:     'jvp',
+    1:     'kei_zeros',
+    1:     'keip_zeros',
+    1:     'kelvin_zeros',
+    1:     'ker_zeros',
+    1:     'kerp_zeros',
+    1:     'kv',
+    1:     'kvp',
+    1:     'lmbda',
+    1:     'lqmn',
+    1:     'lqn',
+    1:     'mathieu_a',
+    1:     'mathieu_b',
+    1:     'mathieu_even_coef',
+    1:     'mathieu_odd_coef',
+    1:     'obl_cv_seq',
+    1:     'pbdn_seq',
+    1:     'pbdv_seq',
+    1:     'pbvv_seq',
+    1:     'perm',
+    1:     'polygamma',
+    1:     'pro_cv_seq',
+    1:     'psi',
+    1:     'riccati_jn',
+    1:     'riccati_yn',
+    1:     'sinc',
+    1:     'y0_zeros',
+    1:     'y1_zeros',
+    1:     'y1p_zeros',
+    1:     'yn_zeros',
+    1:     'ynp_zeros',
+    1:     'yv',
+    1:     'yvp',
+    1:     'zeta'
+       ]
+       
+       
+    1: def __dir__():
+>>>>>>     return __all__
+       
+       
+    1: def __getattr__(name):
+>>>>>>     return _sub_module_deprecation(sub_package="special", module="basic",
+>>>>>>                                    private_modules=["_basic", "_ufuncs"], all=__all__,
+>>>>>>                                    attribute=name)

@@ -1,0 +1,77 @@
+    1: from __future__ import annotations
+       
+    1: from typing import (
+           TYPE_CHECKING,
+           Any,
+       )
+       
+    1: import numpy as np
+       
+    1: from pandas._config import is_nan_na
+       
+    1: from pandas._libs import lib
+    1: from pandas._libs.missing import NA
+    1: from pandas.errors import LossySetitemError
+       
+    1: from pandas.core.dtypes.cast import np_can_hold_element
+    1: from pandas.core.dtypes.common import is_numeric_dtype
+       
+    1: if TYPE_CHECKING:
+>>>>>>     from pandas._typing import (
+               npt,
+           )
+       
+>>>>>>     from pandas.core.arrays.base import ExtensionArray
+       
+       
+    1: def to_numpy_dtype_inference(
+>>>>>>     arr: ExtensionArray,
+>>>>>>     dtype: npt.DTypeLike | None,
+           na_value,
+>>>>>>     hasna: bool,
+>>>>>> ) -> tuple[np.dtype | None, Any]:
+           result_dtype: np.dtype | None
+ 2061:     inferred_numeric_dtype = False
+ 2061:     if dtype is None and is_numeric_dtype(arr.dtype):
+>>>>>>         inferred_numeric_dtype = True
+>>>>>>         if hasna:
+>>>>>>             if arr.dtype.kind == "b":
+>>>>>>                 result_dtype = np.dtype(np.object_)
+                   else:
+>>>>>>                 if arr.dtype.kind in "iu":
+>>>>>>                     result_dtype = np.dtype(np.float64)
+                       else:
+>>>>>>                     result_dtype = arr.dtype.numpy_dtype  # type: ignore[attr-defined]
+>>>>>>                 if na_value is lib.no_default:
+>>>>>>                     if not is_nan_na():
+>>>>>>                         na_value = NA
+>>>>>>                         dtype = np.dtype(object)
+                           else:
+>>>>>>                         na_value = np.nan
+               else:
+>>>>>>             result_dtype = arr.dtype.numpy_dtype  # type: ignore[attr-defined]
+ 2061:     elif dtype is not None:
+ 2061:         result_dtype = np.dtype(dtype)
+           else:
+>>>>>>         result_dtype = None
+       
+ 2061:     if na_value is lib.no_default:
+ 2061:         if result_dtype is None or not hasna:
+ 2061:             na_value = arr.dtype.na_value
+>>>>>>         elif result_dtype.kind == "f":
+>>>>>>             na_value = np.nan
+>>>>>>         elif result_dtype.kind == "M":
+>>>>>>             unit = np.datetime_data(result_dtype)[0]  # type: ignore[arg-type]
+>>>>>>             na_value = np.datetime64("NaT", unit)  # type: ignore[call-overload]
+>>>>>>         elif result_dtype.kind == "m":
+>>>>>>             unit = np.datetime_data(result_dtype)[0]  # type: ignore[arg-type]
+>>>>>>             na_value = np.timedelta64("NaT", unit)  # type: ignore[call-overload]
+               else:
+>>>>>>             na_value = arr.dtype.na_value
+       
+ 2061:     if inferred_numeric_dtype and hasna:
+>>>>>>         try:
+>>>>>>             np_can_hold_element(result_dtype, na_value)  # type: ignore[arg-type]
+>>>>>>         except LossySetitemError:
+>>>>>>             result_dtype = np.dtype(np.object_)
+ 2061:     return result_dtype, na_value

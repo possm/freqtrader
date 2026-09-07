@@ -1,0 +1,21 @@
+       # Used for list-exchanges
+       
+    1: from typing_extensions import TypedDict
+       
+       
+    6: class TradeModeType(TypedDict):
+    1:     trading_mode: str
+    1:     margin_mode: str
+       
+       
+   14: class ValidExchangesType(TypedDict):
+    1:     name: str
+    1:     classname: str
+    1:     valid: bool
+    1:     supported: bool
+    1:     comment: str
+    1:     comment_futures: str
+    1:     dex: bool
+    1:     is_alias: bool
+    1:     alias_for: str | None
+    1:     trade_modes: list[TradeModeType]

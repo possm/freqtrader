@@ -1,0 +1,42 @@
+    1: from datetime import datetime
+    1: from typing import Literal, Required
+       
+    1: from pydantic import TypeAdapter
+    1: from typing_extensions import TypedDict
+       
+       
+   19: class _BaseAnnotationType(TypedDict, total=False):
+    4:     color: str
+    4:     label: str
+    4:     z_level: int
+       
+       
+   18: class _Base2DAnnotationType(_BaseAnnotationType, total=False):
+    3:     start: str | datetime
+    3:     end: str | datetime
+    3:     y_start: float
+    3:     y_end: float
+       
+       
+    7: class AreaAnnotationType(_Base2DAnnotationType, total=False):
+    2:     type: Required[Literal["area"]]
+       
+       
+   11: class LineAnnotationType(_Base2DAnnotationType, total=False):
+    2:     type: Required[Literal["line"]]
+    2:     width: int
+    2:     line_style: Literal["solid", "dashed", "dotted"]
+       
+       
+   17: class PointAnnotationType(_BaseAnnotationType, total=False):
+    2:     type: Required[Literal["point"]]
+    2:     x: str | datetime
+    2:     y: float
+    2:     size: int
+    2:     shape: Literal["circle", "rect", "roundRect", "triangle", "pin", "arrow", "none"]
+    2:     rotate: int
+       
+       
+    1: AnnotationType = AreaAnnotationType | LineAnnotationType | PointAnnotationType
+       
+    1: AnnotationTypeTA: TypeAdapter[AnnotationType] = TypeAdapter(AnnotationType)

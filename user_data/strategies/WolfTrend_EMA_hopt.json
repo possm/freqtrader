@@ -1,0 +1,28 @@
+{
+  "strategy_name": "WolfTrend_EMA_hopt",
+  "params": {
+    "roi": {
+      "0": 100.0
+    },
+    "trailing": {
+      "trailing_stop": false,
+      "trailing_stop_positive": null,
+      "trailing_stop_positive_offset": 0.0,
+      "trailing_only_offset_is_reached": false
+    },
+    "max_open_trades": {
+      "max_open_trades": 11
+    },
+    "buy": {
+      "buy_adx_min": 15,
+      "buy_ema_fast": 20,
+      "buy_ema_slow": 71,
+      "buy_ema_trend": 105
+    },
+    "stoploss": {
+      "stoploss": -0.024
+    }
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2026-05-24 11:42:01.239446+00:00"
+}

@@ -1,0 +1,77 @@
+    1: """
+       Internal helpers
+       """
+       
+    1: import importlib
+    1: from collections.abc import Callable
+    1: from functools import wraps
+    1: from inspect import signature
+    1: from types import ModuleType
+    1: from typing import TypeVar
+       
+    1: _T = TypeVar("_T")
+       
+       
+    1: def get_xp(xp: ModuleType) -> Callable[[Callable[..., _T]], Callable[..., _T]]:
+           """
+           Decorator to automatically replace xp with the corresponding array module.
+       
+           Use like
+       
+           import numpy as np
+       
+           @get_xp(np)
+           def func(x, /, xp, kwarg=None):
+               return xp.func(x, kwarg=kwarg)
+       
+           Note that xp must be a keyword argument and come after all non-keyword
+           arguments.
+       
+           """
+       
+   61:     def inner(f: Callable[..., _T], /) -> Callable[..., _T]:
+  122:         @wraps(f)
+  122:         def wrapped_f(*args: object, **kwargs: object) -> object:
+   13:             return f(*args, xp=xp, **kwargs)
+       
+   61:         sig = signature(f)
+  122:         new_sig = sig.replace(
+  327:             parameters=[par for i, par in sig.parameters.items() if i != "xp"]
+               )
+       
+   61:         if wrapped_f.__doc__ is None:
+  116:             wrapped_f.__doc__ = f"""\
+   58: Array API compatibility wrapper for {f.__name__}.
+       
+       See the corresponding documentation in NumPy/CuPy and/or the array API
+       specification for more details.
+       
+       """
+   61:         wrapped_f.__signature__ = new_sig  # type: ignore[attr-defined] # pyright: ignore[reportAttributeAccessIssue]
+   61:         return wrapped_f  # type: ignore[return-value] # pyright: ignore[reportReturnType]
+       
+   61:     return inner
+       
+       
+    1: def clone_module(mod_name: str, globals_: dict[str, object]) -> list[str]:
+           """Import everything from module, updating globals().
+           Returns __all__.
+           """
+    3:     mod = importlib.import_module(mod_name)
+           # Neither of these two methods is sufficient by itself,
+           # depending on various idiosyncrasies of the libraries we're wrapping.
+    3:     objs = {}
+    3:     exec(f"from {mod.__name__} import *", objs)
+       
+  615:     for n in dir(mod):
+  612:         if not n.startswith("_") and hasattr(mod, n):
+  550:             objs[n] = getattr(mod, n)
+       
+    3:     globals_.update(objs)
+    3:     return list(objs)
+       
+       
+    1: __all__ = ["get_xp", "clone_module"]
+       
+    1: def __dir__() -> list[str]:
+>>>>>>     return __all__

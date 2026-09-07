@@ -1,0 +1,23 @@
+    1: from enum import StrEnum
+       
+       
+    2: class RunMode(StrEnum):
+    1:     """
+           Bot running mode (backtest, hyperopt, ...)
+           can be "live", "dry-run", "backtest", "hyperopt".
+           """
+       
+    1:     LIVE = "live"
+    1:     DRY_RUN = "dry_run"
+    1:     BACKTEST = "backtest"
+    1:     HYPEROPT = "hyperopt"
+    1:     UTIL_EXCHANGE = "util_exchange"
+    1:     UTIL_NO_EXCHANGE = "util_no_exchange"
+    1:     PLOT = "plot"
+    1:     WEBSERVER = "webserver"
+    1:     OTHER = "other"
+       
+       
+    1: TRADE_MODES = [RunMode.LIVE, RunMode.DRY_RUN]
+    1: OPTIMIZE_MODES = [RunMode.BACKTEST, RunMode.HYPEROPT]
+    1: NON_UTIL_MODES = TRADE_MODES + OPTIMIZE_MODES

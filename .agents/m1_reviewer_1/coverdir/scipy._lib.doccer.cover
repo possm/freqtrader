@@ -1,0 +1,366 @@
+    1: """Utilities to allow inserting docstring fragments for common
+       parameters into function and method docstrings."""
+       
+    1: from collections.abc import Callable, Iterable, Mapping
+    1: from typing import Protocol, TypeVar
+    1: import sys
+       
+    1: __all__ = [
+           "docformat",
+           "inherit_docstring_from",
+           "indentcount_lines",
+           "filldoc",
+           "unindent_dict",
+           "unindent_string",
+           "extend_notes_in_docstring",
+           "replace_notes_in_docstring",
+           "doc_replace",
+       ]
+       
+    1: _F = TypeVar("_F", bound=Callable[..., object])
+       
+       
+    2: class Decorator(Protocol):
+    1:     """A decorator of a function."""
+       
+    1:     def __call__(self, func: _F, /) -> _F: ...
+       
+       
+    1: def docformat(docstring: str, docdict: Mapping[str, str] | None = None) -> str:
+           """Fill a function docstring from variables in dictionary.
+       
+           Adapt the indent of the inserted docs
+       
+           Parameters
+           ----------
+           docstring : str
+               A docstring from a function, possibly with dict formatting strings.
+           docdict : dict[str, str], optional
+               A dictionary with keys that match the dict formatting strings
+               and values that are docstring fragments to be inserted. The
+               indentation of the inserted docstrings is set to match the
+               minimum indentation of the ``docstring`` by adding this
+               indentation to all lines of the inserted string, except the
+               first.
+       
+           Returns
+           -------
+           docstring : str
+               string with requested ``docdict`` strings inserted.
+       
+           Examples
+           --------
+           >>> docformat(' Test string with %(value)s', {'value':'inserted value'})
+           ' Test string with inserted value'
+           >>> docstring = 'First line\\n    Second line\\n    %(value)s'
+           >>> inserted_string = "indented\\nstring"
+           >>> docdict = {'value': inserted_string}
+           >>> docformat(docstring, docdict)
+           'First line\\n    Second line\\n    indented\\n    string'
+           """
+  437:     if not docstring:
+    1:         return docstring
+  436:     if docdict is None:
+    5:         docdict = {}
+  436:     if not docdict:
+    5:         return docstring
+  431:     lines = docstring.expandtabs().splitlines()
+           # Find the minimum indent of the main docstring, after first line
+  431:     if len(lines) < 2:
+>>>>>>         icount = 0
+           else:
+  431:         icount = indentcount_lines(lines[1:])
+  431:     indent = " " * icount
+           # Insert this indent to dictionary docstrings
+  431:     indented = {}
+ 9448:     for name, dstr in docdict.items():
+ 9017:         lines = dstr.expandtabs().splitlines()
+ 9017:         indented[name] = ("\n" + indent).join(lines)
+  431:     return docstring % indented
+       
+       
+    1: def inherit_docstring_from(cls: object) -> Decorator:
+           """This decorator modifies the decorated function's docstring by
+           replacing occurrences of '%(super)s' with the docstring of the
+           method of the same name from the class `cls`.
+       
+           If the decorated method has no docstring, it is simply given the
+           docstring of `cls`s method.
+       
+           Parameters
+           ----------
+           cls : type or object
+               A class with a method with the same name as the decorated method.
+               The docstring of the method in this class replaces '%(super)s' in the
+               docstring of the decorated method.
+       
+           Returns
+           -------
+           decfunc : function
+               The decorator function that modifies the __doc__ attribute
+               of its argument.
+       
+           Examples
+           --------
+           In the following, the docstring for Bar.func created using the
+           docstring of `Foo.func`.
+       
+           >>> class Foo:
+           ...     def func(self):
+           ...         '''Do something useful.'''
+           ...         return
+           ...
+           >>> class Bar(Foo):
+           ...     @inherit_docstring_from(Foo)
+           ...     def func(self):
+           ...         '''%(super)s
+           ...         Do it fast.
+           ...         '''
+           ...         return
+           ...
+           >>> b = Bar()
+           >>> b.func.__doc__
+           'Do something useful.\n        Do it fast.\n        '
+           """
+       
+   16:     def _doc(func: _F) -> _F:
+   16:         cls_docstring = getattr(cls, func.__name__).__doc__
+   16:         func_docstring = func.__doc__
+   16:         if func_docstring is None:
+   16:             func.__doc__ = cls_docstring
+               else:
+>>>>>>             new_docstring = func_docstring % dict(super=cls_docstring)
+>>>>>>             func.__doc__ = new_docstring
+   16:         return func
+       
+   16:     return _doc
+       
+       
+    1: def extend_notes_in_docstring(cls: object, notes: str) -> Decorator:
+           """This decorator replaces the decorated function's docstring
+           with the docstring from corresponding method in `cls`.
+           It extends the 'Notes' section of that docstring to include
+           the given `notes`.
+       
+           Parameters
+           ----------
+           cls : type or object
+               A class with a method with the same name as the decorated method.
+               The docstring of the method in this class replaces the docstring of the
+               decorated method.
+           notes : str
+               Additional notes to append to the 'Notes' section of the docstring.
+       
+           Returns
+           -------
+           decfunc : function
+               The decorator function that modifies the __doc__ attribute
+               of its argument.
+           """
+       
+   12:     def _doc(func: _F) -> _F:
+   12:         cls_docstring = getattr(cls, func.__name__).__doc__
+               # If python is called with -OO option,
+               # there is no docstring
+   12:         if cls_docstring is None:
+>>>>>>             return func
+   12:         end_of_notes = cls_docstring.find("        References\n")
+   12:         if end_of_notes == -1:
+   12:             end_of_notes = cls_docstring.find("        Examples\n")
+   12:             if end_of_notes == -1:
+   12:                 end_of_notes = len(cls_docstring)
+   12:         func.__doc__ = (
+   12:             cls_docstring[:end_of_notes] + notes + cls_docstring[end_of_notes:]
+               )
+   12:         return func
+       
+   12:     return _doc
+       
+       
+    1: def replace_notes_in_docstring(cls: object, notes: str) -> Decorator:
+           """This decorator replaces the decorated function's docstring
+           with the docstring from corresponding method in `cls`.
+           It replaces the 'Notes' section of that docstring with
+           the given `notes`.
+       
+           Parameters
+           ----------
+           cls : type or object
+               A class with a method with the same name as the decorated method.
+               The docstring of the method in this class replaces the docstring of the
+               decorated method.
+           notes : str
+               The notes to replace the existing 'Notes' section with.
+       
+           Returns
+           -------
+           decfunc : function
+               The decorator function that modifies the __doc__ attribute
+               of its argument.
+           """
+       
+    4:     def _doc(func: _F) -> _F:
+    4:         cls_docstring = getattr(cls, func.__name__).__doc__
+    4:         notes_header = "        Notes\n        -----\n"
+               # If python is called with -OO option,
+               # there is no docstring
+    4:         if cls_docstring is None:
+>>>>>>             return func
+    4:         start_of_notes = cls_docstring.find(notes_header)
+    4:         end_of_notes = cls_docstring.find("        References\n")
+    4:         if end_of_notes == -1:
+    4:             end_of_notes = cls_docstring.find("        Examples\n")
+    4:             if end_of_notes == -1:
+    4:                 end_of_notes = len(cls_docstring)
+    4:         func.__doc__ = (
+   12:             cls_docstring[: start_of_notes + len(notes_header)]
+    4:             + notes
+    4:             + cls_docstring[end_of_notes:]
+               )
+    4:         return func
+       
+    4:     return _doc
+       
+       
+    1: def indentcount_lines(lines: Iterable[str]) -> int:
+           """Minimum indent for all lines in line list
+       
+           Parameters
+           ----------
+           lines : Iterable[str]
+               The lines to find the minimum indent of.
+       
+           Returns
+           -------
+           indent : int
+               The minimum indent.
+       
+       
+           Examples
+           --------
+           >>> lines = [' one', '  two', '   three']
+           >>> indentcount_lines(lines)
+           1
+           >>> lines = []
+           >>> indentcount_lines(lines)
+           0
+           >>> lines = [' one']
+           >>> indentcount_lines(lines)
+           1
+           >>> indentcount_lines(['    '])
+           0
+           """
+  446:     indentno = sys.maxsize
+27626:     for line in lines:
+27180:         stripped = line.lstrip()
+27180:         if stripped:
+20922:             indentno = min(indentno, len(line) - len(stripped))
+  446:     if indentno == sys.maxsize:
+>>>>>>         return 0
+  446:     return indentno
+       
+       
+    1: def filldoc(docdict: Mapping[str, str], unindent_params: bool = True) -> Decorator:
+           """Return docstring decorator using docdict variable dictionary.
+       
+           Parameters
+           ----------
+           docdict : dict[str, str]
+               A dictionary containing name, docstring fragment pairs.
+           unindent_params : bool, optional
+               If True, strip common indentation from all parameters in docdict.
+               Default is False.
+       
+           Returns
+           -------
+           decfunc : function
+               The decorator function that applies dictionary to its
+               argument's __doc__ attribute.
+           """
+    1:     if unindent_params:
+    1:         docdict = unindent_dict(docdict)
+       
+    1:     def decorate(func: _F) -> _F:
+               # __doc__ may be None for optimized Python (-OO)
+   34:         doc = func.__doc__ or ""
+   34:         func.__doc__ = docformat(doc, docdict)
+   34:         return func
+       
+    1:     return decorate
+       
+       
+    1: def unindent_dict(docdict: Mapping[str, str]) -> dict[str, str]:
+           """Unindent all strings in a docdict.
+       
+           Parameters
+           ----------
+           docdict : dict[str, str]
+               A dictionary with string values to unindent.
+       
+           Returns
+           -------
+           docdict : dict[str, str]
+               The `docdict` dictionary but each of its string values are unindented.
+           """
+    1:     can_dict: dict[str, str] = {}
+   16:     for name, dstr in docdict.items():
+   15:         can_dict[name] = unindent_string(dstr)
+    1:     return can_dict
+       
+       
+    1: def unindent_string(docstring: str) -> str:
+           """Set docstring to minimum indent for all lines, including first.
+       
+           Parameters
+           ----------
+           docstring : str
+               The input docstring to unindent.
+       
+           Returns
+           -------
+           docstring : str
+               The unindented docstring.
+       
+           Examples
+           --------
+           >>> unindent_string(' two')
+           'two'
+           >>> unindent_string('  two\\n   three')
+           'two\\n three'
+           """
+   15:     lines = docstring.expandtabs().splitlines()
+   15:     icount = indentcount_lines(lines)
+   15:     if icount == 0:
+   15:         return docstring
+>>>>>>     return "\n".join([line[icount:] for line in lines])
+       
+       
+    1: def doc_replace(obj: object, oldval: str, newval: str) -> Decorator:
+           """Decorator to take the docstring from obj, with oldval replaced by newval
+       
+           Equivalent to ``func.__doc__ = obj.__doc__.replace(oldval, newval)``
+       
+           Parameters
+           ----------
+           obj : object
+               A class or object whose docstring will be used as the basis for the
+               replacement operation.
+           oldval : str
+               The string to search for in the docstring.
+           newval : str
+               The string to replace `oldval` with in the docstring.
+       
+           Returns
+           -------
+           decfunc : function
+               A decorator function that replaces occurrences of `oldval` with `newval`
+               in the docstring of the decorated function.
+           """
+           # __doc__ may be None for optimized Python (-OO)
+>>>>>>     doc = (obj.__doc__ or "").replace(oldval, newval)
+       
+>>>>>>     def inner(func: _F) -> _F:
+>>>>>>         func.__doc__ = doc
+>>>>>>         return func
+       
+>>>>>>     return inner

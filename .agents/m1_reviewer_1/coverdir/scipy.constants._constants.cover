@@ -1,0 +1,369 @@
+    1: """
+       Collection of physical constants and conversion factors.
+       
+       Most constants are in SI units, so you can do
+       print '10 mile per minute is', 10*mile/minute, 'm/s or', 10*mile/(minute*knot), 'knots'
+       
+       The list is not meant to be comprehensive, but just convenient for everyday use.
+       """
+       
+    1: import math as _math
+    1: from typing import TYPE_CHECKING, Any
+       
+    1: from ._codata import value as _cd
+       
+    1: if TYPE_CHECKING:
+>>>>>>     import numpy.typing as npt
+       
+    1: from scipy._lib._array_api import array_namespace, _asarray, xp_capabilities
+       
+       
+    1: """
+       BasSw 2006
+       physical constants: imported from CODATA
+       unit conversion: see e.g., NIST special publication 811
+       Use at own risk: double-check values before calculating your Mars orbit-insertion burn.
+       Some constants exist in a few variants, which are marked with suffixes.
+       The ones without any suffix should be the most common ones.
+       """
+       
+  159: __all__ = [
+    6:     'Avogadro', 'Boltzmann', 'Btu', 'Btu_IT', 'Btu_th', 'G',
+    5:     'Julian_year', 'N_A', 'Planck', 'R', 'Rydberg',
+    4:     'Stefan_Boltzmann', 'Wien', 'acre', 'alpha',
+    4:     'angstrom', 'arcmin', 'arcminute', 'arcsec',
+    3:     'arcsecond', 'astronomical_unit', 'atm',
+    5:     'atmosphere', 'atomic_mass', 'atto', 'au', 'bar',
+    5:     'barrel', 'bbl', 'blob', 'c', 'calorie',
+    4:     'calorie_IT', 'calorie_th', 'carat', 'centi',
+    4:     'convert_temperature', 'day', 'deci', 'degree',
+    5:     'degree_Fahrenheit', 'deka', 'dyn', 'dyne', 'e',
+    3:     'eV', 'electron_mass', 'electron_volt',
+    3:     'elementary_charge', 'epsilon_0', 'erg',
+    5:     'exa', 'exbi', 'femto', 'fermi', 'fine_structure',
+    3:     'fluid_ounce', 'fluid_ounce_US', 'fluid_ounce_imp',
+    5:     'foot', 'g', 'gallon', 'gallon_US', 'gallon_imp',
+    5:     'gas_constant', 'gibi', 'giga', 'golden', 'golden_ratio',
+    5:     'grain', 'gram', 'gravitational_constant', 'h', 'hbar',
+    5:     'hectare', 'hecto', 'horsepower', 'hour', 'hp',
+    6:     'inch', 'k', 'kgf', 'kibi', 'kilo', 'kilogram_force',
+    5:     'kmh', 'knot', 'lambda2nu', 'lb', 'lbf',
+    5:     'light_year', 'liter', 'litre', 'long_ton', 'm_e',
+    6:     'm_n', 'm_p', 'm_u', 'mach', 'mebi', 'mega',
+    5:     'metric_ton', 'micro', 'micron', 'mil', 'mile',
+    6:     'milli', 'minute', 'mmHg', 'mph', 'mu_0', 'nano',
+    3:     'nautical_mile', 'neutron_mass', 'nu2lambda',
+    5:     'ounce', 'oz', 'parsec', 'pebi', 'peta',
+    5:     'pi', 'pico', 'point', 'pound', 'pound_force',
+    7:     'proton_mass', 'psi', 'pt', 'quecto', 'quetta', 'ronna', 'ronto',
+    5:     'short_ton', 'sigma', 'slinch', 'slug', 'speed_of_light',
+    3:     'speed_of_sound', 'stone', 'survey_foot',
+    4:     'survey_mile', 'tebi', 'tera', 'ton_TNT',
+    4:     'torr', 'troy_ounce', 'troy_pound', 'u',
+    5:     'week', 'yard', 'year', 'yobi', 'yocto',
+    5:     'yotta', 'zebi', 'zepto', 'zero_Celsius', 'zetta'
+       ]
+       
+       
+       # mathematical constants
+    1: pi = _math.pi
+    1: golden = golden_ratio = (1 + _math.sqrt(5)) / 2
+       
+       # SI prefixes
+    1: quetta = 1e30
+    1: ronna = 1e27
+    1: yotta = 1e24
+    1: zetta = 1e21
+    1: exa = 1e18
+    1: peta = 1e15
+    1: tera = 1e12
+    1: giga = 1e9
+    1: mega = 1e6
+    1: kilo = 1e3
+    1: hecto = 1e2
+    1: deka = 1e1
+    1: deci = 1e-1
+    1: centi = 1e-2
+    1: milli = 1e-3
+    1: micro = 1e-6
+    1: nano = 1e-9
+    1: pico = 1e-12
+    1: femto = 1e-15
+    1: atto = 1e-18
+    1: zepto = 1e-21
+    1: yocto = 1e-24
+    1: ronto = 1e-27
+    1: quecto = 1e-30
+       
+       # binary prefixes
+    1: kibi = 2**10
+    1: mebi = 2**20
+    1: gibi = 2**30
+    1: tebi = 2**40
+    1: pebi = 2**50
+    1: exbi = 2**60
+    1: zebi = 2**70
+    1: yobi = 2**80
+       
+       # physical constants
+    1: c = speed_of_light = _cd('speed of light in vacuum')
+    1: mu_0 = _cd('vacuum mag. permeability')
+    1: epsilon_0 = _cd('vacuum electric permittivity')
+    1: h = Planck = _cd('Planck constant')
+    1: hbar = _cd('reduced Planck constant')
+    1: G = gravitational_constant = _cd('Newtonian constant of gravitation')
+    1: g = _cd('standard acceleration of gravity')
+    1: e = elementary_charge = _cd('elementary charge')
+    1: R = gas_constant = _cd('molar gas constant')
+    1: alpha = fine_structure = _cd('fine-structure constant')
+    1: N_A = Avogadro = _cd('Avogadro constant')
+    1: k = Boltzmann = _cd('Boltzmann constant')
+    1: sigma = Stefan_Boltzmann = _cd('Stefan-Boltzmann constant')
+    1: Wien = _cd('Wien wavelength displacement law constant')
+    1: Rydberg = _cd('Rydberg constant')
+       
+       # mass in kg
+    1: gram = 1e-3
+    1: metric_ton = 1e3
+    1: grain = 64.79891e-6
+    1: lb = pound = 7000 * grain  # avoirdupois
+    1: blob = slinch = pound * g / 0.0254  # lbf*s**2/in (added in 1.0.0)
+    1: slug = blob / 12  # lbf*s**2/foot (added in 1.0.0)
+    1: oz = ounce = pound / 16
+    1: stone = 14 * pound
+    1: long_ton = 2240 * pound
+    1: short_ton = 2000 * pound
+       
+    1: troy_ounce = 480 * grain  # only for metals / gems
+    1: troy_pound = 12 * troy_ounce
+    1: carat = 200e-6
+       
+    1: m_e = electron_mass = _cd('electron mass')
+    1: m_p = proton_mass = _cd('proton mass')
+    1: m_n = neutron_mass = _cd('neutron mass')
+    1: m_u = u = atomic_mass = _cd('atomic mass constant')
+       
+       # angle in rad
+    1: degree = pi / 180
+    1: arcmin = arcminute = degree / 60
+    1: arcsec = arcsecond = arcmin / 60
+       
+       # time in second
+    1: minute = 60.0
+    1: hour = 60 * minute
+    1: day = 24 * hour
+    1: week = 7 * day
+    1: year = 365 * day
+    1: Julian_year = 365.25 * day
+       
+       # length in meter
+    1: inch = 0.0254
+    1: foot = 12 * inch
+    1: yard = 3 * foot
+    1: mile = 1760 * yard
+    1: mil = inch / 1000
+    1: pt = point = inch / 72  # typography
+    1: survey_foot = 1200.0 / 3937
+    1: survey_mile = 5280 * survey_foot
+    1: nautical_mile = 1852.0
+    1: fermi = 1e-15
+    1: angstrom = 1e-10
+    1: micron = 1e-6
+    1: au = astronomical_unit = 149597870700.0
+    1: light_year = Julian_year * c
+    1: parsec = au / arcsec
+       
+       # pressure in pascal
+    1: atm = atmosphere = _cd('standard atmosphere')
+    1: bar = 1e5
+    1: torr = mmHg = atm / 760
+    1: psi = pound * g / (inch * inch)
+       
+       # area in meter**2
+    1: hectare = 1e4
+    1: acre = 43560 * foot**2
+       
+       # volume in meter**3
+    1: litre = liter = 1e-3
+    1: gallon = gallon_US = 231 * inch**3  # US
+       # pint = gallon_US / 8
+    1: fluid_ounce = fluid_ounce_US = gallon_US / 128
+    1: bbl = barrel = 42 * gallon_US  # for oil
+       
+    1: gallon_imp = 4.54609e-3  # UK
+    1: fluid_ounce_imp = gallon_imp / 160
+       
+       # speed in meter per second
+    1: kmh = 1e3 / hour
+    1: mph = mile / hour
+       # approx value of mach at 15 degrees in 1 atm. Is this a common value?
+    1: mach = speed_of_sound = 340.5
+    1: knot = nautical_mile / hour
+       
+       # temperature in kelvin
+    1: zero_Celsius = 273.15
+    1: degree_Fahrenheit = 1/1.8  # only for differences
+       
+       # energy in joule
+    1: eV = electron_volt = elementary_charge  # * 1 Volt
+    1: calorie = calorie_th = 4.184
+    1: calorie_IT = 4.1868
+    1: erg = 1e-7
+    1: Btu_th = pound * degree_Fahrenheit * calorie_th / gram
+    1: Btu = Btu_IT = pound * degree_Fahrenheit * calorie_IT / gram
+    1: ton_TNT = 1e9 * calorie_th
+       # Wh = watt_hour
+       
+       # power in watt
+    1: hp = horsepower = 550 * foot * pound * g
+       
+       # force in newton
+    1: dyn = dyne = 1e-5
+    1: lbf = pound_force = pound * g
+    1: kgf = kilogram_force = g  # * 1 kg
+       
+       # functions for conversions that are not linear
+       
+       
+    2: @xp_capabilities()
+    2: def convert_temperature(
+>>>>>>     val: "npt.ArrayLike",
+>>>>>>     old_scale: str,
+>>>>>>     new_scale: str,
+>>>>>> ) -> Any:
+           """
+           Convert from a temperature scale to another one among Celsius, Kelvin,
+           Fahrenheit, and Rankine scales.
+       
+           Parameters
+           ----------
+           val : array_like
+               Value(s) of the temperature(s) to be converted expressed in the
+               original scale.
+           old_scale : str
+               Specifies as a string the original scale from which the temperature
+               value(s) will be converted. Supported scales are Celsius ('Celsius',
+               'celsius', 'C' or 'c'), Kelvin ('Kelvin', 'kelvin', 'K', 'k'),
+               Fahrenheit ('Fahrenheit', 'fahrenheit', 'F' or 'f'), and Rankine
+               ('Rankine', 'rankine', 'R', 'r').
+           new_scale : str
+               Specifies as a string the new scale to which the temperature
+               value(s) will be converted. Supported scales are Celsius ('Celsius',
+               'celsius', 'C' or 'c'), Kelvin ('Kelvin', 'kelvin', 'K', 'k'),
+               Fahrenheit ('Fahrenheit', 'fahrenheit', 'F' or 'f'), and Rankine
+               ('Rankine', 'rankine', 'R', 'r').
+       
+           Returns
+           -------
+           res : float or array of floats
+               Value(s) of the converted temperature(s) expressed in the new scale.
+       
+           Notes
+           -----
+           .. versionadded:: 0.18.0
+       
+           Examples
+           --------
+           >>> from scipy.constants import convert_temperature
+           >>> import numpy as np
+           >>> convert_temperature(np.array([-40, 40]), 'Celsius', 'Kelvin')
+           array([ 233.15,  313.15])
+       
+           """
+>>>>>>     xp = array_namespace(val)
+>>>>>>     _val = _asarray(val, xp=xp, subok=True)
+           # Convert from `old_scale` to Kelvin
+>>>>>>     if old_scale.lower() in ['celsius', 'c']:
+>>>>>>         tempo = _val + zero_Celsius
+>>>>>>     elif old_scale.lower() in ['kelvin', 'k']:
+>>>>>>         tempo = _val
+>>>>>>     elif old_scale.lower() in ['fahrenheit', 'f']:
+>>>>>>         tempo = (_val - 32) * 5 / 9 + zero_Celsius
+>>>>>>     elif old_scale.lower() in ['rankine', 'r']:
+>>>>>>         tempo = _val * 5 / 9
+           else:
+>>>>>>         raise NotImplementedError(f"{old_scale=} is unsupported: supported scales "
+                                          "are Celsius, Kelvin, Fahrenheit, and "
+                                          "Rankine")
+           # and from Kelvin to `new_scale`.
+>>>>>>     if new_scale.lower() in ['celsius', 'c']:
+>>>>>>         res = tempo - zero_Celsius
+>>>>>>     elif new_scale.lower() in ['kelvin', 'k']:
+>>>>>>         res = tempo
+>>>>>>     elif new_scale.lower() in ['fahrenheit', 'f']:
+>>>>>>         res = (tempo - zero_Celsius) * 9 / 5 + 32
+>>>>>>     elif new_scale.lower() in ['rankine', 'r']:
+>>>>>>         res = tempo * 9 / 5
+           else:
+>>>>>>         raise NotImplementedError(f"{new_scale=} is unsupported: supported "
+                                          "scales are 'Celsius', 'Kelvin', "
+                                          "'Fahrenheit', and 'Rankine'")
+       
+>>>>>>     return res
+       
+       
+       # optics
+       
+       
+    2: @xp_capabilities()
+    2: def lambda2nu(lambda_: "npt.ArrayLike") -> Any:
+           """
+           Convert wavelength to optical frequency
+       
+           Parameters
+           ----------
+           lambda_ : array_like
+               Wavelength(s) to be converted.
+       
+           Returns
+           -------
+           nu : float or array of floats
+               Equivalent optical frequency.
+       
+           Notes
+           -----
+           Computes ``nu = c / lambda`` where c = 299792458.0, i.e., the
+           (vacuum) speed of light in meters/second.
+       
+           Examples
+           --------
+           >>> from scipy.constants import lambda2nu, speed_of_light
+           >>> import numpy as np
+           >>> lambda2nu(np.array((1, speed_of_light)))
+           array([  2.99792458e+08,   1.00000000e+00])
+       
+           """
+>>>>>>     xp = array_namespace(lambda_)
+>>>>>>     return c / _asarray(lambda_, xp=xp, subok=True)
+       
+       
+    2: @xp_capabilities()
+    2: def nu2lambda(nu: "npt.ArrayLike") -> Any:
+           """
+           Convert optical frequency to wavelength.
+       
+           Parameters
+           ----------
+           nu : array_like
+               Optical frequency to be converted.
+       
+           Returns
+           -------
+           lambda : float or array of floats
+               Equivalent wavelength(s).
+       
+           Notes
+           -----
+           Computes ``lambda = c / nu`` where c = 299792458.0, i.e., the
+           (vacuum) speed of light in meters/second.
+       
+           Examples
+           --------
+           >>> from scipy.constants import nu2lambda, speed_of_light
+           >>> import numpy as np
+           >>> nu2lambda(np.array((1, speed_of_light)))
+           array([  2.99792458e+08,   1.00000000e+00])
+       
+           """
+>>>>>>     xp = array_namespace(nu)
+>>>>>>     return c / _asarray(nu, xp=xp, subok=True)

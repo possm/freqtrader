@@ -1,0 +1,119 @@
+{
+    "_comment": "Academic Strategy Dry-Run Config — WolfBreakout_PVB on Kraken Spot EUR (Port 8082 host / 8080 container)",
+
+    "max_open_trades": 10,
+    "stake_currency": "EUR",
+    "stake_amount": 75,
+    "tradable_balance_ratio": 0.99,
+    "fiat_display_currency": "EUR",
+    "dry_run": true,
+    "dry_run_wallet": 1500,
+    "cancel_open_orders_on_exit": false,
+    "timeframe": "1h",
+
+    "trading_mode": "spot",
+    "margin_mode": "",
+
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+
+    "entry_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+
+    "order_types": {
+        "entry": "market",
+        "exit": "market",
+        "emergency_exit": "market",
+        "force_entry": "market",
+        "force_exit": "market",
+        "stoploss": "market",
+        "stoploss_on_exchange": false
+    },
+
+    "exchange": {
+        "name": "kraken",
+        "key": "",
+        "secret": "",
+        "ccxt_config": {
+            "enableRateLimit": true
+        },
+        "ccxt_async_config": {
+            "enableRateLimit": true
+        },
+        "pair_whitelist": [
+            "AAVE/EUR",
+            "ADA/EUR",
+            "ARB/EUR",
+            "BTC/EUR",
+            "ETH/EUR",
+            "FET/EUR",
+            "HBAR/EUR",
+            "INJ/EUR",
+            "KAS/EUR",
+            "LINK/EUR",
+            "NEAR/EUR",
+            "OP/EUR",
+            "POL/EUR",
+            "RENDER/EUR",
+            "SOL/EUR",
+            "STX/EUR",
+            "SUI/EUR",
+            "TIA/EUR"
+        ],
+        "pair_blacklist": []
+    },
+
+    "pairlists": [
+        {
+            "method": "StaticPairList"
+        }
+    ],
+
+    "telegram": {
+        "enabled": false,
+        "token": "",
+        "chat_id": ""
+    },
+
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "d5f6e7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6",
+        "ws_token": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
+        "CORS_origins": [
+            "http://192.168.2.4",
+            "http://192.168.2.4:80"
+        ],
+        "username": "freqtrader",
+        "password": "freqtrader"
+    },
+
+    "bot_name": "WolfBreakout_PVB (dry-run)",
+    "initial_state": "running",
+    "force_entry_enable": false,
+    "internals": {
+        "process_throttle_secs": 5
+    },
+    "logfile": "/freqtrade/user_data/logs/freqtrade_academic_dryrun.log",
+    "db_url": "sqlite:////freqtrade/user_data/tradesv3_academic_dryrun.sqlite"
+}

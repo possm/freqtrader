@@ -1,0 +1,14 @@
+    1: """Types for aiohappyeyeballs."""
+       
+    1: import socket
+    1: from collections.abc import Callable
+       
+    2: AddrInfoType = tuple[
+    2:     int | socket.AddressFamily,
+    1:     int | socket.SocketKind,
+    1:     int,
+    1:     str,
+    1:     tuple,  # type: ignore[type-arg]
+       ]
+       
+    1: SocketFactoryType = Callable[[AddrInfoType], socket.socket]

@@ -1,0 +1,101 @@
+    1: """Wrappers around the logging module."""
+       
+    1: import functools
+    1: import logging
+    1: import sys
+    1: import typing
+    1: from logging import (
+           CRITICAL,
+           DEBUG,
+           ERROR,
+           FATAL,
+           INFO,
+           NOTSET,
+           StreamHandler,
+           WARN,
+           WARNING,
+           getLogger,
+           root,
+       )
+       
+    1: import colorlog.formatter
+       
+    1: __all__ = (
+           "CRITICAL",
+           "DEBUG",
+           "ERROR",
+           "FATAL",
+           "INFO",
+           "NOTSET",
+           "WARN",
+           "WARNING",
+           "StreamHandler",
+           "basicConfig",
+           "critical",
+           "debug",
+           "error",
+           "exception",
+           "getLogger",
+           "info",
+           "log",
+           "root",
+           "warning",
+       )
+       
+       
+    1: def basicConfig(
+>>>>>>     style: colorlog.formatter._FormatStyle = "%",
+>>>>>>     log_colors: typing.Optional[colorlog.formatter.LogColors] = None,
+>>>>>>     reset: bool = True,
+>>>>>>     secondary_log_colors: typing.Optional[colorlog.formatter.SecondaryLogColors] = None,
+>>>>>>     format: str = "%(log_color)s%(levelname)s%(reset)s:%(name)s:%(message)s",
+>>>>>>     datefmt: typing.Optional[str] = None,
+           **kwargs
+>>>>>> ) -> None:
+           """Call ``logging.basicConfig`` and override the formatter it creates."""
+>>>>>>     logging.basicConfig(**kwargs)
+       
+>>>>>>     def _basicConfig():
+>>>>>>         handler = logging.root.handlers[0]
+>>>>>>         handler.setFormatter(
+>>>>>>             colorlog.formatter.ColoredFormatter(
+>>>>>>                 fmt=format,
+>>>>>>                 datefmt=datefmt,
+>>>>>>                 style=style,
+>>>>>>                 log_colors=log_colors,
+>>>>>>                 reset=reset,
+>>>>>>                 secondary_log_colors=secondary_log_colors,
+>>>>>>                 stream=kwargs.get("stream", None),
+                   )
+               )
+       
+>>>>>>     if sys.version_info >= (3, 13):
+>>>>>>         with logging._lock:  # type: ignore
+>>>>>>             _basicConfig()
+           else:
+>>>>>>         logging._acquireLock()  # type: ignore
+>>>>>>         try:
+>>>>>>             _basicConfig()
+               finally:
+>>>>>>             logging._releaseLock()  # type: ignore
+       
+       
+    1: def ensure_configured(func):
+           """Modify a function to call our basicConfig() first if no handlers exist."""
+       
+   14:     @functools.wraps(func)
+   14:     def wrapper(*args, **kwargs):
+>>>>>>         if len(logging.root.handlers) == 0:
+>>>>>>             basicConfig()
+>>>>>>         return func(*args, **kwargs)
+       
+    7:     return wrapper
+       
+       
+    1: debug = ensure_configured(logging.debug)
+    1: info = ensure_configured(logging.info)
+    1: warning = ensure_configured(logging.warning)
+    1: error = ensure_configured(logging.error)
+    1: critical = ensure_configured(logging.critical)
+    1: log = ensure_configured(logging.log)
+    1: exception = ensure_configured(logging.exception)

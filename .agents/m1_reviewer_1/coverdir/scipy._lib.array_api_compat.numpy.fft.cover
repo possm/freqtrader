@@ -1,0 +1,30 @@
+    1: import numpy as np
+       
+    1: from .._internal import clone_module
+       
+    1: __all__ = clone_module("numpy.fft", globals())
+       
+    1: from .._internal import get_xp
+    1: from ..common import _fft
+       
+    1: fft = get_xp(np)(_fft.fft)
+    1: ifft = get_xp(np)(_fft.ifft)
+    1: fftn = get_xp(np)(_fft.fftn)
+    1: ifftn = get_xp(np)(_fft.ifftn)
+    1: rfft = get_xp(np)(_fft.rfft)
+    1: irfft = get_xp(np)(_fft.irfft)
+    1: rfftn = get_xp(np)(_fft.rfftn)
+    1: irfftn = get_xp(np)(_fft.irfftn)
+    1: hfft = get_xp(np)(_fft.hfft)
+    1: ihfft = get_xp(np)(_fft.ihfft)
+    1: fftfreq = get_xp(np)(_fft.fftfreq)
+    1: rfftfreq = get_xp(np)(_fft.rfftfreq)
+    1: fftshift = get_xp(np)(_fft.fftshift)
+    1: ifftshift = get_xp(np)(_fft.ifftshift)
+       
+       
+    1: __all__ = sorted(set(__all__) | set(_fft.__all__))
+       
+    1: def __dir__() -> list[str]:
+>>>>>>     return __all__
+       
