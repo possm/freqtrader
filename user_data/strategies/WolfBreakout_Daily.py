@@ -46,6 +46,22 @@ class WolfBreakout_Daily(IStrategy):
     ignore_roi_if_entry_signal = False
     startup_candle_count: int = 150
 
+    # -------------------------------------------------------------
+    # UI Plot Configuration
+    # -------------------------------------------------------------
+    plot_config = {
+        "main_plot": {
+            "ema_trend": {"color": "#ffaa00"},
+            "donchian_high": {"color": "#00aaff", "type": "line", "dash": "dash"},
+        },
+        "subplots": {
+            "Volume Metrics": {
+                "volume": {"color": "#686868", "type": "bar"},
+                "volume_mean20": {"color": "#ff0000"}
+            }
+        }
+    }
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # Donchian channel for breakout
         dataframe["donchian_high"] = dataframe["high"].rolling(self.buy_donchian_period).max().shift(1)
@@ -75,9 +91,10 @@ class WolfBreakout_Daily(IStrategy):
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # Exit if the coin loses its macro uptrend
+        # Exit ONLY on the exact day the coin crosses below the macro uptrend
         conditions = [
-            (dataframe["close"] < dataframe["ema_trend"])
+            (dataframe["close"] < dataframe["ema_trend"]),
+            (dataframe["close"].shift(1) >= dataframe["ema_trend"].shift(1))
         ]
         import numpy as np
         dataframe.loc[
