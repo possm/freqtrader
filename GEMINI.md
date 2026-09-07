@@ -1,12 +1,36 @@
-# Freqtrade VPS Deployment Workflow
+# Freqtrade Monorepo Operational & Deployment Workflow
 
-Wanneer je wijzigingen doorvoert of nieuwe strategieën live zet in deze repository, volg dan ALTIJD exact deze workflow:
+## 1. Global Git Branching Rule
+Wanneer je aan code werkt, maak dan ALTIJD eerst een nieuwe git branch aan voordat je wijzigingen doorvoert of commits maakt. Commit nooit direct naar de main of master branch.
+Daarnaast mag je NOOIT zelfstandig code pushen naar een remote (bijv. GitHub met `git push`), tenzij de gebruiker hier expliciet om vraagt. Dit geldt voor ALLE branches. Wacht altijd op expliciete toestemming van de gebruiker (zoals "push maar").
 
-1. **Commit**: Pas de code aan en maak een git commit (zorg dat je op een nieuwe branch zit conform de globale regels).
-2. **Vraag Permissie**: Push nooit zelfstandig. Vraag eerst toestemming aan de gebruiker.
-3. **Sync met VPS**: 
-   Zodra je permissie hebt, push je de branch en gebruik je rsync om de bestanden met de VPS te synchroniseren. Zorg ervoor dat data, logs en databases ALTIJD uitgesloten worden:
-   `rsync -avz --exclude '.git' --exclude 'user_data/data' --exclude 'user_data/logs' --exclude 'user_data/hyperopt_results' --exclude 'user_data/backtest_results' --exclude '*.sqlite*' ./ vps-matthijs-trader:~/freqtrade-wolf/`
-4. **Valideer**: 
-   Herstart na de sync altijd de container op de VPS en check de logs om te valideren dat de strategie succesvol en zonder fouten laadt:
-   `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose up -d freqtrade-hopt-live && sleep 5 && docker compose logs --tail=50 freqtrade-hopt-live"`
+## 2. Monorepo VPS Deployment Workflow
+Wanneer je wijzigingen doorvoert in de bots, configuraties of dashboard:
+1. **Commit**: Zorg voor een schone commit op een feature branch conform de globale regels.
+2. **Permissie**: Vraag expliciet toestemming aan de gebruiker voor de push/sync. Push nooit zelfstandig.
+3. **Sync met VPS**:
+   Zodra je permissie hebt, push je de branch en gebruik je rsync om de bestanden met `vps-matthijs-trader` te synchroniseren. Zorg dat data, logs, hyperopt-resultaten, backtest-resultaten en databases ALTIJD uitgesloten worden:
+   ```bash
+   rsync -avz --exclude '.git' --exclude 'user_data/data' --exclude 'user_data/logs' --exclude 'user_data/hyperopt_results' --exclude 'user_data/backtest_results' --exclude '*.sqlite*' ./ vps-matthijs-trader:~/freqtrade-wolf/
+   ```
+4. **Valideer Containers**:
+   Herstart na de sync altijd de containers op de VPS en check de logs om te valideren dat de services succesvol en zonder fouten laden:
+   ```bash
+   ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose up -d freqtrade-hopt-live freqtrade-grid freqtrade-wolf-academic-dryrun freqtrader-dash && sleep 5 && docker compose ps"
+   ```
+   Valideer specifieke logs op runtime fouten:
+   - Live Trend Bot: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrade-hopt-live"`
+   - Grid Bot: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrade-grid"`
+   - Academic Dry-Run Bot: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrade-wolf-academic-dryrun"`
+   - Dashboard: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrader-dash"`
+
+## 3. Dashboard Frontend Specifics (`dashboard/`)
+- **In-browser Babel**: Geen npm build step. JSX wordt runtime in de browser gecompileerd via Babel standalone.
+- **Cache-Busting**: Bij wijziging van een `.jsx` bestand, update ALTIJD het query-parameter versienummer in `index.html` (bijv. `src="api.jsx?v=[timestamp]"`).
+- **Multi-Bot Defensief**: Gebruik `nr_of_successful_entries` om DCA grids te herkennen, nooit `orders.length > 1`.
+- **P&L Semantiek**: `summary.totalPnl` = Closed Profit (`profit_closed_coin`). Unrealized profit wordt runtime opgeteld.
+- **Testing**: Test UI-wijzigingen altijd op zowel desktop als mobiele viewports (`< 768px`).
+
+## 4. Hyperopt Safety & Parameter Overrides
+- Voer `freqtrade hyperopt` NOOIT direct uit in de live strategieën map (`user_data/strategies/`). Freqtrade genereert automatisch `<strategy_name>.json` bestanden die bij een bot herstart de code overschrijven.
+- Verifieer vóór container herstart dat er geen onbedoelde `.json` bestanden in `user_data/strategies/` staan die live parameter overrides veroorzaken.

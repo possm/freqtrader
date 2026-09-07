@@ -1,0 +1,21 @@
+# Freqtrade Monorepo AI Agent Guidelines
+
+1. Follow the Global Git Branching Rule:
+   - Always create a new feature branch before making changes or commits.
+   - Never commit to main or master.
+   - Never run `git push` without explicit user permission.
+
+2. Architecture:
+   - Single central `docker-compose.yml` orchestrates all services:
+     - `freqtrade-hopt-live` (Port 8080)
+     - `freqtrade-grid` (Port 8081)
+     - `freqtrade-academic-dryrun` (Port 8082)
+     - `freqtrade-breakout-daily` (Port 8083)
+     - `freqtrader-dash` (Port 80)
+   - Exactly one unified `user_data/` directory at the root level serving all Freqtrade bots.
+   - Dashboard source located in `dashboard/`.
+
+3. Safety & Hygiene:
+   - Never commit `*.sqlite*`, `*.log`, `__pycache__`, or `node_modules`.
+   - Never run hyperopt in `user_data/strategies/` without cleaning generated `.json` files.
+   - Always bump cache-busting `?v=` timestamp in `index.html` when altering `.jsx` files.

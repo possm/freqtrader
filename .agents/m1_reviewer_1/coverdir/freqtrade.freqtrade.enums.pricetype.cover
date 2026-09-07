@@ -1,9 +1,0 @@
-    1: from enum import StrEnum
-       
-       
-    2: class PriceType(StrEnum):
-    1:     """Enum to distinguish possible trigger prices for stoplosses"""
-       
-    1:     LAST = "last"
-    1:     MARK = "mark"
-    1:     INDEX = "index"

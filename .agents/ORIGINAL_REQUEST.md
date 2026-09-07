@@ -70,3 +70,39 @@ Je gebruikt de lokale terminal om via SSH commando's te sturen naar `vps-matthij
 - [ ] De code levert geen opstartfouten of syntax-errors op in Freqtrade.
 - [ ] Er is een markdown eindrapport (bijv. `reports/10PERCENT_MONTH_REPORT.md`) gegenereerd waarin de Risk Manager de theorie toelicht en verantwoordt waarom de gekozen drawdown en risico's acceptabel zijn voor dit doel.
 
+## 2026-09-07T13:24:13Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Launched
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+> Requested team: [none — teamwork routes from the description]
+
+Consolidate four separate Freqtrade and dashboard repositories (`freqtrade-breakout`, `freqtrade-grid`, `freqtrade-trend`, `freqtrader-dash`) into a single, unified, and easy-to-manage monorepo. Remove all obsolete files and redundant configurations, but strictly preserve all AI rules, instructions, and hidden configuration files (e.g., `.agents`, `GEMINI.md`, workflow files).
+
+Working directory: ~/IdeaProjects/freqtrade-monorepo
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. History-Preserving Migration
+Create a new monorepo and migrate the four existing repositories (`freqtrade-breakout`, `freqtrade-grid`, `freqtrade-trend`, `freqtrader-dash`) into it. The migration must preserve the git commit history of all four original repositories (e.g., via `git subtree` or unrelated history merging).
+
+### R2. Architectural Consolidation
+Consolidate the architecture so there is only one central `docker-compose.yml` that launches all active bots and the dashboard. Combine the Freqtrade environments into a single, shared `user_data` folder structure containing all strategies, configurations, and pairlists.
+
+### R3. Aggressive Cleanup & AI Rule Preservation
+Remove all obsolete files, redundant test results, old backtest exports, and temporary artifacts. However, you must strictly preserve all AI context files across the projects. This includes our files (e.g., `.agents`, `GEMINI.md`, `SKILL.md`) as well as configuration or instruction files from/for any other AI systems (e.g., `.cursorrules`, `.aider*`, `.github/copilot`, etc.).
+
+## Acceptance Criteria
+
+### Migration Validation
+- [ ] A `git log --all` check confirms that commit histories from the old repositories are present in the new monorepo.
+- [ ] The four original repositories are no longer needed for operation.
+
+### Consolidation Validation
+- [ ] Running `docker compose config` in the monorepo passes without syntax or validation errors.
+- [ ] There is exactly one `user_data` directory at the root level serving all Freqtrade services.
+
+### Preservation Validation
+- [ ] A programmatic check (`find . -name ".agents" -o -name "GEMINI.md" -o -name ".cursorrules"`) verifies that AI instruction files (from this and other AI systems) were successfully migrated to the new repo.

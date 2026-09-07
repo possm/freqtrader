@@ -1,8 +1,0 @@
-    1: """Public API of the property caching library."""
-       
-    1: from ._helpers import cached_property, under_cached_property
-       
-    1: __all__ = (
-           "cached_property",
-           "under_cached_property",
-       )

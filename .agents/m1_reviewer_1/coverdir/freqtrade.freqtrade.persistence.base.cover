@@ -1,8 +1,0 @@
-    1: from sqlalchemy.orm import DeclarativeBase, Session, scoped_session
-       
-       
-    1: SessionType = scoped_session[Session]
-       
-       
-    2: class ModelBase(DeclarativeBase):
-    1:     pass

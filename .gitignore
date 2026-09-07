@@ -5,12 +5,18 @@
 *.swp
 *~
 
-# Python & Testing Artifacts
+# Python, Coverage & Testing Artifacts
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.pytest_cache/
 .pytest_cache/
+**/.pytest_cache/
+*.cover
+**/coverdir/
+.coverage
+htmlcov/
 
 # Freqtrade Runtime Artifacts (CRITICAL: Never commit to Git or sync to VPS)
 user_data/data/
@@ -18,12 +24,9 @@ user_data/logs/
 user_data/hyperopt_results/
 user_data/backtest_results/
 user_data/*.sqlite*
-*.sqlite
-*.sqlite-shm
-*.sqlite-wal
+*.sqlite*
 *.lock
-*.bak
-*.bak.*
+*.bak*
 
 # Environment & Secrets
 .env
@@ -34,7 +37,9 @@ user_data/*.sqlite*
 result_*.txt
 *.log
 
-# Dashboard / Node Tooling Artifacts
+# Node & Dashboard Artifacts
+node_modules/
+**/node_modules/
 dashboard/node_modules/
 dashboard/package-lock.json
 dashboard/npm-debug.log*
