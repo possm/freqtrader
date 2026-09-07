@@ -3,7 +3,7 @@
     "stake_currency": "USDT",
     "stake_amount": "unlimited",
     "tradable_balance_ratio": 0.99,
-    "fiat_display_currency": "USDT",
+    "fiat_display_currency": "USD",
     "dry_run": false,
     "dry_run_wallet": 1000,
     "cancel_open_orders_on_exit": false,
@@ -36,8 +36,8 @@
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [
-            "BTC/EUR",
-            "ETH/EUR"
+            "BTC/USDT",
+            "ETH/USDT"
         ],
         "pair_blacklist": []
     },

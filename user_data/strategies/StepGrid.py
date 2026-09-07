@@ -28,16 +28,22 @@ class StepGrid(IStrategy):
     # Stoploss (e.g. -15% total average drop)
     stoploss = -0.15
 
+    startup_candle_count = 1000
     timeframe = '15m'
 
     def populate_indicators(self, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
         # Simple RSI for initial entry
         dataframe['rsi'] = ta.rsi(dataframe['close'], length=14)
+        
+        # Long-term trend filter (1000 candles on 15m = ~10.4 days trend)
+        dataframe['ema_1000'] = ta.ema(dataframe['close'], length=1000)
+        
         return dataframe
 
     def populate_entry_trend(self, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
         dataframe.loc[
-            (dataframe['rsi'] < 40),
+            (dataframe['rsi'] < 40) &
+            (dataframe['close'] > dataframe['ema_1000']), # Trend filter: only buy if above trend
             'enter_long'
         ] = 1
         return dataframe

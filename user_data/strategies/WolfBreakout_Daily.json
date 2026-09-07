@@ -1,0 +1,30 @@
+{
+  "strategy_name": "WolfBreakout_Daily",
+  "params": {
+    "roi": {
+      "0": 0.297,
+      "10151": 0.182,
+      "27171": 0.092,
+      "41954": 0
+    },
+    "stoploss": {
+      "stoploss": -0.293
+    },
+    "trailing": {
+      "trailing_stop": true,
+      "trailing_stop_positive": 0.01,
+      "trailing_stop_positive_offset": 0.106,
+      "trailing_only_offset_is_reached": true
+    },
+    "max_open_trades": {
+      "max_open_trades": 8
+    },
+    "buy": {
+      "buy_donchian_period": 15,
+      "buy_ema_period": 35,
+      "buy_vol_multiplier": 1.334
+    }
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2026-09-07 12:38:49.966589+00:00"
+}

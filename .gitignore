@@ -1,8 +1,45 @@
+# OS & Editor Artifacts
 .DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Python & Testing Artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+.pytest_cache/
+
+# Freqtrade Runtime Artifacts (CRITICAL: Never commit to Git or sync to VPS)
+user_data/data/
+user_data/logs/
+user_data/hyperopt_results/
+user_data/backtest_results/
+user_data/*.sqlite*
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+*.lock
+*.bak
 *.bak.*
-*.log
-__pycache__/
+
+# Environment & Secrets
 .env
+.env.*
+!.env.example
+
+# Temporary Benchmarks & Test Outputs
+result_*.txt
+*.log
+
+# Dashboard / Node Tooling Artifacts
+dashboard/node_modules/
+dashboard/package-lock.json
+dashboard/npm-debug.log*
+dashboard/yarn-debug.log*
+dashboard/screenshot*.png
+
+# Docker Local Overrides
+docker-compose.override.yml

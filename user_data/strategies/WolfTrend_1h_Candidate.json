@@ -1,0 +1,25 @@
+{
+  "strategy_name": "WolfTrend_1h_Candidate",
+  "params": {
+    "max_open_trades": {
+      "max_open_trades": 8
+    },
+    "roi": {
+      "0": 0.491,
+      "388": 0.181,
+      "951": 0.092,
+      "2040": 0
+    },
+    "stoploss": {
+      "stoploss": -0.03
+    },
+    "trailing": {
+      "trailing_stop": true,
+      "trailing_stop_positive": 0.122,
+      "trailing_stop_positive_offset": 0.199,
+      "trailing_only_offset_is_reached": true
+    }
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2026-09-07 12:54:17.582994+00:00"
+}
