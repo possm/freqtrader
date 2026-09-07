@@ -1,0 +1,58 @@
+    1: from collections.abc import Callable
+    1: from typing import Any
+       
+    1: from rich.console import ConsoleRenderable, Group, RichCast
+    1: from rich.progress import Progress, Task, TaskID
+       
+       
+    2: class CustomProgress(Progress):
+    4:     def __init__(
+               self,
+               *args,
+    1:         cust_objs: list[ConsoleRenderable] | None = None,
+    1:         cust_callables: list[Callable[[], ConsoleRenderable]] | None = None,
+    1:         ft_callback: Callable[[Task], None] | None = None,
+               **kwargs,
+>>>>>>     ) -> None:
+>>>>>>         self._cust_objs = cust_objs or []
+>>>>>>         self._cust_callables = cust_callables or []
+>>>>>>         self._ft_callback = ft_callback
+>>>>>>         if self._ft_callback:
+>>>>>>             kwargs["disable"] = True
+       
+>>>>>>         super().__init__(*args, **kwargs)
+       
+    7:     def update(
+               self,
+>>>>>>         task_id: TaskID,
+               *,
+    1:         total: float | None = None,
+    1:         completed: float | None = None,
+    1:         advance: float | None = None,
+    1:         description: str | None = None,
+    1:         visible: bool | None = None,
+    1:         refresh: bool = False,
+>>>>>>         **fields: Any,
+>>>>>>     ) -> None:
+>>>>>>         t = super().update(
+>>>>>>             task_id,
+>>>>>>             total=total,
+>>>>>>             completed=completed,
+>>>>>>             advance=advance,
+>>>>>>             description=description,
+>>>>>>             visible=visible,
+>>>>>>             refresh=refresh,
+>>>>>>             **fields,
+               )
+>>>>>>         if self._ft_callback:
+>>>>>>             self._ft_callback(
+>>>>>>                 self.tasks[task_id],
+                   )
+>>>>>>         return t
+       
+    1:     def get_renderable(self) -> ConsoleRenderable | RichCast | str:
+>>>>>>         objs = [obj for obj in self._cust_objs]
+>>>>>>         for cust_call in self._cust_callables:
+>>>>>>             objs.append(cust_call())
+>>>>>>         renderable = Group(*objs, *self.get_renderables())
+>>>>>>         return renderable

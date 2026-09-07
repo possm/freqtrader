@@ -1,0 +1,286 @@
+    1: """
+       WolfBreakout_PVB — Parkinson Volatility-Expansion Breakout Strategy
+       ==================================================================
+       Academic Quantitative Foundations:
+         1. Parkinson (1980) Continuous Extreme Value Volatility Estimator
+            Statistically superior range-based variance captures intraday expansion
+            free from opening/closing microstructure noise in 24/7 crypto markets.
+         2. Donchian (20-period) & Keltner Volatility Channel Dual Breakout
+            Requires price penetration of historical resistance accompanied by
+            expansion beyond the ATR volatility envelope.
+         3. Mandelbrot / Engle Volatility Clustering Gate
+            Signals are confirmed only when the Parkinson Volatility Ratio
+            PVR = sigma_P(fast) / sigma_P(slow) > threshold (> 1.10).
+         4. Cross-Asset Bitcoin Macro Trend Regime
+            Altcoin beta gating via BTC > EMA200 cross-asset trend filter.
+         5. Asymmetric Payoff Risk Management
+            Hard catastrophic stoploss (-4.5%), trailing profit lock (+4.5% / 2.5%),
+            stepped time-decaying ROI, and Kraken execution slippage simulation.
+       """
+    1: from __future__ import annotations
+       
+    1: from datetime import datetime, timezone
+    1: from typing import Optional
+       
+    1: import numpy as np
+    1: import talib.abstract as ta
+    1: from pandas import DataFrame
+       
+    1: from freqtrade.persistence import Trade
+    1: from freqtrade.strategy import (
+           IStrategy,
+           IntParameter,
+           DecimalParameter,
+           BooleanParameter,
+           merge_informative_pair,
+       )
+       
+    1: from kraken_slippage import KrakenSlippageMixin
+       
+       
+    2: class WolfBreakout_PVB(KrakenSlippageMixin, IStrategy):
+    1:     """
+           Parkinson Volatility Breakout (PVB) Strategy
+           Designed for Kraken spot trading on EUR pairs on the 1-hour timeframe.
+           """
+       
+    1:     INTERFACE_VERSION = 3
+    1:     timeframe = "1h"
+       
+           # Spot long-only execution
+    1:     can_short = False
+    1:     process_only_new_candles = True
+    1:     use_exit_signal = True
+    1:     exit_profit_only = False
+    1:     ignore_roi_if_entry_signal = False
+       
+           # Warmup history: 250 candles ensures 200 EMA and 30-period rolling windows stabilize
+    1:     startup_candle_count: int = 250
+       
+           # =========================================================================
+           # RISK MANAGEMENT & EXIT PARAMETERS (Baseline Priors)
+           # =========================================================================
+           # Hard stoploss (catastrophic circuit breaker)
+    1:     stoploss = -0.045
+       
+           # Trailing stop: activates once trade reaches +4.5%, trails 2.5% below peak
+    1:     trailing_stop = True
+    1:     trailing_stop_positive = 0.025
+    1:     trailing_stop_positive_offset = 0.045
+    1:     trailing_only_offset_is_reached = True
+       
+           # Minimal ROI Table (minutes -> profit ratio)
+    1:     minimal_roi = {
+    1:         "0": 0.28,      # +28% immediate windfall target
+    1:         "120": 0.16,    # +16% after 2 hours (2 candles)
+    1:         "360": 0.08,    # +8% after 6 hours
+    1:         "720": 0.04,    # +4% after 12 hours
+    1:         "1440": 0.02,   # +2% after 24 hours
+           }
+       
+           # Stale exit timeout: close positions that fail to follow through within 14 days
+    1:     STALE_EXIT_DAYS: int = 14
+       
+           # Protections: protect against adverse volatility regimes and repetitive stop hits
+    1:     protections = [
+    1:         {"method": "CooldownPeriod", "stop_duration_candles": 2},
+    2:         {"method": "StoplossGuard", "lookback_period_candles": 24, "trade_limit": 3,
+    1:          "stop_duration_candles": 12, "only_per_pair": False},
+    2:         {"method": "MaxDrawdown", "lookback_period_candles": 72, "trade_limit": 5,
+    1:          "stop_duration_candles": 24, "max_allowed_drawdown": 0.10},
+           ]
+       
+           # =========================================================================
+           # HYPEROPTABLE PARAMETER SPACES
+           # =========================================================================
+           # Buy space: Channel lookbacks and entry thresholds
+    1:     donchian_period = IntParameter(14, 36, default=20, space="buy", optimize=True)
+    1:     pvr_threshold = DecimalParameter(1.02, 1.35, default=1.10, decimals=2, space="buy", optimize=True)
+    1:     keltner_mult = DecimalParameter(1.20, 2.50, default=1.75, decimals=2, space="buy", optimize=True)
+    1:     volume_factor = DecimalParameter(1.05, 1.50, default=1.20, decimals=2, space="buy", optimize=True)
+    1:     trend_ema_period = IntParameter(80, 220, default=100, space="buy", optimize=True)
+       
+           # Sell space: Modular exit conditions
+    1:     exit_donchian_mid = BooleanParameter(default=True, space="sell", optimize=True)
+    1:     exit_ema_basis = BooleanParameter(default=False, space="sell", optimize=True)
+       
+           # Constants / Fixed parameters for indicators
+    1:     pvr_fast_period: int = 10
+    1:     pvr_slow_period: int = 30
+    1:     btc_ema_period: int = 200
+       
+           # =========================================================================
+           # PLOT CONFIGURATION (FreqUI & Plotting Tooling)
+           # =========================================================================
+    1:     plot_config = {
+    2:         "main_plot": {
+    1:             "donchian_high": {"color": "#2bd4c5"},
+    1:             "donchian_mid": {"color": "#5e8eff"},
+    1:             "keltner_upper": {"color": "#d18b2c"},
+    1:             "ema_trend": {"color": "#ff9d4a"},
+               },
+    2:         "subplots": {
+    2:             "PVR (Parkinson Ratio)": {
+    1:                 "pvr": {"color": "#a855f7"},
+                   },
+    2:             "Macro BTC Filter": {
+    1:                 "btc_uptrend_1h": {"color": "#10b981", "type": "bar"},
+                   },
+               },
+           }
+       
+           # =========================================================================
+           # INFORMATIVE PAIRS (Cross-Asset Macro Gate)
+           # =========================================================================
+    2:     @property
+    2:     def regime_pair(self) -> str:
+               """Dynamically builds regime pair based on stake currency (BTC/EUR or BTC/USDT)."""
+   80:         stake = self.config.get("stake_currency", "EUR")
+   80:         return f"BTC/{stake}"
+       
+    1:     def informative_pairs(self):
+               """Register the Bitcoin pair on 1h as an informative dataset."""
+    1:         return [(self.regime_pair, self.timeframe)]
+       
+           # =========================================================================
+           # INDICATOR POPULATION
+           # =========================================================================
+    1:     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+               """
+               Calculates all mathematical indicators:
+               - Parkinson Volatility Expansion Ratio (PVR)
+               - Donchian Breakout Channel (shifted by 1 candle to prevent lookahead)
+               - Keltner Channel & ATR (and atr_pct for KrakenSlippageMixin)
+               - Moving average of volume
+               - Asset structural trend EMA
+               - Cross-asset BTC macro filter merged from informative pair
+               """
+               # 1. Parkinson (1980) Continuous Volatility Formulation
+               # Protect against non-positive lows and ensure ratio >= 1.0 (clip lower at 1e-8)
+   79:         safe_low = dataframe["low"].clip(lower=1e-8)
+   79:         ratio = (dataframe["high"] / safe_low).clip(lower=1.0)
+   79:         log_hl = np.log(ratio)
+               # Parkinson variance per candle: (ln(H/L))^2 / (4 * ln(2))
+   79:         parkinson_var = (log_hl ** 2) / (4.0 * np.log(2.0))
+       
+   79:         dataframe["parkinson_fast"] = np.sqrt(parkinson_var.rolling(window=self.pvr_fast_period).mean())
+   79:         dataframe["parkinson_slow"] = np.sqrt(parkinson_var.rolling(window=self.pvr_slow_period).mean())
+   79:         dataframe["pvr"] = dataframe["parkinson_fast"] / (dataframe["parkinson_slow"] + 1e-9)
+       
+               # 2. Donchian Breakout Channel (shifted by 1 bar to prevent lookahead bias)
+   79:         donch_window = self.donchian_period.value
+   79:         dataframe["donchian_high"] = dataframe["high"].shift(1).rolling(window=donch_window).max()
+   79:         dataframe["donchian_low"] = dataframe["low"].shift(1).rolling(window=donch_window).min()
+   79:         dataframe["donchian_mid"] = (dataframe["donchian_high"] + dataframe["donchian_low"]) / 2.0
+       
+               # 3. Keltner Channel & ATR
+   79:         dataframe["atr"] = ta.ATR(dataframe, timeperiod=14)
+   79:         dataframe["atr_pct"] = dataframe["atr"] / dataframe["close"]  # Crucial for KrakenSlippageMixin!
+   79:         dataframe["ema_basis"] = ta.EMA(dataframe, timeperiod=20)
+   79:         dataframe["keltner_upper"] = dataframe["ema_basis"] + self.keltner_mult.value * dataframe["atr"]
+   79:         dataframe["keltner_lower"] = dataframe["ema_basis"] - self.keltner_mult.value * dataframe["atr"]
+       
+               # 4. Volume SMA
+   79:         dataframe["volume_mean"] = dataframe["volume"].rolling(window=20).mean()
+       
+               # 5. Asset Trend Filter
+   79:         dataframe["ema_trend"] = ta.EMA(dataframe, timeperiod=self.trend_ema_period.value)
+       
+               # 6. Informative Bitcoin Macro Filter
+   79:         if self.dp:
+   79:             btc = self.dp.get_pair_dataframe(pair=self.regime_pair, timeframe=self.timeframe)
+   79:             if btc is not None and not btc.empty:
+>>>>>>                 btc["btc_ema200"] = ta.EMA(btc, timeperiod=self.btc_ema_period)
+>>>>>>                 btc["btc_uptrend"] = (btc["close"] > btc["btc_ema200"]).astype(int)
+>>>>>>                 dataframe = merge_informative_pair(
+>>>>>>                     dataframe, btc[["date", "btc_uptrend"]], self.timeframe, self.timeframe, ffill=True
+                       )
+       
+               # Graceful fallback if BTC data is absent (e.g. isolated unit tests)
+   79:         if "btc_uptrend_1h" not in dataframe.columns:
+   79:             dataframe["btc_uptrend_1h"] = 1
+               else:
+>>>>>>             dataframe["btc_uptrend_1h"] = dataframe["btc_uptrend_1h"].ffill().fillna(1).astype(int)
+       
+   79:         return dataframe
+       
+           # =========================================================================
+           # ENTRY LOGIC
+           # =========================================================================
+    1:     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+               """
+               Triggers long entry when ALL academic breakout conditions align:
+               1. Price penetrates upper Donchian historical resistance.
+               2. Price expands above Keltner ATR volatility boundary.
+               3. Parkinson Volatility Ratio (PVR) confirms volatility regime expansion.
+               4. Volume exceeds 20-period moving average by specified factor.
+               5. Price trades above the structural trend EMA.
+               6. Bitcoin macro gate is bullish (BTC > EMA200).
+               7. Volume > 0 guard against illiquid / zero-volume bars.
+               """
+   55:         dataframe["enter_long"] = 0
+   55:         dataframe["enter_tag"] = None
+       
+   55:         conditions = [
+   55:             dataframe["close"] > dataframe["donchian_high"],
+   55:             dataframe["close"] > dataframe["keltner_upper"],
+   55:             dataframe["pvr"] > self.pvr_threshold.value,
+   55:             dataframe["volume"] > (self.volume_factor.value * dataframe["volume_mean"]),
+   55:             dataframe["close"] > dataframe["ema_trend"],
+   55:             dataframe["btc_uptrend_1h"] == 1,
+   55:             dataframe["volume"] > 0,
+               ]
+       
+  110:         dataframe.loc[
+  110:             np.logical_and.reduce(conditions),
+   55:             ["enter_long", "enter_tag"]
+   55:         ] = (1, "pvb_breakout")
+       
+   55:         return dataframe
+       
+           # =========================================================================
+           # EXIT LOGIC
+           # =========================================================================
+    1:     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+               """
+               Triggers long exit upon trend exhaustion / momentum breakdown.
+               Configured via hyperoptable boolean flags:
+               - Candle closes below Donchian Middle Line
+               - Candle closes below Keltner EMA basis
+               """
+   46:         dataframe["exit_long"] = 0
+   46:         dataframe["exit_tag"] = None
+       
+   46:         exit_conditions = []
+   46:         if self.exit_donchian_mid.value:
+   42:             exit_conditions.append(dataframe["close"] < dataframe["donchian_mid"])
+   46:         if self.exit_ema_basis.value:
+    4:             exit_conditions.append(dataframe["close"] < dataframe["ema_basis"])
+       
+   46:         if exit_conditions:
+   88:             dataframe.loc[
+   88:                 np.logical_or.reduce(exit_conditions) & (dataframe["volume"] > 0),
+   44:                 ["exit_long", "exit_tag"]
+   44:             ] = (1, "trend_exhaustion")
+       
+   46:         return dataframe
+       
+           # =========================================================================
+           # CUSTOM EXIT HOOKS
+           # =========================================================================
+    1:     def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+>>>>>>                     current_profit: float, **kwargs) -> Optional[str]:
+               """
+               Stale Trade Reclaimer:
+               Liquidates positions that remain open for longer than STALE_EXIT_DAYS without
+               hitting ROI or trailing stop targets, freeing margin for fresh breakouts.
+               """
+    6:         open_date = trade.open_date_utc
+    6:         if open_date.tzinfo is None:
+    1:             open_date = open_date.replace(tzinfo=timezone.utc)
+    6:         ct = current_time if current_time.tzinfo else current_time.replace(tzinfo=timezone.utc)
+       
+    6:         if (ct - open_date).days >= self.STALE_EXIT_DAYS:
+    4:             return "stale_exit"
+       
+    2:         return None

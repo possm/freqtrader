@@ -1,0 +1,143 @@
+    1: """Gate.io exchange subclass"""
+       
+    1: import logging
+    1: from datetime import datetime
+       
+    1: import ccxt
+       
+    1: from freqtrade.constants import BuySell
+    1: from freqtrade.enums import MarginMode, PriceType, TradingMode
+    1: from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
+    1: from freqtrade.exchange import Exchange
+    1: from freqtrade.exchange.common import retrier
+    1: from freqtrade.exchange.exchange_types import FtHas
+       
+       
+    1: logger = logging.getLogger(__name__)
+       
+       
+    3: class Gate(Exchange):
+    1:     """Gate.io exchange class.
+           Contains adjustments needed for Freqtrade to work with this exchange.
+           """
+       
+    1:     unified_account = False
+       
+    1:     _ft_has: FtHas = {
+    1:         "order_time_in_force": ["GTC", "IOC"],
+    1:         "stoploss_on_exchange": True,
+    1:         "stoploss_order_types": {"limit": "limit"},
+    1:         "stop_price_param": "stopPrice",
+    1:         "stop_price_prop": "stopPrice",
+    1:         "stoploss_query_requires_stop_flag": True,
+    1:         "stoploss_algo_order_info_id": "fired_order_id",
+    1:         "l2_limit_upper": 1000,
+    1:         "marketOrderRequiresPrice": True,
+    1:         "trades_has_history": False,  # Endpoint would support this - but ccxt doesn't.
+           }
+       
+    1:     _ft_has_futures: FtHas = {
+    1:         "needs_trading_fees": True,
+    1:         "marketOrderRequiresPrice": False,
+    1:         "funding_fee_candle_limit": 90,
+    1:         "stop_price_type_field": "price_type",
+    1:         "l2_limit_upper": 300,
+    1:         "stoploss_blocks_assets": False,
+    1:         "stoploss_algo_order_info_id": "trade_id",
+    2:         "stop_price_type_value_mapping": {
+    1:             PriceType.LAST: 0,
+    1:             PriceType.MARK: 1,
+    1:             PriceType.INDEX: 2,
+               },
+           }
+       
+    1:     _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
+    1:         (TradingMode.SPOT, MarginMode.NONE),
+               # (TradingMode.MARGIN, MarginMode.CROSS),
+               # (TradingMode.FUTURES, MarginMode.CROSS),
+    1:         (TradingMode.FUTURES, MarginMode.ISOLATED),
+           ]
+       
+    2:     @retrier
+    2:     def additional_exchange_init(self) -> None:
+               """
+               Additional exchange initialization logic.
+               .api will be available at this point.
+               Must be overridden in child methods if required.
+               """
+>>>>>>         try:
+>>>>>>             if not self._config["dry_run"]:
+>>>>>>                 self._api.load_unified_status()
+>>>>>>                 is_unified = self._api.options.get("unifiedAccount")
+       
+                       # Returns a tuple of bools, first for margin, second for Account
+>>>>>>                 if is_unified:
+>>>>>>                     self.unified_account = True
+>>>>>>                     logger.info("Gate: Unified account.")
+                       else:
+>>>>>>                     self.unified_account = False
+>>>>>>                     logger.info("Gate: Classic account.")
+>>>>>>         except ccxt.DDoSProtection as e:
+>>>>>>             raise DDosProtection(e) from e
+>>>>>>         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
+>>>>>>             raise TemporaryError(
+>>>>>>                 f"Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}"
+>>>>>>             ) from e
+>>>>>>         except ccxt.BaseError as e:
+>>>>>>             raise OperationalException(e) from e
+       
+    1:     def _get_params(
+               self,
+>>>>>>         side: BuySell,
+>>>>>>         ordertype: str,
+>>>>>>         leverage: float,
+>>>>>>         reduceOnly: bool,
+>>>>>>         time_in_force: str = "GTC",
+>>>>>>     ) -> dict:
+>>>>>>         params = super()._get_params(
+>>>>>>             side=side,
+>>>>>>             ordertype=ordertype,
+>>>>>>             leverage=leverage,
+>>>>>>             reduceOnly=reduceOnly,
+>>>>>>             time_in_force=time_in_force,
+               )
+>>>>>>         if ordertype == "market" and self.trading_mode == TradingMode.FUTURES:
+>>>>>>             params["type"] = "market"
+>>>>>>             params.update({"timeInForce": "IOC"})
+>>>>>>         return params
+       
+    1:     def get_trades_for_order(
+>>>>>>         self, order_id: str, pair: str, since: datetime, params: dict | None = None
+>>>>>>     ) -> list:
+>>>>>>         trades = super().get_trades_for_order(order_id, pair, since, params)
+       
+>>>>>>         if self.trading_mode == TradingMode.FUTURES:
+                   # Futures usually don't contain fees in the response.
+                   # As such, futures orders on gate will not contain a fee, which causes
+                   # a repeated "update fee" cycle and wrong calculations.
+                   # Therefore we patch the response with fees if it's not available.
+                   # An alternative also containing fees would be
+                   # privateFuturesGetSettleAccountBook({"settle": "usdt"})
+>>>>>>             pair_fees = self._trading_fees.get(pair, {})
+>>>>>>             if pair_fees:
+>>>>>>                 for idx, trade in enumerate(trades):
+>>>>>>                     fee = trade.get("fee", {})
+>>>>>>                     if fee and fee.get("cost") is None:
+>>>>>>                         takerOrMaker = trade.get("takerOrMaker", "taker")
+>>>>>>                         if pair_fees.get(takerOrMaker) is not None:
+>>>>>>                             trades[idx]["fee"] = {
+>>>>>>                                 "currency": self.get_pair_quote_currency(pair),
+>>>>>>                                 "cost": trade["cost"] * pair_fees[takerOrMaker],
+>>>>>>                                 "rate": pair_fees[takerOrMaker],
+                                   }
+>>>>>>         return trades
+       
+       
+    3: class GateEU(Gate):
+    1:     """Gate.io EU exchange class.
+           Minimal adjustment to disable futures trading for the EU version of gate.io.
+           """
+       
+    1:     _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
+    1:         (TradingMode.SPOT, MarginMode.NONE),
+           ]

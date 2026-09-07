@@ -42,6 +42,7 @@
         "stoploss_on_exchange": false
     },
 
+    "fee": 0.004,
     "exchange": {
         "name": "binance",
         "key": "",
@@ -53,14 +54,11 @@
             "BTC/USDT",
             "ETH/USDT",
             "LINK/USDT",
-            "NEAR/USDT",
             "STX/USDT",
             "SUI/USDT",
             "XLM/USDT",
             "XRP/USDT",
-            "DOGE/USDT",
-            "ALGO/USDT",
-            "VET/USDT"
+            "DOGE/USDT"
         ],
         "pair_blacklist": []
     },
@@ -74,7 +72,7 @@
         "listen_port": 8084,
         "username": "test",
         "password": "test",
-        "jwt_secret_key": "binance_hopt_test_only"
+        "jwt_secret_key": "binance_hopt_test_only_must_be_32_chars_long"
     },
 
     "bot_name": "WolfTrend_1h_hopt_stoploss_binance",

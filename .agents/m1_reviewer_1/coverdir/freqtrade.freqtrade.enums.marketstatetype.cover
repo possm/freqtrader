@@ -1,0 +1,16 @@
+    1: from enum import Enum
+       
+       
+    2: class MarketDirection(Enum):
+    1:     """
+           Enum for various market directions.
+           """
+       
+    1:     LONG = "long"
+    1:     SHORT = "short"
+    1:     EVEN = "even"
+    1:     NONE = "none"
+       
+    1:     def __str__(self):
+               # convert to string
+>>>>>>         return self.value

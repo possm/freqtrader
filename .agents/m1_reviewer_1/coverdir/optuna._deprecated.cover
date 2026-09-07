@@ -1,0 +1,199 @@
+    1: from __future__ import annotations
+       
+    1: import functools
+    1: import textwrap
+    1: from typing import Any
+    1: from typing import TYPE_CHECKING
+    1: from typing import TypeVar
+    1: import warnings
+       
+    1: from packaging import version
+       
+    1: from optuna._experimental import _get_docstring_indent
+    1: from optuna._experimental import _validate_version
+       
+       
+    1: if TYPE_CHECKING:
+>>>>>>     from collections.abc import Callable
+       
+>>>>>>     from typing_extensions import ParamSpec
+       
+>>>>>>     FT = TypeVar("FT")
+>>>>>>     FP = ParamSpec("FP")
+>>>>>>     CT = TypeVar("CT")
+       
+       
+    1: _DEPRECATION_NOTE_TEMPLATE = """
+       
+       .. warning::
+           Deprecated in v{d_ver}. This feature will be removed in the future. The removal of this
+           feature is currently scheduled for v{r_ver}, but this schedule is subject to change.
+           See https://github.com/optuna/optuna/releases/tag/v{d_ver}.
+       """
+       
+       
+    1: _DEPRECATION_WARNING_TEMPLATE = (
+    1:     "{name} has been deprecated in v{d_ver}. "
+           "This feature will be removed in v{r_ver}. "
+           "See https://github.com/optuna/optuna/releases/tag/v{d_ver}."
+       )
+       
+       
+    1: def _validate_two_version(old_version: str, new_version: str) -> None:
+   41:     if version.parse(old_version) > version.parse(new_version):
+>>>>>>         raise ValueError(
+>>>>>>             "Invalid version relationship. The deprecated version must be smaller than "
+                   "the removed version, but (deprecated version, removed version) = "
+>>>>>>             f"({old_version}, {new_version}) are specified."
+               )
+       
+       
+    1: def _format_text(text: str) -> str:
+   21:     return "\n\n" + textwrap.indent(text.strip(), "    ") + "\n"
+       
+       
+    1: def deprecated_func(
+>>>>>>     deprecated_version: str,
+>>>>>>     removed_version: str,
+>>>>>>     name: str | None = None,
+>>>>>>     text: str | None = None,
+>>>>>> ) -> "Callable[[Callable[FP, FT]], Callable[FP, FT]]":
+           """Decorate function as deprecated.
+       
+           Args:
+               deprecated_version:
+                   The version in which the target feature is deprecated.
+               removed_version:
+                   The version in which the target feature will be removed.
+               name:
+                   The name of the feature. Defaults to the function name. Optional.
+               text:
+                   The additional text for the deprecation note. The default note is build using specified
+                   ``deprecated_version`` and ``removed_version``. If you want to provide additional
+                   information, please specify this argument yourself.
+       
+                   .. note::
+                       The default deprecation note is as follows: "Deprecated in v{d_ver}. This feature
+                       will be removed in the future. The removal of this feature is currently scheduled
+                       for v{r_ver}, but this schedule is subject to change. See
+                       https://github.com/optuna/optuna/releases/tag/v{d_ver}."
+       
+                   .. note::
+                       The specified text is concatenated after the default deprecation note.
+           """
+       
+   21:     _validate_version(deprecated_version)
+   21:     _validate_version(removed_version)
+   21:     _validate_two_version(deprecated_version, removed_version)
+       
+   21:     def decorator(func: "Callable[FP, FT]") -> "Callable[FP, FT]":
+   21:         if func.__doc__ is None:
+   12:             func.__doc__ = ""
+       
+   21:         note = _DEPRECATION_NOTE_TEMPLATE.format(d_ver=deprecated_version, r_ver=removed_version)
+   21:         if text is not None:
+   10:             note += _format_text(text)
+   21:         indent = _get_docstring_indent(func.__doc__)
+   21:         func.__doc__ = func.__doc__.strip() + textwrap.indent(note, indent) + indent
+       
+   42:         @functools.wraps(func)
+   42:         def wrapper(*args: Any, **kwargs: Any) -> "FT":
+                   """Decorates a function as deprecated.
+       
+                   This decorator is supposed to be applied to the deprecated function.
+                   """
+       
+>>>>>>             message = _DEPRECATION_WARNING_TEMPLATE.format(
+>>>>>>                 name=(name if name is not None else func.__name__),
+>>>>>>                 d_ver=deprecated_version,
+>>>>>>                 r_ver=removed_version,
+                   )
+>>>>>>             if text is not None:
+>>>>>>                 message += " " + text
+>>>>>>             warnings.warn(message, FutureWarning, stacklevel=2)
+       
+>>>>>>             return func(*args, **kwargs)
+       
+   21:         return wrapper
+       
+   21:     return decorator
+       
+       
+    1: def deprecated_class(
+>>>>>>     deprecated_version: str,
+>>>>>>     removed_version: str,
+>>>>>>     name: str | None = None,
+>>>>>>     text: str | None = None,
+>>>>>> ) -> "Callable[[CT], CT]":
+           """Decorate class as deprecated.
+       
+           Args:
+               deprecated_version:
+                   The version in which the target feature is deprecated.
+               removed_version:
+                   The version in which the target feature will be removed.
+               name:
+                   The name of the feature. Defaults to the class name. Optional.
+               text:
+                   The additional text for the deprecation note. The default note is build using specified
+                   ``deprecated_version`` and ``removed_version``. If you want to provide additional
+                   information, please specify this argument yourself.
+       
+                   .. note::
+                       The default deprecation note is as follows: "Deprecated in v{d_ver}. This feature
+                       will be removed in the future. The removal of this feature is currently scheduled
+                       for v{r_ver}, but this schedule is subject to change. See
+                       https://github.com/optuna/optuna/releases/tag/v{d_ver}."
+       
+                   .. note::
+                       The specified text is concatenated after the default deprecation note.
+           """
+       
+   11:     _validate_version(deprecated_version)
+   11:     _validate_version(removed_version)
+   11:     _validate_two_version(deprecated_version, removed_version)
+       
+   11:     def decorator(cls: "CT") -> "CT":
+   11:         def wrapper(cls: "CT") -> "CT":
+                   """Decorates a class as deprecated.
+       
+                   This decorator is supposed to be applied to the deprecated class.
+                   """
+   11:             _original_init = getattr(cls, "__init__")
+   11:             _original_name = getattr(cls, "__name__")
+       
+   22:             @functools.wraps(_original_init)
+   22:             def wrapped_init(self: Any, *args: Any, **kwargs: Any) -> None:
+>>>>>>                 message = _DEPRECATION_WARNING_TEMPLATE.format(
+>>>>>>                     name=(name if name is not None else _original_name),
+>>>>>>                     d_ver=deprecated_version,
+>>>>>>                     r_ver=removed_version,
+                       )
+>>>>>>                 if text is not None:
+>>>>>>                     message += " " + text
+>>>>>>                 warnings.warn(
+>>>>>>                     message,
+>>>>>>                     FutureWarning,
+>>>>>>                     stacklevel=2,
+                       )
+       
+>>>>>>                 _original_init(self, *args, **kwargs)
+       
+   11:             setattr(cls, "__init__", wrapped_init)
+       
+   11:             if cls.__doc__ is None:
+    4:                 cls.__doc__ = ""
+       
+   22:             note = _DEPRECATION_NOTE_TEMPLATE.format(
+   11:                 d_ver=deprecated_version, r_ver=removed_version
+                   )
+   11:             if text is not None:
+   11:                 note += _format_text(text)
+   11:             indent = _get_docstring_indent(cls.__doc__)
+   11:             cls.__doc__ = cls.__doc__.strip() + textwrap.indent(note, indent) + indent
+       
+   11:             return cls
+       
+   11:         return wrapper(cls)
+       
+   11:     return decorator

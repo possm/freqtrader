@@ -1,0 +1,12 @@
+    1: import time
+       
+    1: from cachetools import TTLCache
+       
+       
+    2: class FtTTLCache(TTLCache):
+    1:     """
+           A TTLCache with a different default timer to allow for easier mocking in tests.
+           """
+       
+    1:     def __init__(self, maxsize, ttl, timer=time.time, getsizeof=None):
+>>>>>>         super().__init__(maxsize=maxsize, ttl=ttl, timer=timer, getsizeof=getsizeof)

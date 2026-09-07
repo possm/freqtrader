@@ -1,0 +1,107 @@
+    1: """Models for WebSocket protocol versions 13 and 8."""
+       
+    1: import json
+    1: from collections.abc import Callable
+    1: from enum import IntEnum
+    1: from typing import Any, Final, NamedTuple, cast
+       
+    1: WS_DEFLATE_TRAILING: Final[bytes] = bytes([0x00, 0x00, 0xFF, 0xFF])
+       
+       
+    2: class WSCloseCode(IntEnum):
+    1:     OK = 1000
+    1:     GOING_AWAY = 1001
+    1:     PROTOCOL_ERROR = 1002
+    1:     UNSUPPORTED_DATA = 1003
+    1:     ABNORMAL_CLOSURE = 1006
+    1:     INVALID_TEXT = 1007
+    1:     POLICY_VIOLATION = 1008
+    1:     MESSAGE_TOO_BIG = 1009
+    1:     MANDATORY_EXTENSION = 1010
+    1:     INTERNAL_ERROR = 1011
+    1:     SERVICE_RESTART = 1012
+    1:     TRY_AGAIN_LATER = 1013
+    1:     BAD_GATEWAY = 1014
+       
+       
+    2: class WSMsgType(IntEnum):
+           # websocket spec types
+    1:     CONTINUATION = 0x0
+    1:     TEXT = 0x1
+    1:     BINARY = 0x2
+    1:     PING = 0x9
+    1:     PONG = 0xA
+    1:     CLOSE = 0x8
+       
+           # aiohttp specific types
+    1:     CLOSING = 0x100
+    1:     CLOSED = 0x101
+    1:     ERROR = 0x102
+       
+    1:     text = TEXT
+    1:     binary = BINARY
+    1:     ping = PING
+    1:     pong = PONG
+    1:     close = CLOSE
+    1:     closing = CLOSING
+    1:     closed = CLOSED
+    1:     error = ERROR
+       
+       
+    8: class WSMessage(NamedTuple):
+    1:     type: WSMsgType
+           # To type correctly, this would need some kind of tagged union for each type.
+    1:     data: Any
+    1:     extra: str | None
+       
+    1:     def json(self, *, loads: Callable[[Any], Any] = json.loads) -> Any:
+               """Return parsed JSON data.
+       
+               .. versionadded:: 0.22
+               """
+>>>>>>         return loads(self.data)
+       
+       
+    8: class WSMessageTextBytes(NamedTuple):
+    1:     """WebSocket TEXT message with raw bytes (no UTF-8 decoding)."""
+       
+    1:     type: WSMsgType
+           # To type correctly, this would need some kind of tagged union for each type.
+           # In 4.0, we use a union of message types to properly type data, but in 3.x
+           # we keep it as Any to avoid a breaking change.
+    1:     data: Any
+    1:     extra: str | None
+       
+    1:     def json(self, *, loads: Callable[[Any], Any] = json.loads) -> Any:
+               """Return parsed JSON data."""
+>>>>>>         return loads(self.data)
+       
+       
+       # Type aliases for message types based on decode_text setting
+       # When decode_text=True, TEXT messages have str data (WSMessage)
+       # When decode_text=False, TEXT messages have bytes data (WSMessageTextBytes)
+    1: WSMessageDecodeText = WSMessage
+    1: WSMessageNoDecodeText = WSMessage | WSMessageTextBytes
+       
+       
+       # Constructing the tuple directly to avoid the overhead of
+       # the lambda and arg processing since NamedTuples are constructed
+       # with a run time built lambda
+       # https://github.com/python/cpython/blob/d83fcf8371f2f33c7797bc8f5423a8bca8c46e5c/Lib/collections/__init__.py#L441
+    1: WS_CLOSED_MESSAGE = tuple.__new__(WSMessage, (WSMsgType.CLOSED, None, None))
+    1: WS_CLOSING_MESSAGE = tuple.__new__(WSMessage, (WSMsgType.CLOSING, None, None))
+       
+       
+    2: class WebSocketError(Exception):
+    1:     """WebSocket protocol parser error."""
+       
+    1:     def __init__(self, code: int, message: str) -> None:
+>>>>>>         self.code = code
+>>>>>>         super().__init__(code, message)
+       
+    1:     def __str__(self) -> str:
+>>>>>>         return cast(str, self.args[1])
+       
+       
+    2: class WSHandshakeError(Exception):
+    1:     """WebSocket protocol handshake error."""

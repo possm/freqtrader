@@ -1,0 +1,32 @@
+    1: """Quoting and unquoting utilities for URL parts."""
+       
+    1: from urllib.parse import quote
+       
+    1: from ._quoting import _Quoter, _Unquoter
+       
+    1: QUOTER = _Quoter(requote=False)
+    1: REQUOTER = _Quoter()
+    1: PATH_QUOTER = _Quoter(safe="@:", protected="/+", requote=False)
+    1: PATH_REQUOTER = _Quoter(safe="@:", protected="/+")
+    1: QUERY_QUOTER = _Quoter(safe="?/:@", protected="=+&;", qs=True, requote=False)
+    1: QUERY_REQUOTER = _Quoter(safe="?/:@", protected="=+&;", qs=True)
+    1: QUERY_PART_QUOTER = _Quoter(safe="?/:@", qs=True, requote=False)
+    1: FRAGMENT_QUOTER = _Quoter(safe="?/:@", requote=False)
+    1: FRAGMENT_REQUOTER = _Quoter(safe="?/:@")
+       
+    1: UNQUOTER = _Unquoter()
+    1: PATH_UNQUOTER = _Unquoter(unsafe="+")
+    1: PATH_SAFE_UNQUOTER = _Unquoter(ignore="/%", unsafe="+")
+    1: QS_UNQUOTER = _Unquoter(qs=True)
+    1: UNQUOTER_PLUS = _Unquoter(plus=True)  # to match urllib.parse.unquote_plus
+       
+       
+    1: def human_quote(s: str | None, unsafe: str) -> str | None:
+>>>>>>     if not s:
+>>>>>>         return s
+>>>>>>     for c in "%" + unsafe:
+>>>>>>         if c in s:
+>>>>>>             s = s.replace(c, f"%{ord(c):02X}")
+>>>>>>     if s.isprintable():
+>>>>>>         return s
+>>>>>>     return "".join(c if c.isprintable() else quote(c) for c in s)

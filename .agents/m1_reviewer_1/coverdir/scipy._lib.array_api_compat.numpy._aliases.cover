@@ -1,0 +1,191 @@
+       # pyright: reportPrivateUsage=false
+    1: from __future__ import annotations
+       
+    1: from builtins import bool as py_bool
+    1: from typing import Any, cast
+       
+    1: import numpy as np
+       
+    1: from .._internal import get_xp
+    1: from ..common import _aliases, _helpers
+    1: from ..common._typing import NestedSequence, SupportsBufferProtocol
+    1: from ._typing import Array, Device, DType
+       
+    1: bool = np.bool_
+       
+       # Basic renames
+    1: acos = np.arccos
+    1: acosh = np.arccosh
+    1: asin = np.arcsin
+    1: asinh = np.arcsinh
+    1: atan = np.arctan
+    1: atan2 = np.arctan2
+    1: atanh = np.arctanh
+    1: bitwise_left_shift = np.left_shift
+    1: bitwise_invert = np.invert
+    1: bitwise_right_shift = np.right_shift
+    1: concat = np.concatenate
+    1: pow = np.power
+       
+    1: arange = get_xp(np)(_aliases.arange)
+    1: empty = get_xp(np)(_aliases.empty)
+    1: empty_like = get_xp(np)(_aliases.empty_like)
+    1: eye = get_xp(np)(_aliases.eye)
+    1: full = get_xp(np)(_aliases.full)
+    1: full_like = get_xp(np)(_aliases.full_like)
+    1: linspace = get_xp(np)(_aliases.linspace)
+    1: ones = get_xp(np)(_aliases.ones)
+    1: ones_like = get_xp(np)(_aliases.ones_like)
+    1: zeros = get_xp(np)(_aliases.zeros)
+    1: zeros_like = get_xp(np)(_aliases.zeros_like)
+    1: UniqueAllResult = get_xp(np)(_aliases.UniqueAllResult)
+    1: UniqueCountsResult = get_xp(np)(_aliases.UniqueCountsResult)
+    1: UniqueInverseResult = get_xp(np)(_aliases.UniqueInverseResult)
+    1: unique_all = get_xp(np)(_aliases.unique_all)
+    1: unique_counts = get_xp(np)(_aliases.unique_counts)
+    1: unique_inverse = get_xp(np)(_aliases.unique_inverse)
+    1: unique_values = get_xp(np)(_aliases.unique_values)
+    1: std = get_xp(np)(_aliases.std)
+    1: var = get_xp(np)(_aliases.var)
+    1: cumulative_sum = get_xp(np)(_aliases.cumulative_sum)
+    1: cumulative_prod = get_xp(np)(_aliases.cumulative_prod)
+    1: clip = get_xp(np)(_aliases.clip)
+    1: permute_dims = get_xp(np)(_aliases.permute_dims)
+    1: reshape = get_xp(np)(_aliases.reshape)
+    1: argsort = get_xp(np)(_aliases.argsort)
+    1: sort = get_xp(np)(_aliases.sort)
+    1: nonzero = get_xp(np)(_aliases.nonzero)
+    1: matmul = get_xp(np)(_aliases.matmul)
+    1: matrix_transpose = get_xp(np)(_aliases.matrix_transpose)
+    1: tensordot = get_xp(np)(_aliases.tensordot)
+    1: sign = get_xp(np)(_aliases.sign)
+    1: finfo = get_xp(np)(_aliases.finfo)
+    1: iinfo = get_xp(np)(_aliases.iinfo)
+       
+       
+       # asarray also adds the copy keyword, which is not present in numpy 1.0.
+       # asarray() is different enough between numpy, cupy, and dask, the logic
+       # complicated enough that it's easier to define it separately for each module
+       # rather than trying to combine everything into one function in common/
+    4: def asarray(
+>>>>>>     obj: Array | complex | NestedSequence[complex] | SupportsBufferProtocol,
+           /,
+           *,
+    1:     dtype: DType | None = None,
+    1:     device: Device | None = None,
+    1:     copy: py_bool | None = None,
+>>>>>>     **kwargs: Any,
+>>>>>> ) -> Array:
+           """
+           Array API compatibility wrapper for asarray().
+       
+           See the corresponding documentation in the array library and/or the array API
+           specification for more details.
+           """
+    8:     _helpers._check_device(np, device)
+       
+           # None is unsupported in NumPy 1.0, but we can use an internal enum
+           # False in NumPy 1.0 means None in NumPy 2.0 and in the Array API
+    8:     if copy is None:
+    4:         copy = np._CopyMode.IF_NEEDED  # type: ignore[assignment,attr-defined]
+    4:     elif copy is False:
+>>>>>>         copy = np._CopyMode.NEVER  # type: ignore[assignment,attr-defined]
+       
+    8:     return np.array(obj, copy=copy, dtype=dtype, **kwargs)
+       
+       
+    3: def astype(
+>>>>>>     x: Array,
+>>>>>>     dtype: DType,
+           /,
+           *,
+    1:     copy: py_bool = True,
+    1:     device: Device | None = None,
+>>>>>> ) -> Array:
+    2:     _helpers._check_device(np, device)
+    2:     return x.astype(dtype=dtype, copy=copy)
+       
+       
+       # count_nonzero returns a python int for axis=None and keepdims=False
+       # https://github.com/numpy/numpy/issues/17562
+    1: def count_nonzero(
+>>>>>>     x: Array,
+>>>>>>     axis: int | tuple[int, ...] | None = None,
+>>>>>>     keepdims: py_bool = False,
+>>>>>> ) -> Array:
+           # NOTE: this is currently incorrectly typed in numpy, but will be fixed in
+           # numpy 2.2.5 and 2.3.0: https://github.com/numpy/numpy/pull/28750
+>>>>>>     result = cast("Any", np.count_nonzero(x, axis=axis, keepdims=keepdims))  # pyright: ignore[reportArgumentType, reportCallIssue]
+>>>>>>     if axis is None and not keepdims:
+>>>>>>         return np.asarray(result)
+>>>>>>     return result
+       
+       
+       # take_along_axis: axis defaults to -1 but in numpy axis is a required arg
+    1: def take_along_axis(x: Array, indices: Array, /, *, axis: int = -1) -> Array:
+>>>>>>     return np.take_along_axis(x, indices, axis=axis)
+       
+       
+       # ceil, floor, and trunc return integers for integer inputs in NumPy < 2
+       
+    1: def ceil(x: Array, /) -> Array:
+>>>>>>     if np.__version__ < '2' and np.issubdtype(x.dtype, np.integer):
+>>>>>>         return x.copy()
+>>>>>>     return np.ceil(x)
+       
+       
+    1: def floor(x: Array, /) -> Array:
+    1:     if np.__version__ < '2' and np.issubdtype(x.dtype, np.integer):
+>>>>>>         return x.copy()
+    1:     return np.floor(x)
+       
+       
+    1: def trunc(x: Array, /) -> Array:
+>>>>>>     if np.__version__ < '2' and np.issubdtype(x.dtype, np.integer):
+>>>>>>         return x.copy()
+>>>>>>     return np.trunc(x)
+       
+       
+       # These functions are completely new here. If the library already has them
+       # (i.e., numpy 2.0), use the library version instead of our wrapper.
+    1: if hasattr(np, "vecdot"):
+    1:     vecdot = np.vecdot
+       else:
+>>>>>>     vecdot = get_xp(np)(_aliases.vecdot)  # type: ignore[assignment]
+       
+    1: if hasattr(np, "isdtype"):
+    1:     isdtype = np.isdtype
+       else:
+>>>>>>     isdtype = get_xp(np)(_aliases.isdtype)
+       
+    1: if hasattr(np, "unstack"):
+    1:     unstack = np.unstack
+       else:
+>>>>>>     unstack = get_xp(np)(_aliases.unstack)
+       
+    1: __all__ = _aliases.__all__ + [
+           "asarray",
+           "astype",
+           "acos",
+           "acosh",
+           "asin",
+           "asinh",
+           "atan",
+           "atan2",
+           "atanh",
+           "ceil",
+           "floor",
+           "trunc",
+           "bitwise_left_shift",
+           "bitwise_invert",
+           "bitwise_right_shift",
+           "bool",
+           "concat",
+           "count_nonzero",
+           "pow",
+           "take_along_axis"
+       ]
+       
+       
+    1: def __dir__() -> list[str]:
+>>>>>>     return __all__

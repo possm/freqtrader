@@ -1,0 +1,15 @@
+    1: import os
+    1: import platform
+       
+    1: NO_EXTENSIONS = bool(os.environ.get("MULTIDICT_NO_EXTENSIONS"))
+       
+    1: PYPY = platform.python_implementation() == "PyPy"
+       
+    1: USE_EXTENSIONS = not NO_EXTENSIONS and not PYPY
+       
+    1: if USE_EXTENSIONS:
+    1:     try:
+    1:         from . import _multidict  # type: ignore[attr-defined]  # noqa: F401
+>>>>>>     except ImportError:  # pragma: no cover
+               # FIXME: Refactor for coverage. See #837.
+>>>>>>         USE_EXTENSIONS = False

@@ -1,0 +1,29 @@
+       # This file is not meant for public use and will be removed in SciPy v2.0.0.
+       # Use the `scipy.optimize` namespace for importing the functions
+       # included below.
+       
+    1: from scipy._lib.deprecation import _sub_module_deprecation
+       
+       
+    1: __all__ = [  # noqa: F822
+           'BroydenFirst',
+           'InverseJacobian',
+           'KrylovJacobian',
+           'anderson',
+           'broyden1',
+           'broyden2',
+           'diagbroyden',
+           'excitingmixing',
+           'linearmixing',
+           'newton_krylov',
+       ]
+       
+       
+    1: def __dir__():
+>>>>>>     return __all__
+       
+       
+    1: def __getattr__(name):
+>>>>>>     return _sub_module_deprecation(sub_package="optimize", module="nonlin",
+>>>>>>                                    private_modules=["_nonlin"], all=__all__,
+>>>>>>                                    attribute=name)

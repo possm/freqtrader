@@ -1,0 +1,41 @@
+       # This file is not meant for public use and will be removed in SciPy v2.0.0.
+       # Use the `scipy.stats` namespace for importing the functions
+       # included below.
+       
+    1: from scipy._lib.deprecation import _sub_module_deprecation
+       
+       
+   67: __all__ = [  # noqa: F822
+    6:     'gmean', 'hmean', 'pmean', 'mode', 'tmean', 'tvar',
+    5:     'tmin', 'tmax', 'tstd', 'tsem', 'moment',
+    5:     'skew', 'kurtosis', 'describe', 'skewtest', 'kurtosistest',
+    2:     'normaltest', 'jarque_bera',
+    2:     'scoreatpercentile', 'percentileofscore',
+    3:     'cumfreq', 'relfreq', 'obrientransform',
+    6:     'sem', 'zmap', 'zscore', 'gzscore', 'iqr', 'gstd',
+    1:     'median_abs_deviation',
+    4:     'sigmaclip', 'trimboth', 'trim1', 'trim_mean',
+    1:     'f_oneway',
+    2:     'pearsonr', 'fisher_exact',
+    2:     'spearmanr', 'pointbiserialr',
+    3:     'kendalltau', 'weightedtau', 'multiscale_graphcorr',
+    4:     'linregress', 'siegelslopes', 'theilslopes', 'ttest_1samp',
+    3:     'ttest_ind', 'ttest_ind_from_stats', 'ttest_rel',
+    3:     'kstest', 'ks_1samp', 'ks_2samp',
+    2:     'chisquare', 'power_divergence',
+    4:     'tiecorrect', 'ranksums', 'kruskal', 'friedmanchisquare',
+    1:     'rankdata',
+    3:     'combine_pvalues', 'wasserstein_distance', 'energy_distance',
+    3:     'brunnermunzel', 'alexandergovern', 'distributions',
+    1:     'mstats_basic',
+       ]
+       
+       
+    1: def __dir__():
+>>>>>>     return __all__
+       
+       
+    1: def __getattr__(name):
+>>>>>>     return _sub_module_deprecation(sub_package="stats", module="stats",
+>>>>>>                                    private_modules=["_stats_py", "_mgc"], all=__all__,
+>>>>>>                                    attribute=name)

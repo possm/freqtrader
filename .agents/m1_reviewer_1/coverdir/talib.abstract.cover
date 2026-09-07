@@ -1,0 +1,27 @@
+    1: import talib._ta_lib as _ta_lib
+    1: from ._ta_lib import Function as _Function, __TA_FUNCTION_NAMES__, _get_defaults_and_docs
+       
+       # add some backwards compat for backtrader
+    1: from ._ta_lib import TA_FUNC_FLAGS, TA_INPUT_FLAGS, TA_OUTPUT_FLAGS
+       
+    2: _func_obj_mapping = {
+  161:     func_name: getattr(_ta_lib, func_name)
+  163:     for func_name in __TA_FUNCTION_NAMES__
+       }
+       
+       
+    1: def Function(function_name, *args, **kwargs):
+  161:     func_name = function_name.upper()
+  161:     if func_name not in _func_obj_mapping:
+>>>>>>         raise Exception('%s not supported by TA-LIB.' % func_name)
+       
+  644:     return _Function(
+  483:         func_name, _func_obj_mapping[func_name], *args, **kwargs
+           )
+       
+       
+  162: for func_name in __TA_FUNCTION_NAMES__:
+  161:     globals()[func_name] = Function(func_name)
+       
+       
+    1: __all__ = ["Function", "_get_defaults_and_docs"] + __TA_FUNCTION_NAMES__

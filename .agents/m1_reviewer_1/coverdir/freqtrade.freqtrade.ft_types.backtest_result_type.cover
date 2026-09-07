@@ -1,0 +1,59 @@
+    1: from typing import Any, cast
+       
+    1: from pandas import DataFrame
+    1: from typing_extensions import TypedDict
+       
+    1: from freqtrade.constants import Config
+       
+       
+    6: class BacktestMetadataType(TypedDict):
+    1:     run_id: str
+    1:     backtest_start_time: int
+       
+       
+    7: class BacktestResultType(TypedDict):
+    1:     metadata: dict[str, Any]  # BacktestMetadataType
+    1:     strategy: dict[str, Any]
+    1:     strategy_comparison: list[Any]
+       
+       
+    1: def get_BacktestResultType_default() -> BacktestResultType:
+>>>>>>     return cast(
+>>>>>>         BacktestResultType,
+>>>>>>         {
+>>>>>>             "metadata": {},
+>>>>>>             "strategy": {},
+>>>>>>             "strategy_comparison": [],
+               },
+           )
+       
+       
+   11: class BacktestHistoryEntryType(BacktestMetadataType):
+    1:     filename: str
+    1:     strategy: str
+    1:     notes: str
+    1:     backtest_start_ts: int | None
+    1:     backtest_end_ts: int | None
+    1:     timeframe: str | None
+    1:     timeframe_detail: str | None
+       
+       
+   18: class BacktestContentTypeIcomplete(TypedDict, total=False):
+    1:     results: DataFrame
+    1:     config: Config
+    1:     locks: Any
+    1:     rejected_signals: int
+    1:     timedout_entry_orders: int
+    1:     timedout_exit_orders: int
+    1:     canceled_trade_entries: int
+    1:     canceled_entry_orders: int
+    1:     replaced_entry_orders: int
+    1:     final_balance: float
+    1:     backtest_start_time: int
+    1:     backtest_end_time: int
+    1:     run_id: str
+    1:     wallet_summary: DataFrame
+       
+       
+    2: class BacktestContentType(BacktestContentTypeIcomplete, total=True):
+    1:     pass

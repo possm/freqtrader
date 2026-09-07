@@ -1,0 +1,12 @@
+    1: from enum import StrEnum
+       
+       
+    2: class TradingMode(StrEnum):
+    1:     """
+           Enum to distinguish between
+           spot, margin, futures or any other trading method
+           """
+       
+    1:     SPOT = "spot"
+    1:     MARGIN = "margin"
+    1:     FUTURES = "futures"

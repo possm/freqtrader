@@ -1,0 +1,16 @@
+    1: from typing import Any
+       
+       
+    3: class SingletonMeta(type):
+    1:     """
+           A thread-safe implementation of Singleton.
+           Use as metaclass to create singleton classes.
+           """
+       
+    1:     _instances: dict = {}
+       
+    1:     def __call__(cls, *args: Any, **kwargs: Any) -> Any:
+>>>>>>         if cls not in cls._instances:
+>>>>>>             instance = super().__call__(*args, **kwargs)
+>>>>>>             cls._instances[cls] = instance
+>>>>>>         return cls._instances[cls]

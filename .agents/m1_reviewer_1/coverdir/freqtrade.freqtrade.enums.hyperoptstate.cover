@@ -1,0 +1,13 @@
+    1: from enum import Enum
+       
+       
+    2: class HyperoptState(Enum):
+    1:     """Hyperopt states"""
+       
+    1:     STARTUP = 1
+    1:     DATALOAD = 2
+    1:     INDICATORS = 3
+    1:     OPTIMIZE = 4
+       
+    1:     def __str__(self):
+>>>>>>         return f"{self.name.lower()}"

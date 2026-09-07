@@ -1,0 +1,115 @@
+    1: """HTTP Headers constants."""
+       
+       # After changing the file content call ./tools/gen.py
+       # to regenerate the headers parser
+    1: import itertools
+    1: from typing import Final
+       
+    1: from multidict import istr
+       
+    1: METH_ANY: Final[str] = "*"
+    1: METH_CONNECT: Final[str] = "CONNECT"
+    1: METH_HEAD: Final[str] = "HEAD"
+    1: METH_GET: Final[str] = "GET"
+    1: METH_DELETE: Final[str] = "DELETE"
+    1: METH_OPTIONS: Final[str] = "OPTIONS"
+    1: METH_PATCH: Final[str] = "PATCH"
+    1: METH_POST: Final[str] = "POST"
+    1: METH_PUT: Final[str] = "PUT"
+    1: METH_TRACE: Final[str] = "TRACE"
+       
+    1: METH_ALL: Final[set[str]] = {
+    1:     METH_CONNECT,
+    1:     METH_HEAD,
+    1:     METH_GET,
+    1:     METH_DELETE,
+    1:     METH_OPTIONS,
+    1:     METH_PATCH,
+    1:     METH_POST,
+    1:     METH_PUT,
+    1:     METH_TRACE,
+       }
+       
+    1: ACCEPT: Final[istr] = istr("Accept")
+    1: ACCEPT_CHARSET: Final[istr] = istr("Accept-Charset")
+    1: ACCEPT_ENCODING: Final[istr] = istr("Accept-Encoding")
+    1: ACCEPT_LANGUAGE: Final[istr] = istr("Accept-Language")
+    1: ACCEPT_RANGES: Final[istr] = istr("Accept-Ranges")
+    1: ACCESS_CONTROL_MAX_AGE: Final[istr] = istr("Access-Control-Max-Age")
+    1: ACCESS_CONTROL_ALLOW_CREDENTIALS: Final[istr] = istr("Access-Control-Allow-Credentials")
+    1: ACCESS_CONTROL_ALLOW_HEADERS: Final[istr] = istr("Access-Control-Allow-Headers")
+    1: ACCESS_CONTROL_ALLOW_METHODS: Final[istr] = istr("Access-Control-Allow-Methods")
+    1: ACCESS_CONTROL_ALLOW_ORIGIN: Final[istr] = istr("Access-Control-Allow-Origin")
+    1: ACCESS_CONTROL_EXPOSE_HEADERS: Final[istr] = istr("Access-Control-Expose-Headers")
+    1: ACCESS_CONTROL_REQUEST_HEADERS: Final[istr] = istr("Access-Control-Request-Headers")
+    1: ACCESS_CONTROL_REQUEST_METHOD: Final[istr] = istr("Access-Control-Request-Method")
+    1: AGE: Final[istr] = istr("Age")
+    1: ALLOW: Final[istr] = istr("Allow")
+    1: AUTHORIZATION: Final[istr] = istr("Authorization")
+    1: CACHE_CONTROL: Final[istr] = istr("Cache-Control")
+    1: CONNECTION: Final[istr] = istr("Connection")
+    1: CONTENT_DISPOSITION: Final[istr] = istr("Content-Disposition")
+    1: CONTENT_ENCODING: Final[istr] = istr("Content-Encoding")
+    1: CONTENT_LANGUAGE: Final[istr] = istr("Content-Language")
+    1: CONTENT_LENGTH: Final[istr] = istr("Content-Length")
+    1: CONTENT_LOCATION: Final[istr] = istr("Content-Location")
+    1: CONTENT_MD5: Final[istr] = istr("Content-MD5")
+    1: CONTENT_RANGE: Final[istr] = istr("Content-Range")
+    1: CONTENT_TRANSFER_ENCODING: Final[istr] = istr("Content-Transfer-Encoding")
+    1: CONTENT_TYPE: Final[istr] = istr("Content-Type")
+    1: COOKIE: Final[istr] = istr("Cookie")
+    1: DATE: Final[istr] = istr("Date")
+    1: DESTINATION: Final[istr] = istr("Destination")
+    1: DIGEST: Final[istr] = istr("Digest")
+    1: ETAG: Final[istr] = istr("Etag")
+    1: EXPECT: Final[istr] = istr("Expect")
+    1: EXPIRES: Final[istr] = istr("Expires")
+    1: FORWARDED: Final[istr] = istr("Forwarded")
+    1: FROM: Final[istr] = istr("From")
+    1: HOST: Final[istr] = istr("Host")
+    1: IF_MATCH: Final[istr] = istr("If-Match")
+    1: IF_MODIFIED_SINCE: Final[istr] = istr("If-Modified-Since")
+    1: IF_NONE_MATCH: Final[istr] = istr("If-None-Match")
+    1: IF_RANGE: Final[istr] = istr("If-Range")
+    1: IF_UNMODIFIED_SINCE: Final[istr] = istr("If-Unmodified-Since")
+    1: KEEP_ALIVE: Final[istr] = istr("Keep-Alive")
+    1: LAST_EVENT_ID: Final[istr] = istr("Last-Event-ID")
+    1: LAST_MODIFIED: Final[istr] = istr("Last-Modified")
+    1: LINK: Final[istr] = istr("Link")
+    1: LOCATION: Final[istr] = istr("Location")
+    1: MAX_FORWARDS: Final[istr] = istr("Max-Forwards")
+    1: ORIGIN: Final[istr] = istr("Origin")
+    1: PRAGMA: Final[istr] = istr("Pragma")
+    1: PROXY_AUTHENTICATE: Final[istr] = istr("Proxy-Authenticate")
+    1: PROXY_AUTHORIZATION: Final[istr] = istr("Proxy-Authorization")
+    1: RANGE: Final[istr] = istr("Range")
+    1: REFERER: Final[istr] = istr("Referer")
+    1: RETRY_AFTER: Final[istr] = istr("Retry-After")
+    1: SEC_WEBSOCKET_ACCEPT: Final[istr] = istr("Sec-WebSocket-Accept")
+    1: SEC_WEBSOCKET_VERSION: Final[istr] = istr("Sec-WebSocket-Version")
+    1: SEC_WEBSOCKET_PROTOCOL: Final[istr] = istr("Sec-WebSocket-Protocol")
+    1: SEC_WEBSOCKET_EXTENSIONS: Final[istr] = istr("Sec-WebSocket-Extensions")
+    1: SEC_WEBSOCKET_KEY: Final[istr] = istr("Sec-WebSocket-Key")
+    1: SEC_WEBSOCKET_KEY1: Final[istr] = istr("Sec-WebSocket-Key1")
+    1: SERVER: Final[istr] = istr("Server")
+    1: SET_COOKIE: Final[istr] = istr("Set-Cookie")
+    1: TE: Final[istr] = istr("TE")
+    1: TRAILER: Final[istr] = istr("Trailer")
+    1: TRANSFER_ENCODING: Final[istr] = istr("Transfer-Encoding")
+    1: UPGRADE: Final[istr] = istr("Upgrade")
+    1: URI: Final[istr] = istr("URI")
+    1: USER_AGENT: Final[istr] = istr("User-Agent")
+    1: VARY: Final[istr] = istr("Vary")
+    1: VIA: Final[istr] = istr("Via")
+    1: WANT_DIGEST: Final[istr] = istr("Want-Digest")
+    1: WARNING: Final[istr] = istr("Warning")
+    1: WWW_AUTHENTICATE: Final[istr] = istr("WWW-Authenticate")
+    1: X_FORWARDED_FOR: Final[istr] = istr("X-Forwarded-For")
+    1: X_FORWARDED_HOST: Final[istr] = istr("X-Forwarded-Host")
+    1: X_FORWARDED_PROTO: Final[istr] = istr("X-Forwarded-Proto")
+       
+       # Case permutations of the Host header — for callers that match against
+       # raw header tokens before istr/CIMultiDict folding.
+    2: HOST_ALL: Final = frozenset(
+    1:     map("".join, itertools.product(*zip(HOST.upper(), HOST.lower())))
+       )

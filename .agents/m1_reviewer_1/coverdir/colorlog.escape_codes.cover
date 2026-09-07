@@ -1,0 +1,105 @@
+    1: """
+       Generates a dictionary of ANSI escape codes.
+       
+       http://en.wikipedia.org/wiki/ANSI_escape_code
+       
+       Uses colorama as an optional dependency to support color on Windows
+       """
+       
+    1: import sys
+       
+    1: try:
+    1:     import colorama
+    1: except ImportError:
+    1:     pass
+       else:
+>>>>>>     if sys.platform == "win32":
+>>>>>>         colorama.init(strip=False)
+       
+    1: __all__ = ("escape_codes", "parse_colors")
+       
+       
+       # Returns escape codes from format codes
+    1: def esc(*codes: int) -> str:
+ 2993:     return "\033[" + ";".join(str(code) for code in codes) + "m"
+       
+       
+    1: escape_codes = {
+    1:     "reset": esc(0),
+    1:     "bold": esc(1),
+    1:     "thin": esc(2),
+       }
+       
+   17: escape_codes_foreground = {
+    1:     "black": 30,
+    1:     "red": 31,
+    1:     "green": 32,
+    1:     "yellow": 33,
+    1:     "blue": 34,
+    1:     "purple": 35,
+    1:     "cyan": 36,
+    1:     "white": 37,
+    1:     "light_black": 90,
+    1:     "light_red": 91,
+    1:     "light_green": 92,
+    1:     "light_yellow": 93,
+    1:     "light_blue": 94,
+    1:     "light_purple": 95,
+    1:     "light_cyan": 96,
+    1:     "light_white": 97,
+       }
+       
+   19: escape_codes_background = {
+    1:     "black": 40,
+    1:     "red": 41,
+    1:     "green": 42,
+    1:     "yellow": 43,
+    1:     "blue": 44,
+    1:     "purple": 45,
+    1:     "cyan": 46,
+    1:     "white": 47,
+    1:     "light_black": 100,
+    1:     "light_red": 101,
+    1:     "light_green": 102,
+    1:     "light_yellow": 103,
+    1:     "light_blue": 104,
+    1:     "light_purple": 105,
+    1:     "light_cyan": 106,
+    1:     "light_white": 107,
+           # Bold background colors don't exist,
+           # but we used to provide these names.
+    1:     "bold_black": 100,
+    1:     "bold_red": 101,
+    1:     "bold_green": 102,
+    1:     "bold_yellow": 103,
+    1:     "bold_blue": 104,
+    1:     "bold_purple": 105,
+    1:     "bold_cyan": 106,
+    1:     "bold_white": 107,
+       }
+       
+       # Foreground without prefix
+   17: for name, code in escape_codes_foreground.items():
+   16:     escape_codes["%s" % name] = esc(code)
+   16:     escape_codes["bold_%s" % name] = esc(1, code)
+   16:     escape_codes["thin_%s" % name] = esc(2, code)
+       
+       # Foreground with fg_ prefix
+   17: for name, code in escape_codes_foreground.items():
+   16:     escape_codes["fg_%s" % name] = esc(code)
+   16:     escape_codes["fg_bold_%s" % name] = esc(1, code)
+   16:     escape_codes["fg_thin_%s" % name] = esc(2, code)
+       
+       # Background with bg_ prefix
+   25: for name, code in escape_codes_background.items():
+   24:     escape_codes["bg_%s" % name] = esc(code)
+       
+       # 256 colour support
+  257: for code in range(256):
+  256:     escape_codes["fg_%d" % code] = esc(38, 5, code)
+  256:     escape_codes["bg_%d" % code] = esc(48, 5, code)
+       
+       
+    1: def parse_colors(string: str) -> str:
+           """Return escape codes from a color sequence string."""
+>>>>>>     return "".join(escape_codes[n] for n in string.split(",") if n)
