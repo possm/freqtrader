@@ -1479,10 +1479,6 @@ function CandleChart({ data, mainPlot, positions, heikinAshi }) {
       upColor: "#2ad07b", downColor: "#ff5d6c",
       borderUpColor: "#2ad07b", borderDownColor: "#ff5d6c",
       wickUpColor: "#2ad07b", wickDownColor: "#ff5d6c",
-      priceFormat: {
-        type: 'custom',
-        formatter: fmtPrice,
-      },
     });
     const volume = chart.addHistogramSeries({ priceFormat: { type: "volume" }, priceScaleId: "vol" });
     chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.80, bottom: 0 } });
@@ -1511,6 +1507,17 @@ function CandleChart({ data, mainPlot, positions, heikinAshi }) {
     const chart = chartRef.current;
     const base  = baseSeriesRef.current;
     if (!chart || !base || !data?.rows?.length) return;
+
+    const firstPrice = data.rows[0].close || 1;
+    let minMove = 0.01;
+    let prec = 2;
+    if (firstPrice < 0.001) { minMove = 0.00000001; prec = 8; }
+    else if (firstPrice < 0.1) { minMove = 0.000001; prec = 6; }
+    else if (firstPrice < 1) { minMove = 0.0001; prec = 4; }
+
+    base.candles.applyOptions({
+      priceFormat: { type: 'price', precision: prec, minMove: minMove }
+    });
 
     const sorted = [...data.rows].sort((a, b) => a.date - b.date);
     const display = heikinAshi ? toHeikinAshi(sorted) : sorted;
