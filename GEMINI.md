@@ -29,6 +29,8 @@ Wanneer je wijzigingen doorvoert in de bots, configuraties of dashboard:
 - **Multi-Bot Defensief**: Gebruik `nr_of_successful_entries` om DCA grids te herkennen, nooit `orders.length > 1`.
 - **P&L Semantiek**: `summary.totalPnl` = Closed Profit (`profit_closed_coin`). Unrealized profit wordt runtime opgeteld.
 - **Testing**: Test UI-wijzigingen altijd op zowel desktop als mobiele viewports (`< 768px`).
+- **Docker Nginx Rebuild (Deployment)**: Wanneer je wijzigingen aanbrengt in `dashboard/` en deze rsync't naar de VPS, dan is een simpele `docker compose restart` of `up -d` niet genoeg. De Nginx container 'bakt' de bestanden tijdens het bouwen in de image. Je MOET de dashboard container na een rsync dus expliciet herbouwen en herstarten:
+  `ssh vps-matthijs-trader "cd freqtrader && docker compose build freqtrader-dash && docker compose up -d freqtrader-dash"`
 
 ## 4. Hyperopt Safety & Parameter Overrides
 - Voer `freqtrade hyperopt` NOOIT direct uit in de live strategieën map (`user_data/strategies/`). Freqtrade genereert automatisch `<strategy_name>.json` bestanden die bij een bot herstart de code overschrijven.
