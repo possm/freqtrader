@@ -11,19 +11,17 @@ Wanneer je wijzigingen doorvoert in de bots, configuraties of dashboard:
 3. **Sync met VPS**:
    Zodra je permissie hebt, push je de branch en gebruik je rsync om de bestanden met `vps-matthijs-trader` te synchroniseren. Zorg dat data, logs, hyperopt-resultaten, backtest-resultaten en databases ALTIJD uitgesloten worden:
    ```bash
-   rsync -avz --exclude '.git' --exclude 'user_data/data' --exclude 'user_data/logs' --exclude 'user_data/hyperopt_results' --exclude 'user_data/backtest_results' --exclude '*.sqlite*' ./ vps-matthijs-trader:~/freqtrade-wolf/
+   rsync -avz --exclude '.git' --exclude 'user_data/data' --exclude 'user_data/logs' --exclude 'user_data/hyperopt_results' --exclude 'user_data/backtest_results' --exclude '*.sqlite*' ./ vps-matthijs-trader:~/freqtrader/
    ```
 4. **Valideer Containers**:
    Herstart na de sync altijd de containers op de VPS en check de logs om te valideren dat de services succesvol en zonder fouten laden:
    ```bash
-   ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose up -d freqtrade-hopt-live freqtrade-grid freqtrade-academic-dryrun freqtrade-breakout-daily freqtrader-dash && sleep 5 && docker compose ps"
+   ssh vps-matthijs-trader "cd freqtrader && docker compose up -d freqtrade-hopt-live freqtrade-academic-dryrun freqtrader-dash && sleep 5 && docker compose ps"
    ```
    Valideer specifieke logs op runtime fouten:
-   - Live Trend Bot: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrade-hopt-live"`
-   - Grid Bot: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrade-grid"`
-   - Academic Dry-Run Bot: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrade-academic-dryrun"`
-   - Daily Breakout Bot: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrade-breakout-daily"`
-   - Dashboard: `ssh vps-matthijs-trader "cd freqtrade-wolf && docker compose logs --tail=50 freqtrader-dash"`
+   - Live Bot: `ssh vps-matthijs-trader "cd freqtrader && docker compose logs --tail=50 freqtrade-hopt-live"`
+   - Academic Dry-Run Bot: `ssh vps-matthijs-trader "cd freqtrader && docker compose logs --tail=50 freqtrade-academic-dryrun"`
+   - Dashboard: `ssh vps-matthijs-trader "cd freqtrader && docker compose logs --tail=50 freqtrader-dash"`
 
 ## 3. Dashboard Frontend Specifics (`dashboard/`)
 - **In-browser Babel**: Geen npm build step. JSX wordt runtime in de browser gecompileerd via Babel standalone.
@@ -35,3 +33,6 @@ Wanneer je wijzigingen doorvoert in de bots, configuraties of dashboard:
 ## 4. Hyperopt Safety & Parameter Overrides
 - Voer `freqtrade hyperopt` NOOIT direct uit in de live strategieën map (`user_data/strategies/`). Freqtrade genereert automatisch `<strategy_name>.json` bestanden die bij een bot herstart de code overschrijven.
 - Verifieer vóór container herstart dat er geen onbedoelde `.json` bestanden in `user_data/strategies/` staan die live parameter overrides veroorzaken.
+
+## 5. Kraken Fee Assumptions
+Wanneer je ROI, winst, of drawdowns berekent/simuleert, gebruik dan ALTIJD de Kraken Pro tarieven (Taker fee max 0.26%, Maker fee max 0.16%). Freqtrade handelt direct via de API-orderboeken, waardoor de dure consumenten "Instant Buy" fee (1.5%) irrelevant is.
