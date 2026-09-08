@@ -1479,6 +1479,9 @@ function CandleChart({ data, mainPlot, positions, heikinAshi }) {
       upColor: "#2ad07b", downColor: "#ff5d6c",
       borderUpColor: "#2ad07b", borderDownColor: "#ff5d6c",
       wickUpColor: "#2ad07b", wickDownColor: "#ff5d6c",
+      priceLineColor: "#38bdf8", // Sky blue for the current price line
+      priceLineWidth: 1,
+      priceLineStyle: 3, // 3 = Large Dashed
     });
     const volume = chart.addHistogramSeries({ priceFormat: { type: "volume" }, priceScaleId: "vol" });
     chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.80, bottom: 0 } });
