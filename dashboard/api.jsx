@@ -384,6 +384,18 @@ function useFreqtradeData(baseUrl) {
     await Promise.all([fetchFast(), fetchSlow()]);
   }, [fetchFast, fetchSlow]);
 
+  // Reset all cached data and state immediately when switching to a different bot.
+  // Without this, rawRef still holds the previous bot's trades/profit/config and
+  // processData() would briefly render a mix of new-bot positions + old-bot history.
+  React.useEffect(() => {
+    rawRef.current = { status: [], trades: null, profit: null, daily: null, balance: null, config: null, locksRes: null };
+    setState({
+      positions: [], trades: [], equity: [], daily: [],
+      summary: null, bot: null, strats: [], locks: [],
+      loading: true, error: null, lastUpdated: null,
+    });
+  }, [baseUrl]);
+
   React.useEffect(() => {
     if (!baseUrl) return;
     fetchAll();
