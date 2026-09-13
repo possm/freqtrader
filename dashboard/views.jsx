@@ -1601,7 +1601,7 @@ function CandleChart({ data, mainPlot, positions, heikinAshi }) {
       viewKeyRef.current = viewKey;
       const count = sorted.length;
       chart.timeScale().setVisibleLogicalRange({
-        from: Math.max(0, count - 300),
+        from: Math.max(0, count - 80),
         to:   count - 1 + 3,
       });
     }
