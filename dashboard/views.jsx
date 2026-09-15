@@ -1443,7 +1443,7 @@ function addBinaryBgSeries(chart, scaleId, rows, col, t) {
 // Uses plot_config.main_plot to drive which extra series to overlay.
 // `positions` is an array of open positions for the selected pair, used to
 // draw horizontal Entry / SL / TP price lines on the candle series.
-function CandleChart({ data, mainPlot, positions, heikinAshi, hideVolume }) {
+function CandleChart({ data, mainPlot, positions, heikinAshi, extraVolTraces }) {
   const containerRef  = React.useRef(null);
   const chartRef      = React.useRef(null);
   const baseSeriesRef = React.useRef(null);   // { candles, volume }
@@ -1483,11 +1483,8 @@ function CandleChart({ data, mainPlot, positions, heikinAshi, hideVolume }) {
       priceLineWidth: 1,
       priceLineStyle: 3, // 3 = Large Dashed
     });
-    let volume = null;
-    if (!hideVolume) {
-      volume = chart.addHistogramSeries({ priceFormat: { type: "volume" }, priceScaleId: "vol" });
-      chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.80, bottom: 0 } });
-    }
+    const volume = chart.addHistogramSeries({ priceFormat: { type: "volume" }, priceScaleId: "vol" });
+    chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.80, bottom: 0 } });
     baseSeriesRef.current = { candles, volume };
 
     const ro = new ResizeObserver(entries => {
@@ -1535,14 +1532,12 @@ function CandleChart({ data, mainPlot, positions, heikinAshi, hideVolume }) {
       }))
     );
 
-    if (base.volume) {
-      base.volume.setData(
-        display.filter(r => r.volume != null).map(r => ({
-          time: t(r), value: r.volume,
-          color: (r.close ?? 0) >= (r.open ?? 0) ? "rgba(42,208,123,0.24)" : "rgba(255,93,108,0.24)",
-        }))
-      );
-    }
+    base.volume.setData(
+      display.filter(r => r.volume != null).map(r => ({
+        time: t(r), value: r.volume,
+        color: (r.close ?? 0) >= (r.open ?? 0) ? "rgba(42,208,123,0.24)" : "rgba(255,93,108,0.24)",
+      }))
+    );
 
     // Entry / exit markers from the analyzed dataframe
     const markers = [];
@@ -1580,6 +1575,25 @@ function CandleChart({ data, mainPlot, positions, heikinAshi, hideVolume }) {
       series.setData(lineData);
       linesRef.current.set(col, series);
     });
+
+    // ── Rebuild extraVolTraces overlay series ───────────────────────────────
+    if (extraVolTraces) {
+      Object.entries(extraVolTraces).forEach(([col, opts], i) => {
+        const color = normalizeColor(opts?.color, FALLBACK_OVERLAY_COLORS[i % FALLBACK_OVERLAY_COLORS.length]);
+        const series = chart.addLineSeries({
+          color,
+          lineWidth: 1.5,
+          priceScaleId: "vol",
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+        });
+        const lineData = sorted.filter(r => r[col] != null && isFinite(r[col]))
+          .map(r => ({ time: t(r), value: r[col] }));
+        series.setData(lineData);
+        linesRef.current.set(col, series);
+      });
+    }
 
     // Strategies often define no plot_config, so also shade any binary column
     // found directly in the data that mainPlot didn't already cover.
@@ -2097,7 +2111,20 @@ function ChartView({ data, baseUrl, isMobile, selectedPair, onPairChange }) {
   }, [pair, timeframe, loadChart]);
 
   const mainPlot = plotConfig?.main_plot || {};
-  const subplots = plotConfig?.subplots  || {};
+  let subplots = plotConfig?.subplots || {};
+  let extraVolTraces = {};
+  
+  // Find any subplot containing "volume" to plot natively synced to the main chart
+  const volSubplotKey = Object.keys(subplots).find(k => "volume" in subplots[k]);
+  if (volSubplotKey) {
+    extraVolTraces = { ...subplots[volSubplotKey] };
+    delete extraVolTraces.volume; // Native chart handles base volume
+    
+    // Remove the subplot entirely so we don't draw an unsynced SVG for it
+    subplots = { ...subplots };
+    delete subplots[volSubplotKey];
+  }
+
   const subplotEntries = Object.entries(subplots);
   const overlayCols = Object.keys(mainPlot);
 
@@ -2271,7 +2298,7 @@ function ChartView({ data, baseUrl, isMobile, selectedPair, onPairChange }) {
         )}
         {chartData && (
           <div style={{ flex: 1, minHeight: 0 }}>
-            <CandleChart data={chartData} mainPlot={mainPlot} positions={pairPositions} heikinAshi={haMode} hideVolume={Object.values(subplots).some(traces => "volume" in traces)}/>
+            <CandleChart data={chartData} mainPlot={mainPlot} positions={pairPositions} heikinAshi={haMode} extraVolTraces={extraVolTraces}/>
           </div>
         )}
       </Card>
