@@ -1625,7 +1625,11 @@ function CandleChart({ data, mainPlot, positions, heikinAshi }) {
     const dashed = LC?.LineStyle?.Dashed ?? 2;
     const dotted = LC?.LineStyle?.Dotted ?? 1;
 
-    // For each open position on this pair, draw three horizontal lines.
+    // Grab the latest ema_trend for the trend exit
+    const lastRow = data?.rows?.[data.rows.length - 1];
+    const trendExit = lastRow?.ema_trend;
+
+    // For each open position on this pair, draw horizontal lines.
     // When there are multiple positions the trade id is suffixed in the label.
     const multi = positions.length > 1;
     positions.forEach((p) => {
@@ -1660,8 +1664,18 @@ function CandleChart({ data, mainPlot, positions, heikinAshi }) {
           title: `SL${idLabel}`,
         }));
       }
+      // Trend Exit
+      if (trendExit != null && isFinite(trendExit)) {
+        priceLinesRef.current.push(base.candles.createPriceLine({
+          price: trendExit,
+          color: "#ffb74a",
+          lineWidth: 1, lineStyle: dashed,
+          axisLabelVisible: true,
+          title: `EXIT${idLabel}`,
+        }));
+      }
     });
-  }, [positions]);
+  }, [positions, data]);
 
   // No min-height — the chart must shrink with its flex parent. With a
   // hard minimum, smaller browser windows force the container taller than
@@ -2116,14 +2130,35 @@ function ChartView({ data, baseUrl, isMobile, selectedPair, onPairChange }) {
         {plotConfig === null && !loading && (
           <span className="muted" style={{ fontSize: 12 }}>· no plot_config</span>
         )}
-        {pairPositions.length > 0 && (
-          <span style={{
+        {pairPositions.length > 0 && (() => {
+          const p = pairPositions[0];
+          const lastRow = chartData?.rows?.[chartData.rows.length - 1];
+          const trendExit = lastRow?.ema_trend;
+          const pill = {
             fontSize: 11.5, fontWeight: 600, padding: "2px 8px", borderRadius: 5,
-            background: "var(--up-soft)", border: "1px solid var(--up-line)", color: "var(--up)",
-          }}>
-            {pairPositions.length} open · SL {fmtPrice(pairPositions[0].sl)} · TP {fmtPrice(pairPositions[0].tp)}
-          </span>
-        )}
+          };
+          return (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ ...pill, background: "var(--panel-2)", border: "1px solid var(--border-2)", color: "var(--text)" }}>
+                {pairPositions.length} open
+              </span>
+              <span style={{ ...pill, background: "var(--panel-2)", border: "1px solid var(--border-2)", color: "var(--text)" }}>
+                MARK {fmtPrice(p.current_rate)}
+              </span>
+              {trendExit != null && (
+                <span style={{ ...pill, background: "rgba(255,183,74,0.13)", border: "1px solid rgba(255,183,74,0.32)", color: "var(--warn)" }}>
+                  EXIT {fmtPrice(trendExit)}
+                </span>
+              )}
+              <span style={{ ...pill, background: "var(--down-soft)", border: "1px solid var(--down-line)", color: "var(--down)" }}>
+                SL {fmtPrice(p.sl)}
+              </span>
+              <span style={{ ...pill, background: "var(--up-soft)", border: "1px solid var(--up-line)", color: "var(--up)" }}>
+                TP {fmtPrice(p.tp)}
+              </span>
+            </div>
+          );
+        })()}
         {updatedAt && !loading && (
           <span className="muted" style={{ fontSize: 12, marginLeft: isMobile ? 0 : "auto" }}>
             Updated {fmtTimeAgo(updatedAt)}
