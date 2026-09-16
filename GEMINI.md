@@ -24,12 +24,12 @@ Wanneer je wijzigingen doorvoert in de bots, configuraties of dashboard:
    - Dashboard: `ssh vps-matthijs-trader "cd freqtrader && docker compose logs --tail=50 freqtrader-dash"`
 
 ## 3. Dashboard Frontend Specifics (`dashboard/`)
-- **In-browser Babel**: Geen npm build step. JSX wordt runtime in de browser gecompileerd via Babel standalone.
-- **Cache-Busting**: Bij wijziging van een `.jsx` bestand, update ALTIJD het query-parameter versienummer in `index.html` (bijv. `src="api.jsx?v=[timestamp]"`).
+- **Vite Buildstep**: Het dashboard gebruikt nu een Vite/React pipeline met ES-modules. In de `dashboard/` map bevindt zich een `package.json`. Bij wijzigingen lokaal installeer en test je via `npm install` en `npm run dev`.
+- **Cache-Busting (Vite)**: Niet meer handmatig nodig. Vite genereert gehashte bundels tijdens `npm run build` die door Nginx agressief worden gecachet (permanente cache), terwijl `index.html` zelf een `no-cache` header krijgt.
 - **Multi-Bot Defensief**: Gebruik `nr_of_successful_entries` om DCA grids te herkennen, nooit `orders.length > 1`.
 - **P&L Semantiek**: `summary.totalPnl` = Closed Profit (`profit_closed_coin`). Unrealized profit wordt runtime opgeteld.
 - **Testing**: Test UI-wijzigingen altijd op zowel desktop als mobiele viewports (`< 768px`).
-- **Docker Nginx Rebuild (Deployment)**: Wanneer je wijzigingen aanbrengt in `dashboard/` en deze rsync't naar de VPS, dan is een simpele `docker compose restart` of `up -d` niet genoeg. De Nginx container 'bakt' de bestanden tijdens het bouwen in de image. Je MOET de dashboard container na een rsync dus expliciet herbouwen en herstarten:
+- **Docker Nginx Rebuild (Deployment)**: Wanneer je wijzigingen aanbrengt in `dashboard/` en deze rsync't naar de VPS, dan is een simpele `docker compose restart` of `up -d` niet genoeg. De Nginx container gebruikt een multi-stage build om Vite uit te voeren. Je MOET de dashboard container na een rsync dus expliciet herbouwen en herstarten:
   `ssh vps-matthijs-trader "cd freqtrader && docker compose build freqtrader-dash && docker compose up -d freqtrader-dash"`
 
 ## 4. Hyperopt Safety & Parameter Overrides

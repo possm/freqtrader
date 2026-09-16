@@ -6,9 +6,9 @@ trigger: always_on
 
 # freqtrader-dash Project Specifics
 
-- **Architecture:** This is an in-browser React 18 application with no build step. JSX is compiled live in the browser by Babel standalone.
-- **Cache Busting:** Because Babel standalone runs in the browser, caching is aggressive. Whenever you modify a `.jsx` file, you MUST ALSO update its corresponding `?v=[timestamp]` query parameter in `index.html` (e.g., `src="api.jsx?v=12345"`). If you forget to bump this version number, the user's browser will stubbornly load the old cached code.
-- **Dependencies:** No Node toolchain, no npm, and no bundlers. Files are statically served by an Nginx container.
+- **Architecture:** This is a modern React 18 application built with Vite. It uses standard ES modules (`import`/`export`) and is no longer dependent on global variables or Babel Standalone.
+- **Cache Busting:** Vite automatically handles cache-busting by generating hashed output files in `dist/assets/`. The Nginx configuration (`nginx.conf`) aggressively caches these static assets (`max-age=31536000`), while strictly preventing caching of `index.html`. 
+- **Dependencies:** Uses a standard Node toolchain (`package.json`) in the `dashboard/` directory. Run `npm install` and `npm run build` locally. The Dockerfile uses a multi-stage build to compile the static assets before serving them with Nginx.
 - **Deployment (CRITICAL):** Code edits made in this local workspace are NOT automatically visible in the browser (which runs off the VPS). After making functional code changes, you MUST explicitly deploy them to the VPS (`vps-matthijs-trader`) using `rsync` and restart the dashboard container (`docker compose up -d --build`) BEFORE asking the user to verify the changes.
 - **API Backend:** Reads from Freqtrade's REST API (`/api/v1/...`) directly from the browser. credentials are saved in localStorage.
 
