@@ -42,7 +42,7 @@
         "stoploss_on_exchange": false
     },
     "exchange": {
-        "name": "bybit",
+        "name": "bybiteu",
         "key": "",
         "secret": "",
         "ccxt_config": {
