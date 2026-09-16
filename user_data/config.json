@@ -96,6 +96,7 @@
             "stake_currency": "{stake_currency}"
         }
     },
+    "force_entry_enable": true,
     "api_server": {
         "enabled": true,
         "listen_ip_address": "0.0.0.0",
@@ -115,7 +116,7 @@
     },
     "bot_name": "WolfTrend_1h_Candidate",
     "initial_state": "running",
-    "force_entry_enable": false,
+    "force_entry_enable": true,
     "internals": {
         "process_throttle_secs": 5
     },

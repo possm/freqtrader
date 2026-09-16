@@ -1,5 +1,5 @@
 import React, { useState as vUseState, useMemo as vUseMemo, useEffect, useRef } from 'react';
-import { createChart, CrosshairMode } from 'lightweight-charts';
+import { createChart, CrosshairMode, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers } from 'lightweight-charts';
 import { useQuery } from '@tanstack/react-query';
 import {
   useBreakpoint, Card, Icon, PairToken, TableStack, pnlColor, pnlTone, fmtMoney, fmtPrice, 
@@ -1464,7 +1464,7 @@ function toHeikinAshi(sorted) {
 // Hidden full-height histogram that shades the chart background green when a
 // binary 0/1 column is ON, red when OFF (e.g. regime filters like btc_uptrend_4h).
 function addBinaryBgSeries(chart, scaleId, rows, col, t) {
-  const series = chart.addHistogramSeries({
+  const series = chart.addSeries(HistogramSeries, {
     priceScaleId: scaleId,
     lastValueVisible: false,
     priceLineVisible: false,
@@ -1515,7 +1515,7 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
     });
     chartRef.current = chart;
 
-    const candles = chart.addCandlestickSeries({
+    const candles = chart.addSeries(CandlestickSeries, {
       upColor: "#2ad07b", downColor: "#ff5d6c",
       borderUpColor: "#2ad07b", borderDownColor: "#ff5d6c",
       wickUpColor: "#2ad07b", wickDownColor: "#ff5d6c",
@@ -1523,7 +1523,7 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
       priceLineWidth: 1,
       priceLineStyle: 3, // 3 = Large Dashed
     });
-    const volume = chart.addHistogramSeries({ priceFormat: { type: "volume" }, priceScaleId: "vol" });
+    const volume = chart.addSeries(HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "vol" });
     chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.80, bottom: 0 } });
     baseSeriesRef.current = { candles, volume };
 
@@ -1648,7 +1648,11 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
       }
     });
 
-    base.candles.setMarkers(uniqueMarkers);
+    if (!base.candlesMarkers) {
+      base.candlesMarkers = createSeriesMarkers(base.candles, uniqueMarkers);
+    } else {
+      base.candlesMarkers.setMarkers(uniqueMarkers);
+    }
 
     // ── Rebuild main_plot overlay series ───────────────────────────────
     linesRef.current.forEach(s => chart.removeSeries(s));
@@ -1664,7 +1668,7 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
       }
 
       const color = normalizeColor(opts?.color, FALLBACK_OVERLAY_COLORS[i % FALLBACK_OVERLAY_COLORS.length]);
-      const series = chart.addLineSeries({
+      const series = chart.addSeries(LineSeries, {
         color,
         lineWidth: 1.5,
         priceLineVisible: false,
@@ -1682,7 +1686,7 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
     if (extraVolTraces) {
       Object.entries(extraVolTraces).forEach(([col, opts], i) => {
         const color = normalizeColor(opts?.color, FALLBACK_OVERLAY_COLORS[i % FALLBACK_OVERLAY_COLORS.length]);
-        const series = chart.addLineSeries({
+        const series = chart.addSeries(LineSeries, {
           color,
           lineWidth: 1.5,
           priceScaleId: "vol",
