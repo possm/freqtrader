@@ -393,10 +393,25 @@ function TradesTable({ rows, goToChart, highlightId }) {
 
 function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
   const { positions, trades, summary, bot, strats, locks, loading } = data;
-  const pnlSpark  = vUseMemo(() => summary ? sparkSeries(summary.totalPnl * .6, summary.totalPnl, 40, "pnlspark") : [], [summary]);
-  const winSpark  = vUseMemo(() => summary ? sparkSeries(summary.winRate - 6, summary.winRate, 40, "winspark") : [], [summary]);
-  const balSpark  = vUseMemo(() => bot ? sparkSeries(bot.balance * .92, bot.balance, 40, "balspark") : [], [bot]);
-  const pfSpark   = vUseMemo(() => summary ? sparkSeries(summary.profitFactor * .7, summary.profitFactor, 40, "pfspark") : [], [summary]);
+  const pnlSpark = vUseMemo(() => {
+    if (!trades || !trades.length) return [0, 0];
+    const sorted = [...trades].sort((a, b) => a.closedAt - b.closedAt);
+    let cum = 0; return sorted.map(t => { cum += t.pnlAbs; return cum; });
+  }, [trades]);
+  const winSpark = vUseMemo(() => {
+    if (!trades || !trades.length) return [0, 0];
+    const sorted = [...trades].sort((a, b) => a.closedAt - b.closedAt);
+    let w = 0, tot = 0; return sorted.map(t => { tot++; if (t.pnlAbs > 0) w++; return (w / tot) * 100; });
+  }, [trades]);
+  const balSpark = vUseMemo(() => {
+    if (!data.equity || !data.equity.length) return [0, 0];
+    return data.equity.map(e => e.v);
+  }, [data.equity]);
+  const pfSpark = vUseMemo(() => {
+    if (!trades || !trades.length) return [0, 0];
+    const sorted = [...trades].sort((a, b) => a.closedAt - b.closedAt);
+    let gw = 0, gl = 0; return sorted.map(t => { if (t.pnlAbs > 0) gw += t.pnlAbs; else gl += Math.abs(t.pnlAbs); return gl === 0 ? gw : (gw / gl); });
+  }, [trades]);
 
   const [search, setSearch] = vUseState("");
   const [strat, setStrat] = vUseState("All");
