@@ -36,5 +36,13 @@ Wanneer je wijzigingen doorvoert in de bots, configuraties of dashboard:
 - Voer `freqtrade hyperopt` NOOIT direct uit in de live strategieën map (`user_data/strategies/`). Freqtrade genereert automatisch `<strategy_name>.json` bestanden die bij een bot herstart de code overschrijven.
 - Verifieer vóór container herstart dat er geen onbedoelde `.json` bestanden in `user_data/strategies/` staan die live parameter overrides veroorzaken.
 
-## 5. Kraken Fee Assumptions
-Wanneer je ROI, winst, of drawdowns berekent/simuleert, gebruik dan ALTIJD de Kraken Pro tarieven (Taker fee max 0.26%, Maker fee max 0.16%). Freqtrade handelt direct via de API-orderboeken, waardoor de dure consumenten "Instant Buy" fee (1.5%) irrelevant is.
+## 5. Bybit Fee Assumptions & USDT Pairs
+Wanneer je ROI, winst, of drawdowns berekent/simuleert, gebruik dan ALTIJD de Bybit Spot tarieven:
+- **Maker fee:** 0.10% (voor limit orders)
+- **Taker fee:** 0.25% (voor market orders / stoploss)
+Let op: Handel altijd op Crypto-to-Crypto paren (bijv. USDT-paren). De "Fiat Pairs" (zoals paren die eindigen op /EUR) hebben op Bybit een hogere Maker fee (0.15%).
+
+## 6. Environment Variables & API Keys Security
+- Plaats API-keys, geheimen of tokens NOOIT direct in configuratiebestanden (zoals `config.json` of `config_academic_dryrun.json`).
+- Gebruik altijd het `.env` bestand in de hoofdmap in combinatie met de Freqtrade environment variable syntax (bijv. `FREQTRADE__EXCHANGE__KEY` en `FREQTRADE__EXCHANGE__SECRET`).
+- Het `.env` bestand wordt genegeerd door Git via `.gitignore`, maar wordt wél veilig door het `rsync` commando naar de VPS gesynchroniseerd.
