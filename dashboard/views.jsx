@@ -935,9 +935,10 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
 
       <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0,
                     gridTemplateColumns: isMobile ? "1fr" : "1.5fr 1fr" }}>
-        <Card title="Equity curve" sub="Wallet value over time"
+        <Card title="Equity curve" 
+              sub={`Wallet value over time${bot?.fiatValue != null ? ` (≈ ${new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)})` : ""}`}
               right={<Segmented value={timeRange} options={["24h","7d","30d","All"]} onChange={setTimeRange} size="sm"/>}>
-          <EquityChart data={equity} height={isMobile ? 160 : 200}/>
+          <EquityChart data={equity} height={isMobile ? 160 : 200} fiatRatio={bot?.balance ? (bot?.fiatValue || 0) / bot.balance : 0} fiatSymbol={bot?.fiatSymbol || "EUR"}/>
         </Card>
         <Card title="Daily P&L" sub="Last 30 days">
           <DailyBars data={daily} height={isMobile ? 140 : 200}/>

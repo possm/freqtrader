@@ -347,7 +347,7 @@ function StatusDot({ kind = "up", pulse = false }) {
 }
 
 // ── Equity chart ─────────────────────────────────────────────────────────────
-function EquityChart({ data, height = 260 }) {
+function EquityChart({ data, height = 260, fiatRatio = 0, fiatSymbol = "" }) {
   const wrapRef = useRef(null);
   const [w, setW] = useState(800);
   const [hover, setHover] = useState(null);
@@ -488,11 +488,17 @@ function EquityChart({ data, height = 260 }) {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginTop: 3, paddingTop: 3, borderTop: "1px dashed var(--border)" }}>
                 <span className="muted">Equity</span>
-                <span className="num" style={{ fontWeight: 600 }}>{fmtUsd(plotData[hover.i].v + plotData[hover.i].unrealized, 0)}</span>
+                <span className="num" style={{ fontWeight: 600 }}>
+                  {fmtUsd(plotData[hover.i].v + plotData[hover.i].unrealized, 0)}
+                  {fiatRatio ? <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 6 }}>≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: fiatSymbol, maximumFractionDigits: 0}).format((plotData[hover.i].v + plotData[hover.i].unrealized) * fiatRatio)}</span> : null}
+                </span>
               </div>
             </div>
           ) : (
-            <div className="num" style={{ fontWeight: 600 }}>{fmtUsd(plotData[hover.i].v, 0)}</div>
+            <div className="num" style={{ fontWeight: 600 }}>
+              {fmtUsd(plotData[hover.i].v, 0)}
+              {fiatRatio ? <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 6 }}>≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: fiatSymbol, maximumFractionDigits: 0}).format(plotData[hover.i].v * fiatRatio)}</span> : null}
+            </div>
           )}
         </div>
       )}
