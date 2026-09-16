@@ -305,11 +305,11 @@ function useFreqtradeData(baseUrl) {
     queryKey: ['ft_fast', baseUrl],
     queryFn: async () => {
       if (!baseUrl) return null;
-      const [status, balance] = await Promise.all([
+      const [status, profit] = await Promise.all([
         ftFetch(baseUrl, "/api/v1/status"),
-        ftFetch(baseUrl, "/api/v1/balance").catch(() => null),
+        ftFetch(baseUrl, "/api/v1/profit").catch(() => null),
       ]);
-      return { status, balance };
+      return { status, profit };
     },
     refetchInterval: 5000,
     enabled: !!baseUrl,
@@ -325,14 +325,14 @@ function useFreqtradeData(baseUrl) {
     queryKey: ['ft_slow', baseUrl],
     queryFn: async () => {
       if (!baseUrl) return null;
-      const [trades, profit, daily, config, locksRes] = await Promise.all([
+      const [trades, balance, daily, config, locksRes] = await Promise.all([
         ftFetch(baseUrl, "/api/v1/trades?limit=500"),
-        ftFetch(baseUrl, "/api/v1/profit").catch(() => null),
+        ftFetch(baseUrl, "/api/v1/balance").catch(() => null),
         ftFetch(baseUrl, "/api/v1/daily?timescale=30").catch(() => null),
         ftFetch(baseUrl, "/api/v1/show_config").catch(() => null),
         ftFetch(baseUrl, "/api/v1/locks").catch(() => null),
       ]);
-      return { trades, profit, daily, config, locksRes };
+      return { trades, balance, daily, config, locksRes };
     },
     refetchInterval: 60000,
     enabled: !!baseUrl,
@@ -361,10 +361,10 @@ function useFreqtradeData(baseUrl) {
     }
 
     const status = fastData?.status ?? [];
-    const balance = fastData?.balance ?? null;
+    const profit = fastData?.profit ?? null;
     
     const trades = slowData?.trades ?? null;
-    const profit = slowData?.profit ?? null;
+    const balance = slowData?.balance ?? null;
     const daily = slowData?.daily ?? null;
     const config = slowData?.config ?? null;
     const locksRes = slowData?.locksRes ?? null;
