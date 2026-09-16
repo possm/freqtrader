@@ -17,3 +17,6 @@ docker-compose.override.yml
 # Local env (if any added later)
 .env
 .env.local
+node_modules
+dist
+

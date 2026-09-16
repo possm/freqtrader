@@ -1,3 +1,7 @@
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { setCurrency } from './components.jsx';
+
 // Freqtrade REST API client.
 // Exposes useFreqtradeData() hook that polls all endpoints every 5s.
 // Also exposes auth helpers (login / logout / stored config).
@@ -293,7 +297,7 @@ function buildBot(config, balance, positions) {
 
 // ── Main data hook ────────────────────────────────────────────────────────────
 function useFreqtradeData(baseUrl) {
-  const { useQuery } = window.ReactQuery || {};
+  
 
   // Fast-polling query (every 5s)
   const {
@@ -301,7 +305,7 @@ function useFreqtradeData(baseUrl) {
     error: fastError,
     refetch: refetchFast,
     isFetching: isFastFetching
-  } = (useQuery || (() => ({})))({
+  } = useQuery({
     queryKey: ['ft_fast', baseUrl],
     queryFn: async () => {
       if (!baseUrl) return null;
@@ -321,7 +325,7 @@ function useFreqtradeData(baseUrl) {
     error: slowError,
     refetch: refetchSlow,
     isFetching: isSlowFetching
-  } = (useQuery || (() => ({})))({
+  } = useQuery({
     queryKey: ['ft_slow', baseUrl],
     queryFn: async () => {
       if (!baseUrl) return null;
@@ -350,7 +354,7 @@ function useFreqtradeData(baseUrl) {
       loading: true, error: null, lastUpdated: null, refresh
     };
 
-    if (!baseUrl || !window.ReactQuery) return emptyState;
+    if (!baseUrl) return emptyState;
 
     const isInitialLoading = (!fastData && isFastFetching) || (!slowData && isSlowFetching);
     
@@ -488,10 +492,10 @@ async function fetchPlotConfig(baseUrl) {
   }
 }
 
-Object.assign(window, {
-  loadConfig, saveConfig, clearConfig,
-  login, refreshAccessToken, ensureToken, useFreqtradeData,
-  deleteLock, forceExit,
-  fetchPairCandles, fetchAllPairSignals, fetchWhitelist, fetchChartCandles,
-  fetchPlotConfig,
-});
+
+export {
+  POLL_INTERVAL, loadConfig, saveConfig, clearConfig, loadBots, saveBots, addBot, removeBot,
+  mapPosition, mapTrade, mapReason, buildEquity, buildSummary, EXCHANGE_DISPLAY_NAMES,
+  formatExchangeName, buildBot, useFreqtradeData, login, forceExit, deleteLock,
+  fetchPairCandles, fetchAllPairSignals, fetchWhitelist, fetchChartCandles, fetchPlotConfig
+};

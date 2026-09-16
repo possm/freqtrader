@@ -1,6 +1,11 @@
+import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
+import { createChart, CrosshairMode } from 'lightweight-charts';
+import { loadConfig, forceExit } from "./api.jsx";
+
+
 // Shared UI primitives — formatters, icons, sparklines, charts, table chrome.
 
-const { useState, useEffect, useMemo, useRef, useLayoutEffect } = React;
+
 
 // ── Breakpoint hook ───────────────────────────────────────────────────────────
 function useBreakpoint() {
@@ -831,8 +836,8 @@ function MobilePositionCard({ p, onPairClick, refresh }) {
     if (!window.confirm(`Are you sure you want to force sell ${p.pair} at market price?`)) return;
     try {
       setSelling(true);
-      const cfg = window.loadConfig?.() || JSON.parse(localStorage.getItem("ft_config") || "{}");
-      await window.forceExit(cfg?.url || "", p.id);
+      const cfg = loadConfig() || JSON.parse(localStorage.getItem("ft_config") || "{}");
+      await forceExit(cfg?.url || "", p.id);
       if (refresh) await refresh();
     } catch (err) {
       console.error("Force exit failed", err);
@@ -952,3 +957,11 @@ Object.assign(window, {
   useBreakpoint,
   MobilePositionCard, MobileTradeCard, MobileSignalCard,
 });
+
+export {
+  useBreakpoint, STAKE_SYMBOLS, setCurrency, getCurrency, fmtMoney, pnlColor, pnlTone,
+  fmtPrice, fmtCompact, fmtDuration, fmtTimeAgo, fmtTime, mulberry32, hashStr, sparkSeries,
+  Icon, PAIR_COLORS, PairToken, PairLabel, Card, PnlPill, TableStack, Sparkline, StatusDot,
+  EquityChart, DailyBars, WinLossDonut, ColHead, Segmented, Chip, Btn, SearchInput, KpiCard,
+  MobileRowCard, MobilePositionCard, MobileTradeCard, MobileSignalCard, applySort
+};

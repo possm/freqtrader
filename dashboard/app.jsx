@@ -1,6 +1,18 @@
+import React, { useState as aUseState, useEffect as aUseEffect, useCallback as aUseCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Icon, Btn, useBreakpoint, Card
+} from './components.jsx';
+import {
+  useFreqtradeData, login, loadConfig, saveConfig, clearConfig, loadBots, saveBots, addBot, removeBot
+} from './api.jsx';
+import {
+  OverviewView, ChartView, SignalsView, TradesView, PerformanceView, LocksView
+} from './views.jsx';
+
 // App shell: login screen, sidebar, top header, tab routing + data polling.
 
-const { useState: aUseState, useEffect: aUseEffect, useCallback: aUseCallback } = React;
+
 
 // ── Login screen ──────────────────────────────────────────────────────────────
 function LoginScreen({ onLogin }) {
@@ -564,19 +576,4 @@ function App() {
   );
 }
 
-const queryClient = new window.ReactQuery.QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: true,
-      retry: 1,
-      staleTime: 2000,
-    },
-  },
-});
-
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(
-  <window.ReactQuery.QueryClientProvider client={queryClient}>
-    <App/>
-  </window.ReactQuery.QueryClientProvider>
-);
+export default App;

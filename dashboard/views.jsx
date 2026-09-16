@@ -1,7 +1,18 @@
+import React, { useState as vUseState, useMemo as vUseMemo, useEffect, useRef } from 'react';
+import { createChart, CrosshairMode } from 'lightweight-charts';
+import { useQuery } from '@tanstack/react-query';
+import {
+  useBreakpoint, Card, Icon, PairToken, TableStack, pnlColor, pnlTone, fmtMoney, fmtPrice, 
+  fmtCompact, fmtDuration, fmtTimeAgo, fmtTime, KpiCard, StatusDot, PnlPill, EquityChart, 
+  DailyBars, WinLossDonut, ColHead, Segmented, Chip, Btn, SearchInput, MobileRowCard, 
+  MobilePositionCard, MobileTradeCard, MobileSignalCard, applySort, getCurrency, PairLabel
+} from './components.jsx';
+import { formatExchangeName } from './api.jsx';
+
 // Tab views: Overview, Positions, Trades, Performance.
 // All views receive data as props from the App's data context.
 
-const { useState: vUseState, useMemo: vUseMemo } = React;
+
 
 const TABLE_STYLE = { width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: 13.5, lineHeight: 1.3 };
 const TD = { padding: "0 14px", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap", height: "var(--row-h)", verticalAlign: "middle" };
@@ -1483,15 +1494,14 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
 
   React.useLayoutEffect(() => {
     const el = containerRef.current;
-    if (!el || !window.LightweightCharts) return;
-    const LC = window.LightweightCharts;
+    if (!el || false) return;
 
     const style = getComputedStyle(document.documentElement);
     const bg = style.getPropertyValue("--panel").trim() || "#10172a";
     const text = style.getPropertyValue("--text-2").trim() || "#b6becf";
     const gridLine = style.getPropertyValue("--border-2").trim() || "rgba(255,255,255,0.04)";
 
-    const chart = LC.createChart(el, {
+    const chart = createChart(el, {
       width:  Math.max(el.clientWidth,  300),
       height: Math.max(el.clientHeight, 300),
       layout: { background: { type: "solid", color: bg }, textColor: text, fontSize: 12 },
@@ -1499,7 +1509,7 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
         vertLines: { color: gridLine },
         horzLines: { color: gridLine },
       },
-      crosshair: { mode: LC.CrosshairMode.Normal },
+      crosshair: { mode: CrosshairMode.Normal },
       rightPriceScale: { borderColor: gridLine, scaleMargins: { top: 0.06, bottom: 0.20 } },
       timeScale: { borderColor: gridLine, timeVisible: true, secondsVisible: false },
     });
@@ -1732,7 +1742,6 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
 
     if (!positions || positions.length === 0) return;
 
-    const LC = window.LightweightCharts;
     const dashed = LC?.LineStyle?.Dashed ?? 2;
     const dotted = LC?.LineStyle?.Dotted ?? 1;
 
@@ -2425,3 +2434,7 @@ Object.assign(window, {
   OverviewView, PositionsView, TradesView, PerformanceView, LocksView,
   SignalsView, ChartView,
 });
+
+export {
+  OverviewView, ChartView, SignalsView, TradesView, PerformanceView, LocksView
+};
