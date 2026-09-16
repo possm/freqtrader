@@ -1473,7 +1473,7 @@ function addBinaryBgSeries(chart, scaleId, rows, col, t) {
 // Uses plot_config.main_plot to drive which extra series to overlay.
 // `positions` is an array of open positions for the selected pair, used to
 // draw horizontal Entry / SL / TP price lines on the candle series.
-function CandleChart({ data, mainPlot, positions, heikinAshi, extraVolTraces }) {
+function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTraces }) {
   const containerRef  = React.useRef(null);
   const chartRef      = React.useRef(null);
   const baseSeriesRef = React.useRef(null);   // { candles, volume }
@@ -1569,14 +1569,49 @@ function CandleChart({ data, mainPlot, positions, heikinAshi, extraVolTraces }) 
       }))
     );
 
-    // Entry / exit markers from the analyzed dataframe
+    // Entry / exit markers from the analyzed dataframe + Historical trades
     const markers = [];
+    
+    // Add signals from dataframe
     sorted.forEach(r => {
-      if (r.enter_long  || r.buy)  markers.push({ time: t(r), position: "belowBar", color: "#2ad07b", shape: "arrowUp",   text: "L" });
-      if (r.exit_long   || r.sell) markers.push({ time: t(r), position: "aboveBar", color: "#ff5d6c", shape: "arrowDown", text: "X" });
-      if (r.enter_short)           markers.push({ time: t(r), position: "aboveBar", color: "#ffb74a", shape: "arrowDown", text: "S" });
+      if (r.enter_long  || r.buy)  markers.push({ time: t(r), position: "belowBar", color: "rgba(42,208,123,0.5)", shape: "arrowUp",   text: "L" });
+      if (r.exit_long   || r.sell) markers.push({ time: t(r), position: "aboveBar", color: "rgba(255,93,108,0.5)", shape: "arrowDown", text: "X" });
+      if (r.enter_short)           markers.push({ time: t(r), position: "aboveBar", color: "rgba(255,183,74,0.5)", shape: "arrowDown", text: "S" });
     });
-    base.candles.setMarkers(markers.sort((a, b) => a.time - b.time));
+
+    // Add historical trades
+    if (trades) {
+      trades.forEach(trade => {
+        const openedT = toTimeSec(trade.openedAt);
+        const closedT = toTimeSec(trade.closedAt);
+        const pnl = trade.pnlPct;
+        const color = pnl >= 0 ? "#2ad07b" : "#ff5d6c";
+        
+        // Buy marker
+        markers.push({ time: openedT, position: "belowBar", color: "#38bdf8", shape: "arrowUp", text: `BUY ${trade.id}` });
+        // Sell marker
+        markers.push({ time: closedT, position: "aboveBar", color, shape: "arrowDown", text: `${pnl >= 0 ? 'TP' : 'SL'} ${pnl.toFixed(2)}%` });
+      });
+    }
+    
+    // De-duplicate markers falling on the exact same timestamp (LW charts can complain)
+    const uniqueMarkers = [];
+    const seen = new Set();
+    markers.sort((a, b) => a.time - b.time).forEach(m => {
+      const key = `${m.time}_${m.position}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueMarkers.push(m);
+      } else {
+        // Offset slightly or append text if multiple markers on same candle
+        const existing = uniqueMarkers.find(um => um.time === m.time && um.position === m.position);
+        if (existing && m.text && !existing.text.includes(m.text)) {
+          existing.text += ` | ${m.text}`;
+        }
+      }
+    });
+
+    base.candles.setMarkers(uniqueMarkers);
 
     // ── Rebuild main_plot overlay series ───────────────────────────────
     linesRef.current.forEach(s => chart.removeSeries(s));
@@ -2326,11 +2361,14 @@ function ChartView({ data, baseUrl, isMobile, selectedPair, onPairChange }) {
             </div>
           </div>
         )}
-        {chartData && (
+        {chartData && (() => {
+          const pairTrades = (data?.trades || []).filter(t => t.pair === chartData.pair);
+          return (
           <div style={{ flex: 1, minHeight: 0 }}>
-            <CandleChart data={chartData} mainPlot={mainPlot} positions={pairPositions} heikinAshi={haMode} extraVolTraces={extraVolTraces}/>
+            <CandleChart data={chartData} mainPlot={mainPlot} positions={pairPositions} trades={pairTrades} heikinAshi={haMode} extraVolTraces={extraVolTraces}/>
           </div>
-        )}
+          );
+        })()}
       </Card>
 
       {/* ── Subplots — one card per plot_config.subplots entry ────────── */}

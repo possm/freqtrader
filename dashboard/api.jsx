@@ -293,27 +293,82 @@ function buildBot(config, balance, positions) {
 
 // ── Main data hook ────────────────────────────────────────────────────────────
 function useFreqtradeData(baseUrl) {
-  const [state, setState] = React.useState({
-    positions: [],
-    trades: [],
-    equity: [],
-    daily: [],
-    summary: null,
-    bot: null,
-    strats: [],
-    locks: [],
-    loading: true,
-    error: null,
-    lastUpdated: null,
+  const { useQuery } = window.ReactQuery || {};
+
+  // Fast-polling query (every 5s)
+  const {
+    data: fastData,
+    error: fastError,
+    refetch: refetchFast,
+    isFetching: isFastFetching
+  } = (useQuery || (() => ({})))({
+    queryKey: ['ft_fast', baseUrl],
+    queryFn: async () => {
+      if (!baseUrl) return null;
+      const [status, balance] = await Promise.all([
+        ftFetch(baseUrl, "/api/v1/status"),
+        ftFetch(baseUrl, "/api/v1/balance").catch(() => null),
+      ]);
+      return { status, balance };
+    },
+    refetchInterval: 5000,
+    enabled: !!baseUrl,
   });
 
-  const rawRef = React.useRef({
-    status: [], trades: null, profit: null, daily: null, balance: null, config: null, locks: null
+  // Slow-polling query (every 60s)
+  const {
+    data: slowData,
+    error: slowError,
+    refetch: refetchSlow,
+    isFetching: isSlowFetching
+  } = (useQuery || (() => ({})))({
+    queryKey: ['ft_slow', baseUrl],
+    queryFn: async () => {
+      if (!baseUrl) return null;
+      const [trades, profit, daily, config, locksRes] = await Promise.all([
+        ftFetch(baseUrl, "/api/v1/trades?limit=500"),
+        ftFetch(baseUrl, "/api/v1/profit").catch(() => null),
+        ftFetch(baseUrl, "/api/v1/daily?timescale=30").catch(() => null),
+        ftFetch(baseUrl, "/api/v1/show_config").catch(() => null),
+        ftFetch(baseUrl, "/api/v1/locks").catch(() => null),
+      ]);
+      return { trades, profit, daily, config, locksRes };
+    },
+    refetchInterval: 60000,
+    enabled: !!baseUrl,
   });
 
-  const processData = React.useCallback(() => {
-    const { status, trades, profit, daily, balance, config, locksRes } = rawRef.current;
+  const refresh = React.useCallback(() => {
+    if (refetchFast) refetchFast();
+    if (refetchSlow) refetchSlow();
+  }, [refetchFast, refetchSlow]);
+
+  return React.useMemo(() => {
+    const emptyState = {
+      positions: [], trades: [], equity: [], daily: [],
+      summary: null, bot: null, strats: [], locks: [],
+      loading: true, error: null, lastUpdated: null, refresh
+    };
+
+    if (!baseUrl || !window.ReactQuery) return emptyState;
+
+    const isInitialLoading = (!fastData && isFastFetching) || (!slowData && isSlowFetching);
     
+    let error = null;
+    if (fastError || slowError) {
+       const err = fastError || slowError;
+       error = err.code === 401 ? "auth" : (err.message || "Connection error");
+    }
+
+    const status = fastData?.status ?? [];
+    const balance = fastData?.balance ?? null;
+    
+    const trades = slowData?.trades ?? null;
+    const profit = slowData?.profit ?? null;
+    const daily = slowData?.daily ?? null;
+    const config = slowData?.config ?? null;
+    const locksRes = slowData?.locksRes ?? null;
+
     const positions = (Array.isArray(status) ? status : []).map(mapPosition);
     const allTrades = (trades?.trades ?? []).map(mapTrade);
     const closedTrades = allTrades.filter(t => t.status === "closed");
@@ -333,85 +388,19 @@ function useFreqtradeData(baseUrl) {
     const strats = [...new Set(allTrades.map(t => t.strategy).filter(Boolean))];
     
     const locksArr = Array.isArray(locksRes?.locks) ? locksRes.locks : (Array.isArray(locksRes) ? locksRes : []);
-    const locks = locksArr.map(l => ({
+    const mappedLocks = locksArr.map(l => ({
       id: l.id, pair: l.pair, side: l.side || "*", reason: l.reason || "—",
       until: l.lock_end_timestamp ?? (l.lock_end_time ? new Date(l.lock_end_time).getTime() : null),
     })).filter(l => !l.until || l.until > Date.now()).sort((a, b) => (a.until ?? 0) - (b.until ?? 0));
 
-    setState({
+    return {
       positions, trades: closedTrades, equity, daily: dailyArr,
-      summary, bot, strats, locks,
-      loading: false, error: null, lastUpdated: Date.now(),
-    });
-  }, []);
-
-  const fetchFast = React.useCallback(async () => {
-    if (!baseUrl) return;
-    try {
-      const [status, balance] = await Promise.all([
-        ftFetch(baseUrl, "/api/v1/status"),
-        ftFetch(baseUrl, "/api/v1/balance").catch(() => null),
-      ]);
-      rawRef.current.status = status;
-      rawRef.current.balance = balance;
-      processData();
-    } catch (err) {
-      setState(prev => ({
-        ...prev, loading: false,
-        error: err.code === 401 ? "auth" : (err.message || "Connection error"),
-      }));
-    }
-  }, [baseUrl, processData]);
-
-  const fetchSlow = React.useCallback(async () => {
-    if (!baseUrl) return;
-    try {
-      const [trades, profit, daily, config, locksRes] = await Promise.all([
-        ftFetch(baseUrl, "/api/v1/trades?limit=500"),
-        ftFetch(baseUrl, "/api/v1/profit").catch(() => null),
-        ftFetch(baseUrl, "/api/v1/daily?timescale=30").catch(() => null),
-        ftFetch(baseUrl, "/api/v1/show_config").catch(() => null),
-        ftFetch(baseUrl, "/api/v1/locks").catch(() => null),
-      ]);
-      rawRef.current.trades = trades;
-      rawRef.current.profit = profit;
-      rawRef.current.daily = daily;
-      rawRef.current.config = config;
-      rawRef.current.locksRes = locksRes;
-      processData();
-    } catch (err) {
-      // Fast poll handles auth errors mostly, but catch here too.
-    }
-  }, [baseUrl, processData]);
-
-  const fetchAll = React.useCallback(async () => {
-    await Promise.all([fetchFast(), fetchSlow()]);
-  }, [fetchFast, fetchSlow]);
-
-  // Reset all cached data and state immediately when switching to a different bot.
-  // Without this, rawRef still holds the previous bot's trades/profit/config and
-  // processData() would briefly render a mix of new-bot positions + old-bot history.
-  React.useEffect(() => {
-    rawRef.current = { status: [], trades: null, profit: null, daily: null, balance: null, config: null, locksRes: null };
-    setState({
-      positions: [], trades: [], equity: [], daily: [],
-      summary: null, bot: null, strats: [], locks: [],
-      loading: true, error: null, lastUpdated: null,
-    });
-  }, [baseUrl]);
-
-  React.useEffect(() => {
-    if (!baseUrl) return;
-    fetchAll();
-    const fastId = setInterval(fetchFast, 5000);
-    const slowId = setInterval(fetchSlow, 60000);
-    return () => {
-      clearInterval(fastId);
-      clearInterval(slowId);
+      summary, bot, strats, locks: mappedLocks,
+      loading: isInitialLoading, error, 
+      lastUpdated: fastData ? Date.now() : null,
+      refresh
     };
-  }, [fetchAll, fetchFast, fetchSlow, baseUrl]);
-
-  return { ...state, refresh: fetchAll };
+  }, [baseUrl, fastData, slowData, fastError, slowError, isFastFetching, isSlowFetching, refresh]);
 }
 
 // Delete a pair lock by id — used by the dashboard's "unlock" action.

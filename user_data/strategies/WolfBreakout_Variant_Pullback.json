@@ -1,0 +1,31 @@
+{
+  "strategy_name": "WolfBreakout_Variant_Pullback",
+  "params": {
+    "max_open_trades": {
+      "max_open_trades": 8
+    },
+    "buy": {
+      "buy_donchian_period": 16,
+      "buy_ema_period": 40,
+      "buy_pullback_pct": 0.036,
+      "buy_vol_multiplier": 2.273
+    },
+    "roi": {
+      "0": 0.508,
+      "6038": 0.312,
+      "21172": 0.056,
+      "28797": 0
+    },
+    "stoploss": {
+      "stoploss": -0.227
+    },
+    "trailing": {
+      "trailing_stop": true,
+      "trailing_stop_positive": 0.01,
+      "trailing_stop_positive_offset": 0.092,
+      "trailing_only_offset_is_reached": true
+    }
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2026-09-08 13:25:40.319188+00:00"
+}

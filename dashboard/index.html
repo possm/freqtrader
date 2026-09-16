@@ -173,14 +173,25 @@
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@tanstack/react-query@5.28.4/build/umd/index.production.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 </head>
 <body>
 <div id="root"><div style="position:absolute;inset:0;display:grid;place-items:center;color:#535b71;font:13px 'Geist',sans-serif">Loading…</div></div>
 
-<script type="text/babel" src="components.jsx?v=1789557987"></script>
-<script type="text/babel" src="api.jsx?v=1789557987"></script>
-<script type="text/babel" src="views.jsx?v=1789557987"></script>
-<script type="text/babel" src="app.jsx?v=1789557987"></script>
+<script type="text/babel" src="components.jsx?v=1789557988"></script>
+<script type="text/babel" src="api.jsx?v=1789557988"></script>
+<script type="text/babel" src="views.jsx?v=1789557988"></script>
+<script type="text/babel" src="app.jsx?v=1789557988"></script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => {
+        console.error('ServiceWorker registration failed:', err);
+      });
+    });
+  }
+</script>
 </body>
 </html>

@@ -564,5 +564,19 @@ function App() {
   );
 }
 
+const queryClient = new window.ReactQuery.QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: true,
+      retry: 1,
+      staleTime: 2000,
+    },
+  },
+});
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App/>);
+root.render(
+  <window.ReactQuery.QueryClientProvider client={queryClient}>
+    <App/>
+  </window.ReactQuery.QueryClientProvider>
+);

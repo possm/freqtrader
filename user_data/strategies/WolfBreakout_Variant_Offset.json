@@ -1,0 +1,31 @@
+{
+  "strategy_name": "WolfBreakout_Variant_Offset",
+  "params": {
+    "max_open_trades": {
+      "max_open_trades": 8
+    },
+    "buy": {
+      "buy_donchian_period": 15,
+      "buy_ema_period": 42,
+      "buy_offset_hour": 5,
+      "buy_vol_multiplier": 2.252
+    },
+    "roi": {
+      "0": 0.167,
+      "289": 0.079,
+      "859": 0.052,
+      "2274": 0
+    },
+    "stoploss": {
+      "stoploss": -0.259
+    },
+    "trailing": {
+      "trailing_stop": true,
+      "trailing_stop_positive": 0.142,
+      "trailing_stop_positive_offset": 0.175,
+      "trailing_only_offset_is_reached": false
+    }
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2026-09-08 13:35:08.313951+00:00"
+}

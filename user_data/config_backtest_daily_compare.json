@@ -1,0 +1,51 @@
+{
+  "max_open_trades": 8,
+  "stake_currency": "USDT",
+  "stake_amount": 75,
+  "tradable_balance_ratio": 0.99,
+  "fiat_display_currency": "EUR",
+  "dry_run": true,
+  "cancel_open_orders_on_exit": false,
+  "trading_mode": "spot",
+  "margin_mode": "",
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0,
+    "check_depth_of_market": {"enabled": false, "bids_to_ask_delta": 1}
+  },
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  "timeframe": "1d",
+  "exchange": {
+    "name": "binance",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {},
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+      "XLM/USDT",
+      "XRP/USDT",
+      "ADA/USDT",
+      "BTC/USDT",
+      "LINK/USDT",
+      "SUI/USDT",
+      "STX/USDT",
+      "ETH/USDT",
+      "DOGE/USDT",
+      "TRX/USDT",
+      "XTZ/USDT"
+    ],
+    "pair_blacklist": []
+  },
+  "fee": 0.0026,
+  "dataformat_ohlcv": "feather",
+  "dataformat_trades": "feather",
+  "pairlists": [
+    {"method": "StaticPairList"}
+  ]
+}
