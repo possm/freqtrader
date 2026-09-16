@@ -46,7 +46,8 @@
         "key": "",
         "secret": "",
         "ccxt_config": {
-            "enableRateLimit": true
+            "enableRateLimit": true,
+            "hostname": "bybit.eu"
         },
         "ccxt_async_config": {
             "enableRateLimit": true

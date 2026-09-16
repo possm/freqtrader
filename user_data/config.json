@@ -43,7 +43,9 @@
         "name": "bybit",
         "key": "",
         "secret": "",
-        "ccxt_config": {},
+        "ccxt_config": {
+            "hostname": "bybit.eu"
+        },
         "ccxt_async_config": {},
         "pair_whitelist": [
             "XLM/USDT",
