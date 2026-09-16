@@ -42,12 +42,19 @@
         "stoploss_on_exchange": false
     },
     "exchange": {
-        "name": "bybiteu",
+        "name": "bybit",
         "key": "",
         "secret": "",
         "ccxt_config": {
-            "enableRateLimit": true,
-            "hostname": "bybit.eu"
+            "urls": {
+                "api": {
+                    "spot": "https://api.bybit.eu",
+                    "futures": "https://api.bybit.eu",
+                    "v2": "https://api.bybit.eu",
+                    "public": "https://api.bybit.eu",
+                    "private": "https://api.bybit.eu"
+                }
+            }
         },
         "ccxt_async_config": {
             "enableRateLimit": true
