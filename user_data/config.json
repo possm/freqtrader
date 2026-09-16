@@ -1,6 +1,6 @@
 {
     "max_open_trades": 8,
-    "stake_currency": "EUR",
+    "stake_currency": "USDT",
     "stake_amount": 125,
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "EUR",
@@ -40,24 +40,24 @@
         "stoploss_on_exchange": true
     },
     "exchange": {
-        "name": "kraken",
+        "name": "bybit",
         "key": "",
         "secret": "",
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [
-            "XLM/EUR",
-            "XRP/EUR",
-            "ADA/EUR",
-            "BTC/EUR",
-            "LINK/EUR",
-            "SUI/EUR",
-            "STX/EUR",
-            "ETH/EUR",
-            "DOGE/EUR",
-            "TRX/EUR",
-            "EGLD/EUR",
-            "XTZ/EUR"
+            "XLM/USDT",
+            "XRP/USDT",
+            "ADA/USDT",
+            "BTC/USDT",
+            "LINK/USDT",
+            "SUI/USDT",
+            "STX/USDT",
+            "ETH/USDT",
+            "DOGE/USDT",
+            "TRX/USDT",
+            "EGLD/USDT",
+            "XTZ/USDT"
         ],
         "pair_blacklist": []
     },
