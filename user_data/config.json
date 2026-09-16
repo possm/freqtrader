@@ -1,6 +1,6 @@
 {
     "max_open_trades": 8,
-    "stake_currency": "USDT",
+    "stake_currency": "USDC",
     "stake_amount": 125,
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "EUR",
@@ -56,18 +56,18 @@
         },
         "ccxt_async_config": {},
         "pair_whitelist": [
-            "XLM/USDT",
-            "XRP/USDT",
-            "ADA/USDT",
-            "BTC/USDT",
-            "LINK/USDT",
-            "SUI/USDT",
-            "STX/USDT",
-            "ETH/USDT",
-            "DOGE/USDT",
-            "TRX/USDT",
-            "EGLD/USDT",
-            "XTZ/USDT"
+            "XLM/USDC",
+            "XRP/USDC",
+            "ADA/USDC",
+            "BTC/USDC",
+            "LINK/USDC",
+            "SUI/USDC",
+            "STX/USDC",
+            "ETH/USDC",
+            "DOGE/USDC",
+            "TRX/USDC",
+            "EGLD/USDC",
+            "XTZ/USDC"
         ],
         "pair_blacklist": []
     },
