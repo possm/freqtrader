@@ -1569,6 +1569,17 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
       }))
     );
 
+    const candleTimes = display.filter(r => r.open != null).map(r => t(r));
+    const snapToCandle = (targetT) => {
+      if (candleTimes.length === 0) return targetT;
+      let best = candleTimes[0];
+      for (const ct of candleTimes) {
+        if (ct <= targetT) best = ct;
+        else break;
+      }
+      return best;
+    };
+
     // Entry / exit markers from the analyzed dataframe + Historical trades
     const markers = [];
     
@@ -1582,8 +1593,8 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
     // Add historical trades
     if (trades) {
       trades.forEach(trade => {
-        const openedT = toTimeSec(trade.openedAt);
-        const closedT = toTimeSec(trade.closedAt);
+        const openedT = snapToCandle(toTimeSec(trade.openedAt));
+        const closedT = snapToCandle(toTimeSec(trade.closedAt));
         const pnl = trade.pnlPct;
         const color = pnl >= 0 ? "#2ad07b" : "#ff5d6c";
         
@@ -1593,17 +1604,33 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
         markers.push({ time: closedT, position: "aboveBar", color, shape: "arrowDown", text: `${pnl >= 0 ? 'TP' : 'SL'} ${pnl.toFixed(2)}%` });
       });
     }
+
+    // Add open positions (only the entry marker)
+    if (positions) {
+      positions.forEach(pos => {
+        const openedT = snapToCandle(toTimeSec(pos.openedAt));
+        markers.push({ time: openedT, position: "belowBar", color: "#38bdf8", shape: "arrowUp", text: `BUY ${pos.id} (Open)` });
+      });
+    }
     
     // De-duplicate markers falling on the exact same timestamp (LW charts can complain)
     const uniqueMarkers = [];
     const seen = new Set();
+    
+    // LW Charts requires markers to be strictly in time-ascending order, 
+    // and if multiple markers share the exact time, their order matters less,
+    // but the library does not allow multiple markers with the SAME time natively without workarounds.
+    // However, LW Charts v4 does support multiple markers per time natively. 
+    // But we still de-duplicate them visually so text doesn't overlap messily.
     markers.sort((a, b) => a.time - b.time).forEach(m => {
+      // Must be present in candles to render
+      if (!candleTimes.includes(m.time)) return;
+      
       const key = `${m.time}_${m.position}`;
       if (!seen.has(key)) {
         seen.add(key);
         uniqueMarkers.push(m);
       } else {
-        // Offset slightly or append text if multiple markers on same candle
         const existing = uniqueMarkers.find(um => um.time === m.time && um.position === m.position);
         if (existing && m.text && !existing.text.includes(m.text)) {
           existing.text += ` | ${m.text}`;
