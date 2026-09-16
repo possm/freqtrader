@@ -421,7 +421,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                  value={fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0))}
                  sub={`${positions.length} position${positions.length !== 1 ? "s" : ""}`}/>
         <KpiCard label="Balance" loading={loading}
-                 value={bot ? fmtUsd(bot.balance) : "—"}
+                 value={bot ? (fmtUsd(bot.balance) + (bot.fiatValue ? ` (≈ ${new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)})` : "")) : "—"}
                  sub={bot ? `${fmtUsd(bot.available)} free · ${fmtUsd(bot.allocated)} alloc` : "—"}
                  spark={balSpark} info="Total equity (including unrealized profit)."/>
         <KpiCard label="Win rate" loading={loading}

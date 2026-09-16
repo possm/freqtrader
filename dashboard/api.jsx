@@ -279,6 +279,8 @@ function buildBot(config, balance, positions) {
     openSlots: maxSlots < 0 ? 99 : maxSlots,
     usedSlots: positions.length,
     balance: balance?.total ?? 0,
+    fiatValue: balance?.value ?? null,
+    fiatSymbol: balance?.symbol ?? null,
     available: avail,
     allocated: positions.reduce((a, p) => a + (p.stakeAmount || 0), 0),
     uptime: "—",
