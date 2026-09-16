@@ -36,11 +36,11 @@ Wanneer je wijzigingen doorvoert in de bots, configuraties of dashboard:
 - Voer `freqtrade hyperopt` NOOIT direct uit in de live strategieën map (`user_data/strategies/`). Freqtrade genereert automatisch `<strategy_name>.json` bestanden die bij een bot herstart de code overschrijven.
 - Verifieer vóór container herstart dat er geen onbedoelde `.json` bestanden in `user_data/strategies/` staan die live parameter overrides veroorzaken.
 
-## 5. Bybit Fee Assumptions & USDT Pairs
-Wanneer je ROI, winst, of drawdowns berekent/simuleert, gebruik dan ALTIJD de Bybit Spot tarieven:
-- **Maker fee:** 0.10% (voor limit orders)
-- **Taker fee:** 0.25% (voor market orders / stoploss)
-Let op: Handel altijd op Crypto-to-Crypto paren (bijv. USDT-paren). De "Fiat Pairs" (zoals paren die eindigen op /EUR) hebben op Bybit een hogere Maker fee (0.15%).
+## 5. Bybit Fee Assumptions & Pairs (Updated Oct 2026)
+Wanneer je ROI, winst, of drawdowns berekent/simuleert, gebruik dan ALTIJD de actuele Bybit (SATOS) Spot tarieven (Unified Flat Fee per 5 okt 2026):
+- **Maker fee:** 0.25%
+- **Taker fee:** 0.25%
+Let op: Voor Europese accounts (SATOS) is USDT Spot handel geblokkeerd. Gebruik altijd de **USDC** of **EUR** paren.
 
 ## 6. Environment Variables & API Keys Security
 - Plaats API-keys, geheimen of tokens NOOIT direct in configuratiebestanden (zoals `config.json` of `config_academic_dryrun.json`).
