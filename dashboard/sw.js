@@ -16,7 +16,7 @@ const URLS_TO_CACHE = [
   'https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js',
   'https://unpkg.com/react@18.3.1/umd/react.production.min.js',
   'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js',
-  'https://unpkg.com/@tanstack/react-query@5.28.4/build/umd/index.production.js',
+  'https://unpkg.com/@tanstack/react-query@4/build/umd/index.production.js',
   'https://unpkg.com/@babel/standalone@7.29.0/babel.min.js',
   'https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500;600&display=swap'
 ];
