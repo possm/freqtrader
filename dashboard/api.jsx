@@ -224,6 +224,8 @@ function buildSummary(profit, trades, positions) {
   const sorted = closedTrades.slice().sort((a, b) => b.pnlAbs - a.pnlAbs);
   return {
     totalPnl,
+    totalPnlFiat: profit?.profit_closed_fiat ?? null,
+    totalAllFiat: profit?.profit_all_fiat ?? null,
     roiPct: profit?.profit_closed_percent ?? ((totalPnl / (profit?.holding_value ?? 10000)) * 100),
     winRate: closedTrades.length ? (wins.length / closedTrades.length) * 100 : 0,
     lossRate: closedTrades.length ? (losses.length / closedTrades.length) * 100 : 0,

@@ -421,7 +421,16 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                  value={fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0))}
                  sub={`${positions.length} position${positions.length !== 1 ? "s" : ""}`}/>
         <KpiCard label="Balance" loading={loading}
-                 value={bot ? (fmtUsd(bot.balance) + (bot.fiatValue ? ` (≈ ${new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)})` : "")) : "—"}
+                 value={bot ? (
+                   <div style={{ display: "flex", flexDirection: "column" }}>
+                     <span>{fmtUsd(bot.balance)}</span>
+                     {bot.fiatValue != null && (
+                       <span style={{ fontSize: 14, color: "var(--muted)", fontWeight: 500, marginTop: 4 }}>
+                         ≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)}
+                       </span>
+                     )}
+                   </div>
+                 ) : "—"}
                  sub={bot ? `${fmtUsd(bot.available)} free · ${fmtUsd(bot.allocated)} alloc` : "—"}
                  spark={balSpark} info="Total equity (including unrealized profit)."/>
         <KpiCard label="Win rate" loading={loading}
@@ -864,6 +873,11 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
               <div className="num" style={{ fontSize: isMobile ? 32 : 44, fontWeight: 600, color: pnlColor(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)), letterSpacing: "-.015em", lineHeight: 1.1 }}>
                 {fmtSignedUsd(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0))}
               </div>
+              {s.totalAllFiat != null && (
+                <div style={{ fontSize: isMobile ? 18 : 22, color: "var(--muted)", fontWeight: 500, marginTop: -8 }}>
+                  ≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: bot?.fiatSymbol || "EUR"}).format(s.totalAllFiat)}
+                </div>
+              )}
               
               <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", borderTop: "1px dashed var(--border)", paddingTop: 16 }}>
                 <div>
