@@ -213,7 +213,7 @@ function buildSummary(profit, trades, positions) {
   const grossWin  = wins.reduce((a, t) => a + t.pnlAbs, 0);
   const grossLoss = Math.abs(losses.reduce((a, t) => a + t.pnlAbs, 0)) || 1;
   const profitFactor = grossWin / grossLoss;
-  const strats = [...new Set(closedTrades.map(t => t.strategy))];
+  const strats = [...new Set([...closedTrades].reverse().map(t => t.strategy).filter(Boolean))];
   const STRATEGY_STATS = strats.map(s => {
     const ts = closedTrades.filter(t => t.strategy === s);
     const w  = ts.filter(t => t.pnlAbs > 0).length;
@@ -389,7 +389,7 @@ function useFreqtradeData(baseUrl) {
     const bot = buildBot(config, balance, positions);
     setCurrency(bot.stake);
     const equity = buildEquity(daily?.data ?? [], bot.balance, summary.totalPnl, unrealizedPnl);
-    const strats = [...new Set(allTrades.map(t => t.strategy).filter(Boolean))];
+    const strats = [...new Set([...allTrades].reverse().map(t => t.strategy).filter(Boolean))];
     
     const locksArr = Array.isArray(locksRes?.locks) ? locksRes.locks : (Array.isArray(locksRes) ? locksRes : []);
     const mappedLocks = locksArr.map(l => ({
