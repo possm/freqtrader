@@ -338,9 +338,14 @@ function FreqtradeMark() {
 }
 
 // ── Bot switcher dropdown ─────────────────────────────────────────────────────
-function BotSwitcher({ activeBot, onSwitch }) {
+function BotSwitcher({ activeBot, data, onSwitch }) {
   const [open, setOpen] = aUseState(false);
   const bots = loadBots();
+  
+  // Use actual bot strategy/name from API if available, fallback to manual alias
+  const apiName = data?.bot?.strategy || (data?.bot?.name && data.bot.name !== "freqtrade" ? data.bot.name : null) || data?.strats?.[0];
+  const activeName = apiName || activeBot?.name || activeBot?.url || "Select bot";
+
   if (bots.length <= 1) {
     // Just show the active bot name (no dropdown if only one)
     return activeBot ? (
@@ -350,7 +355,7 @@ function BotSwitcher({ activeBot, onSwitch }) {
         fontSize: 13, color: "var(--text)",
       }}>
         <Icon name="bot" size={13}/>
-        <span style={{ fontWeight: 600 }}>{activeBot.name || activeBot.url}</span>
+        <span style={{ fontWeight: 600 }}>{activeName}</span>
       </div>
     ) : null;
   }
@@ -365,7 +370,7 @@ function BotSwitcher({ activeBot, onSwitch }) {
         fontSize: 13, color: "var(--text)", cursor: "pointer", fontFamily: "inherit",
       }}>
         <Icon name="bot" size={13}/>
-        <span style={{ fontWeight: 600 }}>{activeBot?.name || activeBot?.url || "Select bot"}</span>
+        <span style={{ fontWeight: 600 }}>{activeName}</span>
         <span style={{ fontSize: 10, marginLeft: 2, opacity: .6 }}>▼</span>
       </button>
       {open && (
