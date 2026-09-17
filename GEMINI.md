@@ -46,3 +46,7 @@ Let op: Voor Europese accounts (SATOS) is USDT Spot handel geblokkeerd. Gebruik 
 - Plaats API-keys, geheimen of tokens NOOIT direct in configuratiebestanden (zoals `config.json` of `config_academic_dryrun.json`).
 - Gebruik altijd het `.env` bestand in de hoofdmap in combinatie met de Freqtrade environment variable syntax (bijv. `FREQTRADE__EXCHANGE__KEY` en `FREQTRADE__EXCHANGE__SECRET`).
 - Het `.env` bestand wordt genegeerd door Git via `.gitignore`, maar wordt wél veilig door het `rsync` commando naar de VPS gesynchroniseerd.
+
+## 7. Local Testing Safety (CRITICAL)
+- **NO LIVE BOTS LOCALLY**: Start NOOIT de `freqtrade-hopt-live` container lokaal via Docker Compose als je backend functionaliteit (zoals het dashboard of API-koppelingen) wilt testen. Omdat de lokale map een `.env` bestand bevat met actieve API-keys, zal de bot direct in `live` mode opstarten en **ECHTE TRADES** uitvoeren met echt geld op Bybit.
+- **Enkel Dry-Run**: Gebruik voor lokaal testen ALTIJD de `freqtrade-academic-dryrun` container, of zorg dat je expliciet `dry_run: true` forceert, zodat er nooit onbedoeld geld wordt uitgegeven.
