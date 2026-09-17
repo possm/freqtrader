@@ -273,7 +273,7 @@ function buildBot(config, balance, positions) {
   let avail = 0;
   if (balance?.currencies && Array.isArray(balance.currencies)) {
     const c = balance.currencies.find(x => x.currency === stakeCurr);
-    if (c) avail = c.free;
+    if (c) avail = c.bot_owned ?? c.free;
   }
 
   return {
@@ -284,8 +284,8 @@ function buildBot(config, balance, positions) {
     stake: stakeCurr,
     openSlots: maxSlots < 0 ? 99 : maxSlots,
     usedSlots: positions.length,
-    balance: balance?.total ?? 0,
-    fiatValue: balance?.value ?? null,
+    balance: balance?.total_bot ?? balance?.total ?? 0,
+    fiatValue: balance?.value_bot ?? balance?.value ?? null,
     fiatSymbol: balance?.symbol ?? null,
     available: avail,
     allocated: positions.reduce((a, p) => a + (p.stakeAmount || 0), 0),
