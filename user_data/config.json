@@ -114,7 +114,7 @@
         "username": "freqtrader",
         "password": "freqtrader"
     },
-    "bot_name": "WolfTrend_1h_Candidate",
+    "bot_name": "WolfBreakout_Daily",
     "initial_state": "running",
     "force_entry_enable": true,
     "internals": {
