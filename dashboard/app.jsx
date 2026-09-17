@@ -403,7 +403,7 @@ function BotSwitcher({ activeBot, onSwitch }) {
 }
 
 // ── Top header ─────────────────────────────────────────────────────────────────
-function TopHeader({ tab, onRefresh, onLogout, connected, activeBot, onSwitchBot }) {
+function TopHeader({ tab, onRefresh, onLogout, connected, activeBot, data, onSwitchBot }) {
   const titles = {
     overview:    { t: "Dashboard",    s: "Live overview of bot activity, P&L and active positions" },
     chart:       { t: "Chart",        s: "Live candlestick chart with Bollinger Bands, volume and RSI / MFI" },
@@ -429,7 +429,7 @@ function TopHeader({ tab, onRefresh, onLogout, connected, activeBot, onSwitchBot
         <span className="muted" style={{ fontSize: 12.5 }}>{cur.s}</span>
       </div>
 
-      <BotSwitcher activeBot={activeBot} onSwitch={onSwitchBot}/>
+      <BotSwitcher activeBot={activeBot} data={data} onSwitch={onSwitchBot}/>
 
       <div style={{
         display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 8,
@@ -565,7 +565,7 @@ function App() {
 
       <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--bg)" }}>
         <TopHeader tab={tab} onRefresh={data.refresh} onLogout={handleLogout} connected={connected}
-                   activeBot={activeBot} onSwitchBot={handleSwitchBot}/>
+                   activeBot={activeBot} data={data} onSwitchBot={handleSwitchBot}/>
         {errorBanner}
 
         <div style={{ flex: 1, minHeight: 0, padding: 24, overflow: "auto" }}>
