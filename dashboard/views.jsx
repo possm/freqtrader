@@ -2216,7 +2216,8 @@ function ChartView({ data, baseUrl, isMobile, selectedPair, onPairChange }) {
   }, [pair, timeframe, loadChart]);
 
   const mainPlot = plotConfig?.main_plot || {};
-  let subplots = plotConfig?.subplots || {};
+  let rawSubplots = plotConfig?.subplots || {};
+  let subplots = Object.fromEntries(Object.entries(rawSubplots).filter(([_, traces]) => traces && typeof traces === 'object'));
   let extraVolTraces = {};
   
   // Find any subplot containing "volume" to plot natively synced to the main chart
