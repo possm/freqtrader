@@ -1,5 +1,5 @@
 import React, { useState as vUseState, useMemo as vUseMemo, useEffect, useRef } from 'react';
-import { createChart, CrosshairMode, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers } from 'lightweight-charts';
+import { createChart, CrosshairMode, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers, LineStyle } from 'lightweight-charts';
 import { useQuery } from '@tanstack/react-query';
 import {
   useBreakpoint, Card, Icon, PairToken, TableStack, pnlColor, pnlTone, fmtMoney, fmtPrice, 
@@ -1746,8 +1746,8 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
 
     if (!positions || positions.length === 0) return;
 
-    const dashed = LC?.LineStyle?.Dashed ?? 2;
-    const dotted = LC?.LineStyle?.Dotted ?? 1;
+    const dashed = LineStyle?.Dashed ?? 2;
+    const dotted = LineStyle?.Dotted ?? 1;
 
     // Grab the latest ema_trend for the trend exit
     const lastRow = data?.rows?.[data.rows.length - 1];
