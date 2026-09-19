@@ -1,4 +1,4 @@
-const CACHE_NAME = 'freqtrader-cache-v2';
+const CACHE_NAME = 'freqtrader-cache-v3';
 
 const URLS_TO_CACHE = [
   './',
@@ -37,7 +37,7 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
