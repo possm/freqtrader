@@ -155,6 +155,8 @@ const Icon = ({ name, size = 16, style: s, ...rest }) => {
 };
 
 // ── Pair token ───────────────────────────────────────────────────────────────
+const SUPPORTED_ICONS = new Set(['$PAC', '0XBTC', '1INCH', '2GIVE', 'AAVE', 'ABT', 'ACT', 'ACTN', 'ADA', 'ADD', 'ADX', 'AE', 'AEON', 'AEUR', 'AGI', 'AGRS', 'AION', 'ALGO', 'AMB', 'AMP', 'AMPL', 'ANKR', 'ANT', 'APE', 'APPC', 'ARDR', 'ARG', 'ARK', 'ARN', 'ARNX', 'ARY', 'AST', 'ATLAS', 'ATM', 'ATOM', 'AUDR', 'AURY', 'AUTO', 'AVAX', 'AYWA', 'BAB', 'BAL', 'BAND', 'BAT', 'BAY', 'BCBC', 'BCC', 'BCD', 'BCH', 'BCIO', 'BCN', 'BCO', 'BCPT', 'BDL', 'BEAM', 'BELA', 'BIX', 'BLCN', 'BLK', 'BLOCK', 'BLZ', 'BNB', 'BNT', 'BNTY', 'BOOTY', 'BOS', 'BPT', 'BQ', 'BRD', 'BSD', 'BSV', 'BTC', 'BTCD', 'BTCH', 'BTCP', 'BTCZ', 'BTDX', 'BTG', 'BTM', 'BTS', 'BTT', 'BTX', 'BURST', 'BZE', 'CALL', 'CC', 'CDN', 'CDT', 'CHAIN', 'CHAT', 'CHIPS', 'CHSB', 'CHZ', 'CIX', 'CLAM', 'CLOAK', 'CMM', 'CMT', 'CND', 'CNX', 'CNY', 'COB', 'COLX', 'COMP', 'COQUI', 'CRED', 'CRPT', 'CRV', 'CRW', 'CS', 'CTR', 'CTXC', 'CVC', 'D', 'DAI', 'DASH', 'DAT', 'DATA', 'DBC', 'DCN', 'DCR', 'DEEZ', 'DENT', 'DEW', 'DGB', 'DGD', 'DLT', 'DNT', 'DOCK', 'DOGE', 'DOT', 'DRGN', 'DROP', 'DTA', 'DTH', 'DTR', 'EBST', 'ECA', 'EDG', 'EDO', 'EDOGE', 'ELA', 'ELEC', 'ELF', 'ELIX', 'ELLA', 'EMB', 'EMC', 'EMC2', 'ENG', 'ENJ', 'ENTRP', 'EON', 'EOP', 'EOS', 'EQLI', 'EQUA', 'ETC', 'ETH', 'ETHOS', 'ETN', 'ETP', 'EUR', 'EVX', 'EXMO', 'EXP', 'FAIR', 'FCT', 'FIDA', 'FIL', 'FJC', 'FLDC', 'FLO', 'FLUX', 'FSN', 'FTC', 'FUEL', 'FUN', 'GAME', 'GAS', 'GBP', 'GBX', 'GBYTE', 'GENERIC', 'GIN', 'GLXT', 'GMR', 'GMT', 'GNO', 'GNT', 'GOLD', 'GRC', 'GRIN', 'GRS', 'GRT', 'GSC', 'GTO', 'GUP', 'GUSD', 'GVT', 'GXS', 'GZR', 'HIGHT', 'HNS', 'HODL', 'HOT', 'HPB', 'HSR', 'HT', 'HTML', 'HUC', 'HUSD', 'HUSH', 'ICN', 'ICP', 'ICX', 'IGNIS', 'ILK', 'INK', 'INS', 'ION', 'IOP', 'IOST', 'IOTX', 'IQ', 'ITC', 'JNT', 'JPY', 'KCS', 'KIN', 'KLOWN', 'KMD', 'KNC', 'KRB', 'KSM', 'LBC', 'LEND', 'LEO', 'LINK', 'LKK', 'LOOM', 'LPT', 'LRC', 'LSK', 'LTC', 'LUN', 'MAID', 'MANA', 'MATIC', 'MAX', 'MCAP', 'MCO', 'MDA', 'MDS', 'MED', 'MEETONE', 'MFT', 'MIOTA', 'MITH', 'MKR', 'MLN', 'MNX', 'MNZ', 'MOAC', 'MOD', 'MONA', 'MSR', 'MTH', 'MTL', 'MUSIC', 'MZC', 'NANO', 'NAS', 'NAV', 'NCASH', 'NDZ', 'NEBL', 'NEO', 'NEOS', 'NEU', 'NEXO', 'NGC', 'NIO', 'NKN', 'NLC2', 'NLG', 'NMC', 'NMR', 'NPXS', 'NTBC', 'NULS', 'NXS', 'NXT', 'OAX', 'OK', 'OMG', 'OMNI', 'ONE', 'ONG', 'ONT', 'OOT', 'OST', 'OX', 'OXT', 'OXY', 'PART', 'PASC', 'PASL', 'PAX', 'PAXG', 'PAY', 'PAYX', 'PINK', 'PIRL', 'PIVX', 'PLR', 'POA', 'POE', 'POLIS', 'POLY', 'POT', 'POWR', 'PPC', 'PPP', 'PPT', 'PRE', 'PRL', 'PUNGO', 'PURA', 'QASH', 'QIWI', 'QLC', 'QNT', 'QRL', 'QSP', 'QTUM', 'R', 'RADS', 'RAP', 'RAY', 'RCN', 'RDD', 'RDN', 'REN', 'REP', 'REPV2', 'REQ', 'RHOC', 'RIC', 'RISE', 'RLC', 'RPX', 'RUB', 'RVN', 'RYO', 'SAFE', 'SAFEMOON', 'SAI', 'SALT', 'SAN', 'SAND', 'SBD', 'SBERBANK', 'SC', 'SER', 'SHIFT', 'SIB', 'SIN', 'SKL', 'SKY', 'SLR', 'SLS', 'SMART', 'SNGLS', 'SNM', 'SNT', 'SNX', 'SOC', 'SOL', 'SPACEHBIT', 'SPANK', 'SPHTX', 'SRN', 'STAK', 'START', 'STEEM', 'STORJ', 'STORM', 'STOX', 'STQ', 'STRAT', 'STX', 'SUB', 'SUMO', 'SUSHI', 'SYS', 'TAAS', 'TAU', 'TBX', 'TEL', 'TEN', 'TERN', 'TGCH', 'THETA', 'TIX', 'TKN', 'TKS', 'TNB', 'TNC', 'TNT', 'TOMO', 'TPAY', 'TRIG', 'TRTL', 'TRX', 'TUSD', 'TZC', 'UBQ', 'UMA', 'UNI', 'UNITY', 'USD', 'USDC', 'USDT', 'UTK', 'VERI', 'VET', 'VIA', 'VIB', 'VIBE', 'VIVO', 'VRC', 'VRSC', 'VTC', 'VTHO', 'WABI', 'WAN', 'WAVES', 'WAX', 'WBTC', 'WGR', 'WICC', 'WINGS', 'WPR', 'WTC', 'X', 'XAS', 'XBC', 'XBP', 'XBY', 'XCP', 'XDN', 'XEM', 'XIN', 'XLM', 'XMCC', 'XMG', 'XMO', 'XMR', 'XMY', 'XP', 'XPA', 'XPM', 'XPR', 'XRP', 'XSG', 'XTZ', 'XUC', 'XVC', 'XVG', 'XZC', 'YFI', 'YOYOW', 'ZCL', 'ZEC', 'ZEL', 'ZEN', 'ZEST', 'ZIL', 'ZILLA', 'ZRX']);
+
 const PAIR_COLORS = {
   BTC:   ["#f7931a", "#3a1d04"],
   ETH:   ["#8a8fd9", "#15173a"],
@@ -180,10 +182,12 @@ const PAIR_COLORS = {
 function PairToken({ pair, size = 26, onClick }) {
   const sym = pair.split("/")[0];
   const [fg, bg] = PAIR_COLORS[sym] || ["#9aa5b9", "#1d2740"];
-  const [imgOk, setImgOk] = useState(true);
-  // React reuses instances across table re-sorts; reset the fallback when the coin changes.
-  useEffect(() => { setImgOk(true); }, [sym]);
-  const imgUrl = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@master/32/color/${sym.toLowerCase()}.png`;
+  
+  const hasIcon = SUPPORTED_ICONS.has(sym);
+  const [imgOk, setImgOk] = useState(hasIcon);
+  
+  useEffect(() => { setImgOk(SUPPORTED_ICONS.has(sym)); }, [sym]);
+  const imgUrl = hasIcon ? `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@master/32/color/${sym.toLowerCase()}.png` : null;
   const label = sym.length <= 3 ? sym : sym.slice(0, 3);
   const clickable = !!onClick;
   return (
