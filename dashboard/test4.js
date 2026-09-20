@@ -1,0 +1,24 @@
+import puppeteer from 'puppeteer';
+
+(async () => {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  page.on('pageerror', err => {
+    console.error('Page error:', err.message);
+  });
+  page.on('console', msg => {
+    console.log('Console:', msg.type(), msg.text());
+  });
+  await page.goto('http://192.168.2.4:80'); 
+  await new Promise(r => setTimeout(r, 1000));
+  
+  await page.type('input[placeholder="Wolf Custom Swing"]', 'TestBot');
+  await page.type('input[type="password"]', 'freqtrader');
+  await page.click('button[type="submit"]');
+  
+  await new Promise(r => setTimeout(r, 5000));
+  await page.screenshot({ path: 'screenshot4.png' });
+  const html = await page.content();
+  console.log(html.substring(0, 500));
+  await browser.close();
+})();
