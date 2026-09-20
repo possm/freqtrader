@@ -2241,7 +2241,6 @@ function ChartView({ data, baseUrl, isMobile, selectedPair, onPairChange }) {
     [allPositions, pair]
   );
 
-  const TIMEFRAMES = ["5m", "15m", "30m", "1h", "4h", "1d"];
   const selectStyle = {
     background: "var(--panel-2)", border: "1px solid var(--border-2)", color: "var(--text)",
     borderRadius: 8, padding: "6px 28px 6px 10px", fontFamily: "inherit", fontSize: 13,
@@ -2260,7 +2259,6 @@ function ChartView({ data, baseUrl, isMobile, selectedPair, onPairChange }) {
         <select value={pair} onChange={e => setPair(e.target.value)} style={{ ...selectStyle, minWidth: 130 }}>
           {pairs.map(p => <option key={p}>{p}</option>)}
         </select>
-        <Segmented value={timeframe} options={TIMEFRAMES} onChange={setTimeframe} size="sm"/>
         <Btn tone={haMode ? "accent" : "ghost"} size="sm" onClick={() => setHaMode(v => !v)}>HA</Btn>
         <Btn icon="refresh" tone="ghost" size="sm" disabled={loading || !pair} onClick={() => loadChart(pair, timeframe)}>
           {loading ? "Loading…" : "Refresh"}
