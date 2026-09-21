@@ -58,10 +58,6 @@ class WolfBreakout_Daily(IStrategy):
             "Volume Metrics": {
                 "volume": {"color": "#686868", "type": "bar"},
                 "target_volume": {"color": "#ff0000", "type": "line"}
-            },
-            "Target Status": {
-                "target_price_achieved": {"color": "#00ff00"},
-                "target_vol_achieved": {"color": "#00ff00"}
             }
         }
     }
@@ -79,11 +75,6 @@ class WolfBreakout_Daily(IStrategy):
         # Use .value if it's a DecimalParameter, otherwise just the float
         vol_mult = self.buy_vol_multiplier.value if hasattr(self.buy_vol_multiplier, 'value') else self.buy_vol_multiplier
         dataframe["target_volume"] = dataframe["volume_mean20"] * vol_mult
-        
-        # Binary flags for whether the target was achieved (1 = achieved, 0 = missed)
-        import numpy as np
-        dataframe["target_price_achieved"] = np.where(dataframe["close"] > dataframe["target_price"], 1, 0)
-        dataframe["target_vol_achieved"] = np.where(dataframe["volume"] > dataframe["target_volume"], 1, 0)
 
         return dataframe
 

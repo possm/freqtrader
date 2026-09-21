@@ -1394,8 +1394,8 @@ function SignalCell({ cell, row }) {
     return <td style={{ ...TD, textAlign: "right", color: "var(--muted)" }}>—</td>;
   }
 
-  // Thermometer for target_price
-  if (cell.key === "target_price" && row?.close != null) {
+  // Thermometer for target_price and ema_trend
+  if ((cell.key === "target_price" || cell.key === "ema_trend") && row?.close != null) {
     const target = cell.value;
     const current = row.close;
     // Calculate progress relative to a 10% drop to give the bar some visual scale
