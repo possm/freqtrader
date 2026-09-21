@@ -1519,9 +1519,7 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
       upColor: "#2ad07b", downColor: "#ff5d6c",
       borderUpColor: "#2ad07b", borderDownColor: "#ff5d6c",
       wickUpColor: "#2ad07b", wickDownColor: "#ff5d6c",
-      priceLineColor: "#38bdf8", // Sky blue for the current price line
-      priceLineWidth: 1,
-      priceLineStyle: 3, // 3 = Large Dashed
+      priceLineVisible: false,
     });
     const volume = chart.addSeries(HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "vol" });
     chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.80, bottom: 0 } });
@@ -1744,13 +1742,27 @@ function CandleChart({ data, mainPlot, positions, trades, heikinAshi, extraVolTr
     });
     priceLinesRef.current = [];
 
-    if (!positions || positions.length === 0) return;
-
     const dashed = LineStyle?.Dashed ?? 2;
     const dotted = LineStyle?.Dotted ?? 1;
+    const lastRow = data?.rows?.[data.rows.length - 1];
+
+    // 1. Always draw a "LIVE" price line using the most accurate current price available
+    // (Prefer the fast-polling position price if active, otherwise fallback to last candle close)
+    const openPos = positions?.length > 0 ? positions[0] : null;
+    const livePrice = openPos?.current ?? lastRow?.close;
+    if (livePrice != null && isFinite(livePrice)) {
+      priceLinesRef.current.push(base.candles.createPriceLine({
+        price: livePrice,
+        color: "#38bdf8",
+        lineWidth: 1, lineStyle: dashed,
+        axisLabelVisible: true,
+        title: "LIVE",
+      }));
+    }
+
+    if (!positions || positions.length === 0) return;
 
     // Grab the latest ema_trend for the trend exit
-    const lastRow = data?.rows?.[data.rows.length - 1];
     const trendExit = lastRow?.ema_trend;
 
     // For each open position on this pair, draw horizontal lines.
