@@ -52,14 +52,12 @@ class WolfBreakout_Daily(IStrategy):
     plot_config = {
         "main_plot": {
             "ema_trend": {"color": "#ffaa00"},
-            "donchian_high": {"color": "#00aaff", "type": "line", "dash": "dash"},
-            "target_price": {"color": "#00ff00", "type": "line", "dash": "dot"},
+            "target_price": {"color": "#00aaff", "type": "line", "dash": "dash"},
         },
         "subplots": {
             "Volume Metrics": {
                 "volume": {"color": "#686868", "type": "bar"},
-                "volume_mean20": {"color": "#ff0000"},
-                "target_volume": {"color": "#00ff00", "type": "line"}
+                "target_volume": {"color": "#ff0000", "type": "line"}
             },
             "Target Status": {
                 "target_price_achieved": {"color": "#00ff00"},

@@ -1214,6 +1214,7 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
   }), [signals.rows, signalDefs]);
 
   // Sort: entry signal first, then most binary signals on, then most oversold by RSI, errors last.
+  // Sort: entry signal first, then most binary signals on, then by proximity to target_price, then RSI.
   const sorted = vUseMemo(() => {
     const arr = [...processed];
     arr.sort((a, b) => {
@@ -1222,6 +1223,14 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
       if (!b.ok) return -1;
       if (a.ready !== b.ready) return a.ready ? -1 : 1;
       if (b.fired !== a.fired) return b.fired - a.fired;
+      
+      const tA = a.candle?.target_price;
+      const tB = b.candle?.target_price;
+      if (tA && tB && a.close && b.close) {
+        // Higher ratio = closer to breaking out (or further above)
+        return (b.close / tB) - (a.close / tA);
+      }
+      
       return (a.rsi ?? 100) - (b.rsi ?? 100);
     });
     return arr;
@@ -1384,7 +1393,9 @@ function SignalCell({ cell }) {
   if (cell.value == null) {
     return <td style={{ ...TD, textAlign: "right", color: "var(--muted)" }}>—</td>;
   }
-  const txt = cell.type === "price" ? fmtPrice(cell.value) : Number(cell.value).toFixed(1);
+  const txt = cell.type === "price" 
+    ? fmtPrice(cell.value) 
+    : (Math.abs(cell.value) >= 1000 ? fmtCompact(cell.value) : Number(cell.value).toFixed(1));
   return (
     <td className="num" style={{
       ...TD, textAlign: "right",
