@@ -53,11 +53,13 @@ class WolfBreakout_Daily(IStrategy):
         "main_plot": {
             "ema_trend": {"color": "#ffaa00"},
             "donchian_high": {"color": "#00aaff", "type": "line", "dash": "dash"},
+            "target_price": {"color": "#00ff00", "type": "line", "dash": "dot"},
         },
         "subplots": {
             "Volume Metrics": {
                 "volume": {"color": "#686868", "type": "bar"},
-                "volume_mean20": {"color": "#ff0000"}
+                "volume_mean20": {"color": "#ff0000"},
+                "target_volume": {"color": "#00ff00", "type": "line"}
             }
         }
     }
@@ -69,6 +71,12 @@ class WolfBreakout_Daily(IStrategy):
         # Trend indicators
         dataframe["ema_trend"] = ta.EMA(dataframe, timeperiod=self.buy_ema_period)
         dataframe["volume_mean20"] = dataframe["volume"].rolling(20).mean()
+
+        # Explicit target columns for the Dashboard Signals tab
+        dataframe["target_price"] = dataframe["donchian_high"]
+        # Use .value if it's a DecimalParameter, otherwise just the float
+        vol_mult = self.buy_vol_multiplier.value if hasattr(self.buy_vol_multiplier, 'value') else self.buy_vol_multiplier
+        dataframe["target_volume"] = dataframe["volume_mean20"] * vol_mult
 
         return dataframe
 
