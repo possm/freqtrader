@@ -7,7 +7,7 @@ import {
   useFreqtradeData, login, loadConfig, saveConfig, clearConfig, loadBots, saveBots, addBot, removeBot
 } from './api.jsx';
 import {
-  OverviewView, ChartView, SignalsView, TradesView, PerformanceView, LocksView
+  OverviewView, ChartView, SignalsView, TradesView, PerformanceView, LocksView, StrategiesView, RiskView, SettingsView
 } from './views.jsx';
 
 // App shell: login screen, sidebar, top header, tab routing + data polling.
@@ -243,28 +243,31 @@ function Sidebar({ tab, setTab, compact }) {
       </nav>
 
       <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
-        <SideBtn icon="bot" label="Strategies" compact={compact}/>
-        <SideBtn icon="shield" label="Risk" compact={compact}/>
-        <SideBtn icon="settings" label="Settings" compact={compact}/>
+        <SideBtn icon="bot" label="Strategies" id="strategies" tab={tab} setTab={setTab} compact={compact}/>
+        <SideBtn icon="shield" label="Risk" id="risk" tab={tab} setTab={setTab} compact={compact}/>
+        <SideBtn icon="settings" label="Settings" id="settings" tab={tab} setTab={setTab} compact={compact}/>
       </div>
     </aside>
   );
 }
 
-function SideBtn({ icon, label, compact }) {
+function SideBtn({ icon, label, id, tab, setTab, compact }) {
+  const on = tab === id;
   return (
-    <button type="button" title={compact ? label : ""}
+    <button type="button" title={compact ? label : ""} onClick={() => setTab(id)}
       style={{
         display: "flex", alignItems: "center", gap: 12,
         padding: compact ? "10px 0" : "9px 12px",
-        background: "transparent", color: "var(--muted)",
+        background: on ? "var(--panel-2)" : "transparent", color: on ? "var(--text)" : "var(--muted)",
         border: 0, borderRadius: 9, fontFamily: "inherit", fontSize: 13,
-        cursor: "pointer", textAlign: "left",
+        cursor: "pointer", textAlign: "left", position: "relative",
         justifyContent: compact ? "center" : "flex-start",
         width: compact ? 44 : "100%", margin: compact ? "0 auto" : 0,
       }}>
-      <Icon name={icon} size={16}/>
+      {on && !compact && <span style={{ position: "absolute", left: -12, top: 8, bottom: 8, width: 2.5, background: "var(--text)", borderRadius: 99 }}/>}
+      <Icon name={icon} size={16} style={{ color: on ? "var(--text)" : "currentColor" }}/>
       {!compact && <span>{label}</span>}
+      {compact && on && <span style={{ position: "absolute", left: 0, top: 12, bottom: 12, width: 2.5, background: "var(--text)", borderRadius: 99 }}/>}
     </button>
   );
 }
@@ -303,6 +306,7 @@ function MobileTopBar({ tab, connected, onRefresh, activeBot, onLogout }) {
     overview: "Dashboard", chart: "Chart",
     signals: "Signals", trades: "Trades",
     performance: "Performance", locks: "Pair Locks",
+    strategies: "Strategies", risk: "Risk", settings: "Settings",
   };
   return (
     <header className="chrome mobile-topbar" style={{
@@ -411,6 +415,9 @@ function TopHeader({ tab, onRefresh, onLogout, connected, activeBot, onSwitchBot
     trades:      { t: "Trade history", s: "Closed and cancelled trades · filter, sort, export" },
     performance: { t: "Performance",  s: "All-time metrics, equity curve, strategy breakdown" },
     locks:       { t: "Pair locks",    s: "Pairs currently blocked by protections — unlock from here" },
+    strategies:  { t: "Strategies",    s: "Active strategy settings and available strategies" },
+    risk:        { t: "Risk",          s: "Risk management, limits, and exposure" },
+    settings:    { t: "Settings",      s: "Dashboard preferences and bot information" },
   };
   const cur = titles[tab];
   const [now, setNow] = aUseState(new Date());
@@ -534,6 +541,9 @@ function App() {
       {tab === "trades"      && <TradesView      data={data}                    isMobile={isMobile} goToChart={goToChart} focusTradeId={tradeFocus} clearFocus={() => setTradeFocus(null)}/>}
       {tab === "performance" && <PerformanceView data={data} timeRange={timeRange} setTimeRange={setTimeRange} isMobile={isMobile} goToChart={goToChart}/>}
       {tab === "locks"       && <LocksView       data={data}                    isMobile={isMobile} goToChart={goToChart}/>}
+      {tab === "strategies"  && <StrategiesView  data={data} baseUrl={baseUrl}  isMobile={isMobile}/>}
+      {tab === "risk"        && <RiskView        data={data}                    isMobile={isMobile}/>}
+      {tab === "settings"    && <SettingsView    data={data} baseUrl={baseUrl}  isMobile={isMobile} compactNav={compactNav} setCompactNav={setCompactNav}/>}
     </>
   );
 

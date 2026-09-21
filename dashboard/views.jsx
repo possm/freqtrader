@@ -7,7 +7,7 @@ import {
   DailyBars, WinLossDonut, ColHead, Segmented, Chip, Btn, SearchInput, MobileRowCard, 
   MobilePositionCard, MobileTradeCard, MobileSignalCard, applySort, getCurrency, PairLabel
 } from './components.jsx';
-import { formatExchangeName, forceExit, deleteLock, fetchWhitelist, fetchPlotConfig, fetchChartCandles, fetchAllPairSignals } from './api.jsx';
+import { formatExchangeName, forceExit, deleteLock, fetchWhitelist, fetchPlotConfig, fetchChartCandles, fetchAllPairSignals, fetchVersion, fetchStrategies } from './api.jsx';
 
 // Tab views: Overview, Positions, Trades, Performance.
 // All views receive data as props from the App's data context.
@@ -2507,5 +2507,222 @@ Object.assign(window, {
 });
 
 export {
-  OverviewView, ChartView, SignalsView, TradesView, PerformanceView, LocksView
+  OverviewView, ChartView, SignalsView, TradesView, PerformanceView, LocksView,
+  StrategiesView, RiskView, SettingsView
 };
+
+
+// ════════════════════════════════════════════════════════════════════════════
+//                            NEW VIEWS
+// ════════════════════════════════════════════════════════════════════════════
+
+function StrategiesView({ data, baseUrl, isMobile }) {
+  const { data: stratData, isLoading } = useQuery({
+    queryKey: ['strategies', baseUrl],
+    queryFn: () => fetchStrategies(baseUrl),
+    enabled: !!baseUrl,
+  });
+
+  const { bot, rawConfig } = data;
+  const strategies = stratData?.strategies || [];
+  
+  if (data.loading) return <div style={{ padding: 24 }}>Loading...</div>;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 800 }}>
+      <Card title="Active Strategy">
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Name</div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{bot?.strategy || "Unknown"}</div>
+          </div>
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Timeframe</div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{bot?.timeframe || "Unknown"}</div>
+          </div>
+          {rawConfig?.minimal_roi && (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Minimal ROI</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {Object.entries(rawConfig.minimal_roi).map(([time, roi]) => (
+                  <div key={time} style={{ background: "var(--panel-2)", padding: "4px 8px", borderRadius: 6, fontSize: 13, border: "1px solid var(--border)" }}>
+                    <span className="muted" style={{ marginRight: 6 }}>{time}m</span>
+                    <span style={{ fontWeight: 500 }}>{(roi * 100).toFixed(2)}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {rawConfig?.stoploss !== undefined && (
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Stoploss</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--down)" }}>{(rawConfig.stoploss * 100).toFixed(2)}%</div>
+            </div>
+          )}
+          {rawConfig?.trailing_stop !== undefined && (
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Trailing Stop</div>
+              <div style={{ fontSize: 15, fontWeight: 600 }}>{rawConfig.trailing_stop ? "Enabled" : "Disabled"}</div>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      <Card title="Available Strategies" subtitle="All strategies loaded on the VPS">
+        {isLoading ? (
+          <div style={{ padding: 20, color: "var(--muted)" }}>Loading...</div>
+        ) : strategies.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {strategies.map(s => (
+              <div key={s} style={{ 
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "10px 14px", background: "var(--panel-2)", borderRadius: 8, border: "1px solid var(--border)"
+              }}>
+                <span style={{ fontSize: 14, fontWeight: s === bot?.strategy ? 600 : 400, color: s === bot?.strategy ? "var(--accent)" : "var(--text)" }}>
+                  {s}
+                </span>
+                {s === bot?.strategy && (
+                  <span style={{ fontSize: 11, background: "var(--accent-soft)", color: "var(--accent)", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>
+                    ACTIVE
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ padding: 20, color: "var(--muted)" }}>No strategies found</div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function RiskView({ data, isMobile }) {
+  const { bot, rawConfig, positions, summary } = data;
+  
+  if (data.loading) return <div style={{ padding: 24 }}>Loading...</div>;
+
+  const totalBalance = bot?.balance || 0;
+  const totalAllocated = bot?.allocated || 0;
+  const exposurePct = totalBalance > 0 ? (totalAllocated / totalBalance) * 100 : 0;
+  
+  const maxTrades = bot?.openSlots === 99 ? "Unlimited" : bot?.openSlots;
+  const usedSlots = bot?.usedSlots || 0;
+  
+  const maxRiskAbs = rawConfig?.stoploss ? (totalAllocated * Math.abs(rawConfig.stoploss)) : 0;
+  const maxRiskPct = totalBalance > 0 ? (maxRiskAbs / totalBalance) * 100 : 0;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 800 }}>
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr" }}>
+        <KpiCard title="Capital Exposure" 
+                 value={`${exposurePct.toFixed(1)}%`} 
+                 subtitle={`${fmtMoney(totalAllocated)} / ${fmtMoney(totalBalance)}`} />
+        <KpiCard title="Open Trade Slots" 
+                 value={`${usedSlots} / ${maxTrades}`} />
+        <KpiCard title="Max Open Risk (Est)" 
+                 value={maxRiskAbs > 0 ? `${fmtMoney(maxRiskAbs)}` : "—"}
+                 subtitle={maxRiskPct > 0 ? `${maxRiskPct.toFixed(2)}% of balance` : "Based on stoploss"} />
+      </div>
+
+      <Card title="Risk Limits & Configuration">
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Stake Amount</div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>
+              {rawConfig?.stake_amount === "unlimited" ? "Unlimited (compounding)" : 
+               rawConfig?.stake_amount ? fmtMoney(rawConfig.stake_amount) : "—"}
+            </div>
+          </div>
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Max Open Trades</div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{maxTrades}</div>
+          </div>
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Tradable Balance Ratio</div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>
+              {rawConfig?.tradable_balance_ratio ? `${(rawConfig.tradable_balance_ratio * 100).toFixed(0)}%` : "100%"}
+            </div>
+          </div>
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Dry Run</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: rawConfig?.dry_run ? "var(--warn)" : "var(--up)" }}>
+              {rawConfig?.dry_run ? "Enabled (No real money)" : "Disabled (LIVE TRADING)"}
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function SettingsView({ data, baseUrl, isMobile, compactNav, setCompactNav }) {
+  const { data: versionData } = useQuery({
+    queryKey: ['version', baseUrl],
+    queryFn: () => fetchVersion(baseUrl),
+    enabled: !!baseUrl,
+  });
+
+  const { bot } = data;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 800 }}>
+      <Card title="Dashboard Settings">
+        {!isMobile && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 500 }}>Compact Sidebar</div>
+              <div className="muted" style={{ fontSize: 13 }}>Show only icons in the left navigation menu</div>
+            </div>
+            <button 
+              onClick={() => setCompactNav(!compactNav)}
+              style={{
+                width: 44, height: 24, borderRadius: 12, border: 0,
+                background: compactNav ? "var(--accent)" : "var(--panel-3)",
+                position: "relative", cursor: "pointer", transition: "background .2s"
+              }}>
+              <div style={{
+                position: "absolute", top: 2, left: compactNav ? 22 : 2,
+                width: 20, height: 20, borderRadius: 10, background: "#fff",
+                transition: "left .2s"
+              }}/>
+            </button>
+          </div>
+        )}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderTop: !isMobile ? "1px solid var(--border)" : 0 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 500 }}>Clear Cache</div>
+            <div className="muted" style={{ fontSize: 13 }}>Reset saved bots and settings</div>
+          </div>
+          <Btn title="Clear Local Data" tone="ghost" onClick={() => {
+            if(window.confirm("This will clear all saved bots and settings on this device. Continue?")) {
+              localStorage.clear();
+              window.location.reload();
+            }
+          }}/>
+        </div>
+      </Card>
+
+      <Card title="Bot Information">
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Bot Name</div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{bot?.name || "—"}</div>
+          </div>
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Exchange</div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{bot?.exchange || "—"}</div>
+          </div>
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Freqtrade Version</div>
+            <div style={{ fontSize: 14, fontFamily: "var(--mono)", color: "var(--text-2)" }}>{versionData?.version || "Unknown"}</div>
+          </div>
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>API URL</div>
+            <div style={{ fontSize: 14, fontFamily: "var(--mono)", color: "var(--text-2)", wordBreak: "break-all" }}>{baseUrl}</div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}

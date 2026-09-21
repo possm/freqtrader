@@ -399,7 +399,7 @@ function useFreqtradeData(baseUrl) {
 
     return {
       positions, trades: closedTrades, equity, daily: dailyArr,
-      summary, bot, strats, locks: mappedLocks,
+      summary, bot, strats, locks: mappedLocks, rawConfig: config,
       loading: isInitialLoading, error, 
       lastUpdated: fastData ? Date.now() : null,
       refresh
@@ -493,9 +493,18 @@ async function fetchPlotConfig(baseUrl) {
 }
 
 
+
+async function fetchVersion(baseUrl) {
+  return ftFetch(baseUrl, "/api/v1/version").catch(() => null);
+}
+
+async function fetchStrategies(baseUrl) {
+  return ftFetch(baseUrl, "/api/v1/strategies").catch(() => ({ strategies: [] }));
+}
+
 export {
   POLL_INTERVAL, loadConfig, saveConfig, clearConfig, loadBots, saveBots, addBot, removeBot,
   mapPosition, mapTrade, mapReason, buildEquity, buildSummary, EXCHANGE_DISPLAY_NAMES,
   formatExchangeName, buildBot, useFreqtradeData, login, forceExit, deleteLock,
-  fetchPairCandles, fetchAllPairSignals, fetchWhitelist, fetchChartCandles, fetchPlotConfig
+  fetchPairCandles, fetchAllPairSignals, fetchWhitelist, fetchChartCandles, fetchPlotConfig, fetchVersion, fetchStrategies
 };
