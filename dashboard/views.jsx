@@ -1371,7 +1371,7 @@ function SignalRow({ r, goToChart }) {
       <td className="num" style={{ ...TD, textAlign: "right" }}>
         {r.close != null ? fmtPrice(r.close) : "—"}
       </td>
-      {r.cells.map(cell => <SignalCell key={cell.key} cell={cell}/>)}
+      {r.cells.map(cell => <SignalCell key={cell.key} cell={cell} row={r}/>)}
       <td style={{ ...TD, textAlign: "right" }}>
         <Chip tone={summaryTone}>{summaryText}</Chip>
       </td>
@@ -1379,7 +1379,7 @@ function SignalRow({ r, goToChart }) {
   );
 }
 
-function SignalCell({ cell }) {
+function SignalCell({ cell, row }) {
   if (cell.type === "binary") {
     if (cell.value == null) {
       return <td style={{ ...TD, textAlign: "center", color: "var(--muted)" }}>—</td>;
@@ -1393,6 +1393,51 @@ function SignalCell({ cell }) {
   if (cell.value == null) {
     return <td style={{ ...TD, textAlign: "right", color: "var(--muted)" }}>—</td>;
   }
+
+  // Thermometer for target_price
+  if (cell.key === "target_price" && row?.close != null) {
+    const target = cell.value;
+    const current = row.close;
+    // Calculate progress relative to a 10% drop to give the bar some visual scale
+    const base = target * 0.9;
+    const rawPct = ((current - base) / (target - base)) * 100;
+    const pct = Math.max(0, Math.min(100, rawPct));
+    const isMet = current >= target;
+    return (
+      <td style={{ ...TD, textAlign: "right", verticalAlign: "middle" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+          <span className="num" style={{ fontSize: 13, color: isMet ? "var(--up)" : "var(--text-1)", fontWeight: isMet ? 600 : 400 }}>
+            {fmtPrice(target)}
+          </span>
+          <div style={{ width: 60, height: 4, background: "rgba(100,100,100,0.15)", borderRadius: 2, overflow: "hidden" }}>
+            <div style={{ width: `${pct}%`, height: "100%", background: isMet ? "var(--up)" : "var(--warn)", transition: "width 0.3s ease" }}/>
+          </div>
+        </div>
+      </td>
+    );
+  }
+
+  // Thermometer for target_volume
+  if (cell.key === "target_volume" && row?.candle?.volume != null) {
+    const target = cell.value;
+    const current = row.candle.volume;
+    const rawPct = (current / target) * 100;
+    const pct = Math.max(0, Math.min(100, rawPct));
+    const isMet = current >= target;
+    return (
+      <td style={{ ...TD, textAlign: "right", verticalAlign: "middle" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+          <span className="num" style={{ fontSize: 13, color: isMet ? "var(--up)" : "var(--text-1)", fontWeight: isMet ? 600 : 400 }}>
+            {fmtCompact(target)}
+          </span>
+          <div style={{ width: 60, height: 4, background: "rgba(100,100,100,0.15)", borderRadius: 2, overflow: "hidden" }}>
+            <div style={{ width: `${pct}%`, height: "100%", background: isMet ? "var(--up)" : "var(--warn)", transition: "width 0.3s ease" }}/>
+          </div>
+        </div>
+      </td>
+    );
+  }
+
   const txt = cell.type === "price" 
     ? fmtPrice(cell.value) 
     : (Math.abs(cell.value) >= 1000 ? fmtCompact(cell.value) : Number(cell.value).toFixed(1));
