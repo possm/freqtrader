@@ -345,16 +345,30 @@ function FreqtradeMark() {
 function BotSwitcher({ activeBot, onSwitch }) {
   const [open, setOpen] = aUseState(false);
   const bots = loadBots();
+  
+  const getBacktestResult = (name) => {
+    if (!name) return null;
+    if (name.includes("WolfSqueeze")) return "Backtest: +41.27% (78.3% WR)";
+    if (name.includes("WolfBreakout_Daily")) return "Backtest: +19.43% (79.5% WR)";
+    if (name.includes("WolfBreakout_PVB")) return "Backtest: -2.30% (44.0% WR)";
+    return null;
+  };
+
+  const backtest = activeBot ? getBacktestResult(activeBot.name) : null;
+
   if (bots.length <= 1) {
     // Just show the active bot name (no dropdown if only one)
     return activeBot ? (
       <div style={{
-        display: "flex", alignItems: "center", gap: 6, padding: "5px 10px",
+        display: "flex", alignItems: "center", gap: 8, padding: "6px 12px",
         borderRadius: 8, background: "var(--panel)", border: "1px solid var(--border)",
         fontSize: 13, color: "var(--text)",
       }}>
-        <Icon name="bot" size={13}/>
-        <span style={{ fontWeight: 600 }}>{activeBot.name || activeBot.url}</span>
+        <Icon name="bot" size={16}/>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontWeight: 600 }}>{activeBot.name || activeBot.url}</span>
+          {backtest && <span style={{ fontSize: 10, color: "var(--up)", marginTop: 1 }}>{backtest}</span>}
+        </div>
       </div>
     ) : null;
   }
@@ -364,12 +378,15 @@ function BotSwitcher({ activeBot, onSwitch }) {
   return (
     <div style={{ position: "relative" }}>
       <button type="button" onClick={() => setOpen(!open)} style={{
-        display: "flex", alignItems: "center", gap: 6, padding: "5px 10px",
+        display: "flex", alignItems: "center", gap: 8, padding: "6px 12px",
         borderRadius: 8, background: "var(--panel)", border: "1px solid var(--border)",
         fontSize: 13, color: "var(--text)", cursor: "pointer", fontFamily: "inherit",
       }}>
-        <Icon name="bot" size={13}/>
-        <span style={{ fontWeight: 600 }}>{activeBot?.name || activeBot?.url || "Select bot"}</span>
+        <Icon name="bot" size={16}/>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", textAlign: "left" }}>
+          <span style={{ fontWeight: 600 }}>{activeBot?.name || activeBot?.url || "Select bot"}</span>
+          {backtest && <span style={{ fontSize: 10, color: "var(--up)", marginTop: 1 }}>{backtest}</span>}
+        </div>
         <span style={{ fontSize: 10, marginLeft: 2, opacity: .6 }}>▼</span>
       </button>
       {open && (
