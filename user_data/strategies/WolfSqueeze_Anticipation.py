@@ -47,6 +47,25 @@ class WolfSqueeze_Anticipation(IStrategy):
     ignore_roi_if_entry_signal = False
     startup_candle_count: int = 150
 
+    # -------------------------------------------------------------
+    # UI Plot Configuration
+    # -------------------------------------------------------------
+    plot_config = {
+        "main_plot": {
+            "macro_trend": {"color": "#ffaa00"},
+            "sell_ema_trend": {"color": "#ff0000"},
+            "bb_upperband": {"color": "#00aaff", "type": "line", "dash": "dash"},
+            "bb_middleband": {"color": "#00aaff", "type": "line", "dash": "dot"},
+            "bb_lowerband": {"color": "#00aaff", "type": "line", "dash": "dash"},
+        },
+        "subplots": {
+            "Squeeze Metric": {
+                "bbw": {"color": "#ff0000", "type": "line"},
+                "bbw_mean": {"color": "#aaaaaa", "type": "line", "dash": "dash"}
+            }
+        }
+    }
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # Macro trend
         dataframe["macro_trend"] = ta.EMA(dataframe, timeperiod=self.buy_ema_period)
