@@ -56,6 +56,28 @@ services:
     networks:
       - freqtrade-net
 
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 8081 — DRY-RUN: WolfSqueeze_Anticipation
+  # ─────────────────────────────────────────────────────────────────────────────
+  freqtrade-squeeze-dryrun:
+    image: freqtradeorg/freqtrade:stable
+    restart: unless-stopped
+    container_name: freqtrade-squeeze-dryrun
+    env_file:
+      - .env
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+    ports:
+      - "${LISTEN_IP:-192.168.2.4}:8081:8080"
+    command: >
+      trade
+      --logfile /freqtrade/user_data/logs/freqtrade_squeeze_dryrun.log
+      --db-url sqlite:////freqtrade/user_data/tradesv3_squeeze_dryrun.sqlite
+      --config /freqtrade/user_data/config_squeeze_dryrun.json
+      --strategy WolfSqueeze_Anticipation
+    networks:
+      - freqtrade-net
+
 networks:
   freqtrade-net:
     driver: bridge
