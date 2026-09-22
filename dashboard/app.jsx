@@ -585,10 +585,10 @@ function App() {
 
   // ── Desktop layout ─────────────────────────────────────────────────────────
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
+    <div style={{ display: "flex", minHeight: "100vh", alignItems: "flex-start" }}>
       <Sidebar tab={tab} setTab={setTab} compact={compactNav} activeBot={activeBot}/>
 
-      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--bg)" }}>
+      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--bg)", alignSelf: "stretch" }}>
         <TopHeader tab={tab} onRefresh={data.refresh} onLogout={handleLogout} connected={connected}
                    activeBot={activeBot} onSwitchBot={handleSwitchBot}/>
         {errorBanner}
