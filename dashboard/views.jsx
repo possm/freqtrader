@@ -53,7 +53,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
   }
 
   return (
-    <div style={{ overflow: "auto", flex: 1, minHeight: 0 }}>
+    <div style={{ overflow: "visible", flex: 1 }}>
       <table style={TABLE_STYLE}>
         <thead>
           <tr style={{ background: "var(--panel)", position: "sticky", top: 0, zIndex: 1 }}>
@@ -336,7 +336,7 @@ function TradesTable({ rows, goToChart, highlightId }) {
   }
 
   return (
-    <div style={{ overflow: "auto", flex: 1, minHeight: 0 }}>
+    <div style={{ overflow: "visible", flex: 1 }}>
       <table style={TABLE_STYLE}>
         <thead>
           <tr style={{ background: "var(--panel)", position: "sticky", top: 0, zIndex: 1 }}>
@@ -433,7 +433,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
   ), [positions, search, strat]);
 
   return (
-    <div style={{ display: "grid", gap: "var(--gap)", height: isMobile ? "auto" : "100%", minHeight: 0,
+    <div style={{ display: "grid", gap: "var(--gap)", height: "auto",
                   gridTemplateRows: isMobile ? "auto" : "auto 1fr" }}>
       <div style={{ display: "grid", gap: "var(--gap)",
                     gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5, 1fr)" }}>
@@ -513,7 +513,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
 function LocksView({ data, isMobile, goToChart }) {
   const { locks, loading } = data;
   return (
-    <div style={{ display: "grid", height: isMobile ? "auto" : "100%", minHeight: 0 }}>
+    <div style={{ display: "grid", height: "auto", minHeight: 0 }}>
       {loading && !locks?.length
         ? <Card title="Pair locks"><div style={{ flex: 1, display: "grid", placeItems: "center" }}><span className="muted" style={{ fontSize: 13 }}>Loading…</span></div></Card>
         : <PairLocksCard locks={locks || []} refresh={data.refresh} goToChart={goToChart}/>}
@@ -752,7 +752,7 @@ function PositionsView({ data, goToChart }) {
   const wins = filtered.filter(p => p.pnlAbs >= 0).length;
 
   return (
-    <div style={{ display: "grid", gridTemplateRows: "auto 1fr", gap: "var(--gap)", height: "100%", minHeight: 0 }}>
+    <div style={{ display: "grid", gridTemplateRows: "auto 1fr", gap: "var(--gap)", height: "auto", minHeight: 0 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--gap)" }}>
         <KpiCard label="Open positions" loading={loading} value={filtered.length} sub={bot ? `${bot.openSlots - filtered.length} slots free` : "—"}/>
         <KpiCard label="Unrealized P&L" loading={loading} tone={pnlTone(totalPnl)}
@@ -835,7 +835,7 @@ function TradesView({ data, isMobile, goToChart, focusTradeId, clearFocus }) {
   };
 
   return (
-    <div style={{ display: "grid", gap: "var(--gap)", height: isMobile ? "auto" : "100%", minHeight: 0,
+    <div style={{ display: "grid", gap: "var(--gap)", height: "auto",
                   gridTemplateRows: isMobile ? "auto" : "auto 1fr" }}>
       <div style={{ display: "grid", gap: "var(--gap)",
                     gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)" }}>
@@ -992,7 +992,7 @@ function StrategyTable({ stats }) {
   const rows = vUseMemo(() => applySort(stats, sort), [stats, sort]);
   const maxPnl = Math.max(...stats.map(s => Math.abs(s.pnl))) || 1;
   return (
-    <div style={{ overflow: "auto", flex: 1, minHeight: 0 }}>
+    <div style={{ overflow: "visible", flex: 1 }}>
       <table style={TABLE_STYLE}>
         <thead>
           <tr style={{ background: "var(--panel)", position: "sticky", top: 0, zIndex: 1 }}>
@@ -1300,7 +1300,7 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
             {sorted.map(r => <MobileSignalCard key={r.pair} r={r} onPairClick={goToChart}/>)}
           </div>
         ) : (
-          <div style={{ overflow: "auto" }}>
+          <div style={{ overflow: "visible" }}>
             <table style={TABLE_STYLE}>
               <thead>
                 <tr style={{ background: "var(--panel)", position: "sticky", top: 0, zIndex: 1 }}>

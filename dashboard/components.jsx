@@ -255,7 +255,7 @@ function Card({ title, sub, right, children, pad = true, style }) {
   return (
     <section style={{
       background: "var(--panel)", border: "1px solid var(--border)",
-      borderRadius: 14, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden",
+      borderRadius: 14, display: "flex", flexDirection: "column", minHeight: 0,
       ...style,
     }}>
       {(title || right) && (
