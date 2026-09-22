@@ -198,7 +198,7 @@ function Sidebar({ tab, setTab, compact, activeBot }) {
       background: "var(--bg-2)", borderRight: "1px solid var(--border)",
       display: "flex", flexDirection: "column",
       padding: compact ? "16px 0" : "16px 12px",
-      transition: "width .15s ease",
+      transition: "width .15s ease", position: "sticky", top: 0, height: "100vh",
     }}>
       <div style={{
         padding: compact ? "0 0 18px" : "4px 8px 18px",
@@ -444,7 +444,7 @@ function TopHeader({ tab, onRefresh, onLogout, connected, activeBot, onSwitchBot
   return (
     <header className="chrome" style={{
       display: "flex", alignItems: "center", gap: 14, padding: "14px 24px",
-      borderBottom: "1px solid var(--border)", background: "var(--bg)", flexShrink: 0,
+      borderBottom: "1px solid var(--border)", background: "var(--bg)", flexShrink: 0, position: "sticky", top: 0, zIndex: 100
     }}>
       <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
         <h1 style={{ margin: 0, fontSize: 19, fontWeight: 600, letterSpacing: "-.005em" }}>{cur.t}</h1>
@@ -585,7 +585,7 @@ function App() {
 
   // ── Desktop layout ─────────────────────────────────────────────────────────
   return (
-    <div style={{ display: "flex", height: "100%", minHeight: 0 }}>
+    <div style={{ display: "flex", minHeight: "100vh" }}>
       <Sidebar tab={tab} setTab={setTab} compact={compactNav} activeBot={activeBot}/>
 
       <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--bg)" }}>
@@ -593,7 +593,7 @@ function App() {
                    activeBot={activeBot} onSwitchBot={handleSwitchBot}/>
         {errorBanner}
 
-        <div style={{ flex: 1, minHeight: 0, padding: 24, overflow: "auto" }}>
+        <div style={{ flex: 1, padding: 24 }}>
           {views}
         </div>
       </main>
