@@ -8,35 +8,37 @@ from freqtrade.strategy import IStrategy
 
 class WolfBreakout_Daily(IStrategy):
     """
-    WolfBreakout Daily (Macro) Strategy - v2 HYPEROPTED
-    Beats original strategy with higher profit and lower drawdown.
+    WolfBreakout Daily (Macro) Strategy - v3 HYPEROPTED (Deep Optimization)
+    Decoupled Buy/Sell EMA logic.
     """
     INTERFACE_VERSION = 3
     timeframe = "1d" 
     
     # -------------------------------------------------------------
-    # Hyperopted Parameters (ROI, Stoploss, Trailing) - NEW WINNING
+    # Hyperopted Parameters (ROI, Stoploss, Trailing) - V3 WINNING
     # -------------------------------------------------------------
     minimal_roi = {
-        "0": 0.253,
-        "4973": 0.18,
-        "15350": 0.136,
-        "46070": 0
+        "0": 0.185,
+        "8862": 0.127,
+        "23074": 0.064,
+        "54320": 0
     }
 
-    stoploss = -0.024
+    stoploss = -0.142
 
     trailing_stop = True
-    trailing_stop_positive = 0.105
-    trailing_stop_positive_offset = 0.187
+    trailing_stop_positive = 0.02
+    trailing_stop_positive_offset = 0.079
     trailing_only_offset_is_reached = True
     
     # -------------------------------------------------------------
-    # Hyperopted Buy Parameters - NEW WINNING
+    # Hyperopted Buy & Sell Parameters - V3 WINNING
     # -------------------------------------------------------------
-    buy_donchian_period = 10
-    buy_ema_period = 40
-    buy_vol_multiplier = 1.898
+    buy_donchian_period = 7
+    buy_ema_period = 62
+    buy_vol_multiplier = 1.813
+    
+    sell_ema_period = 75
     
     # Options
     use_custom_stoploss = False
@@ -51,7 +53,8 @@ class WolfBreakout_Daily(IStrategy):
     # -------------------------------------------------------------
     plot_config = {
         "main_plot": {
-            "ema_trend": {"color": "#ffaa00"},
+            "buy_ema_trend": {"color": "#ffaa00"},
+            "sell_ema_trend": {"color": "#ff00aa"},
             "target_price": {"color": "#00aaff", "type": "line", "dash": "dash"},
         },
         "subplots": {
@@ -66,8 +69,10 @@ class WolfBreakout_Daily(IStrategy):
         # Donchian channel for breakout
         dataframe["donchian_high"] = dataframe["high"].rolling(self.buy_donchian_period).max().shift(1)
         
-        # Trend indicators
-        dataframe["ema_trend"] = ta.EMA(dataframe, timeperiod=self.buy_ema_period)
+        # Trend indicators (Decoupled Buy vs Sell)
+        dataframe["buy_ema_trend"] = ta.EMA(dataframe, timeperiod=self.buy_ema_period)
+        dataframe["sell_ema_trend"] = ta.EMA(dataframe, timeperiod=self.sell_ema_period)
+        
         dataframe["volume_mean20"] = dataframe["volume"].rolling(20).mean()
 
         # Explicit target columns for the Dashboard Signals tab
@@ -81,7 +86,7 @@ class WolfBreakout_Daily(IStrategy):
             # 1. Breakout above the N-day high
             (dataframe["close"] > dataframe["donchian_high"]),
             # 2. Must be in a macro uptrend
-            (dataframe["close"] > dataframe["ema_trend"]),
+            (dataframe["close"] > dataframe["buy_ema_trend"]),
             # 3. Volume must be above average to confirm the breakout
             (dataframe["volume"] > (dataframe["volume_mean20"] * self.buy_vol_multiplier))
         ]
@@ -94,10 +99,10 @@ class WolfBreakout_Daily(IStrategy):
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # Exit ONLY on the exact day the coin crosses below the macro uptrend
+        # Exit ONLY on the exact day the coin crosses below the macro uptrend (Decoupled Sell EMA)
         conditions = [
-            (dataframe["close"] < dataframe["ema_trend"]),
-            (dataframe["close"].shift(1) >= dataframe["ema_trend"].shift(1))
+            (dataframe["close"] < dataframe["sell_ema_trend"]),
+            (dataframe["close"].shift(1) >= dataframe["sell_ema_trend"].shift(1))
         ]
         
         dataframe.loc[
