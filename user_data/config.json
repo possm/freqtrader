@@ -68,7 +68,19 @@
             "DOGE/USDC",
             "TRX/USDC",
             "EGLD/USDC",
-            "XTZ/USDC"
+            "XTZ/USDC",
+            "UNI/USDC",
+            "SHIB/USDC",
+            "PEPE/USDC",
+            "WIF/USDC",
+            "RENDER/USDC",
+            "OP/USDC",
+            "INJ/USDC",
+            "TIA/USDC",
+            "LDO/USDC",
+            "FET/USDC",
+            "KAS/USDC",
+            "AAVE/USDC"
         ],
         "pair_blacklist": []
     },
