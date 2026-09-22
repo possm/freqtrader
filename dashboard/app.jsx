@@ -173,7 +173,7 @@ function LoginScreen({ onLogin }) {
 }
 
 // ── Sidebar ────────────────────────────────────────────────────────────────────
-function Sidebar({ tab, setTab, compact }) {
+function Sidebar({ tab, setTab, compact, activeBot }) {
   const items = [
     { id: "overview",    icon: "dashboard", label: "Dashboard" },
     { id: "chart",       icon: "candles",   label: "Chart" },
@@ -182,6 +182,16 @@ function Sidebar({ tab, setTab, compact }) {
     { id: "performance", icon: "perf",      label: "Performance" },
     { id: "locks",       icon: "lock",      label: "Pair locks" },
   ];
+
+  const getBacktestResult = (name) => {
+    if (!name) return null;
+    if (name.includes("WolfSqueeze")) return "+41.3% / 78% WR";
+    if (name.includes("WolfBreakout_Daily")) return "+19.4% / 79% WR";
+    if (name.includes("WolfBreakout_PVB")) return "-2.3% / 44% WR";
+    return null;
+  };
+  const backtest = activeBot ? getBacktestResult(activeBot.name) : null;
+
   return (
     <aside className="chrome" style={{
       width: compact ? 64 : 220, flexShrink: 0,
@@ -244,6 +254,11 @@ function Sidebar({ tab, setTab, compact }) {
 
       <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
         <SideBtn icon="bot" label="Strategies" id="strategies" tab={tab} setTab={setTab} compact={compact}/>
+        {!compact && backtest && (
+          <div style={{ padding: "0 12px 10px 42px", fontSize: 11, color: "var(--up)", fontWeight: 500 }}>
+            {backtest}
+          </div>
+        )}
         <SideBtn icon="shield" label="Risk" id="risk" tab={tab} setTab={setTab} compact={compact}/>
         <SideBtn icon="settings" label="Settings" id="settings" tab={tab} setTab={setTab} compact={compact}/>
       </div>
@@ -345,30 +360,16 @@ function FreqtradeMark() {
 function BotSwitcher({ activeBot, onSwitch }) {
   const [open, setOpen] = aUseState(false);
   const bots = loadBots();
-  
-  const getBacktestResult = (name) => {
-    if (!name) return null;
-    if (name.includes("WolfSqueeze")) return "Backtest: +41.27% (78.3% WR)";
-    if (name.includes("WolfBreakout_Daily")) return "Backtest: +19.43% (79.5% WR)";
-    if (name.includes("WolfBreakout_PVB")) return "Backtest: -2.30% (44.0% WR)";
-    return null;
-  };
-
-  const backtest = activeBot ? getBacktestResult(activeBot.name) : null;
-
   if (bots.length <= 1) {
     // Just show the active bot name (no dropdown if only one)
     return activeBot ? (
       <div style={{
-        display: "flex", alignItems: "center", gap: 8, padding: "6px 12px",
+        display: "flex", alignItems: "center", gap: 6, padding: "5px 10px",
         borderRadius: 8, background: "var(--panel)", border: "1px solid var(--border)",
         fontSize: 13, color: "var(--text)",
       }}>
-        <Icon name="bot" size={16}/>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontWeight: 600 }}>{activeBot.name || activeBot.url}</span>
-          {backtest && <span style={{ fontSize: 10, color: "var(--up)", marginTop: 1 }}>{backtest}</span>}
-        </div>
+        <Icon name="bot" size={13}/>
+        <span style={{ fontWeight: 600 }}>{activeBot.name || activeBot.url}</span>
       </div>
     ) : null;
   }
@@ -378,15 +379,12 @@ function BotSwitcher({ activeBot, onSwitch }) {
   return (
     <div style={{ position: "relative" }}>
       <button type="button" onClick={() => setOpen(!open)} style={{
-        display: "flex", alignItems: "center", gap: 8, padding: "6px 12px",
+        display: "flex", alignItems: "center", gap: 6, padding: "5px 10px",
         borderRadius: 8, background: "var(--panel)", border: "1px solid var(--border)",
         fontSize: 13, color: "var(--text)", cursor: "pointer", fontFamily: "inherit",
       }}>
-        <Icon name="bot" size={16}/>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", textAlign: "left" }}>
-          <span style={{ fontWeight: 600 }}>{activeBot?.name || activeBot?.url || "Select bot"}</span>
-          {backtest && <span style={{ fontSize: 10, color: "var(--up)", marginTop: 1 }}>{backtest}</span>}
-        </div>
+        <Icon name="bot" size={13}/>
+        <span style={{ fontWeight: 600 }}>{activeBot?.name || activeBot?.url || "Select bot"}</span>
         <span style={{ fontSize: 10, marginLeft: 2, opacity: .6 }}>▼</span>
       </button>
       {open && (
@@ -588,7 +586,7 @@ function App() {
   // ── Desktop layout ─────────────────────────────────────────────────────────
   return (
     <div style={{ display: "flex", height: "100%", minHeight: 0 }}>
-      <Sidebar tab={tab} setTab={setTab} compact={compactNav}/>
+      <Sidebar tab={tab} setTab={setTab} compact={compactNav} activeBot={activeBot}/>
 
       <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--bg)" }}>
         <TopHeader tab={tab} onRefresh={data.refresh} onLogout={handleLogout} connected={connected}
