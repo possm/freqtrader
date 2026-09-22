@@ -1,42 +1,42 @@
 from datetime import datetime, timezone
 from typing import Optional
+import numpy as np
 
 import talib.abstract as ta
 from pandas import DataFrame
 from freqtrade.strategy import IStrategy
 
-
 class WolfBreakout_Daily(IStrategy):
     """
-    WolfBreakout Daily (Macro) Strategy
-    Fully Hyperopted (Buy logic + ROI + Stoploss)
+    WolfBreakout Daily (Macro) Strategy - v2 HYPEROPTED
+    Beats original strategy with higher profit and lower drawdown.
     """
     INTERFACE_VERSION = 3
     timeframe = "1d" 
     
     # -------------------------------------------------------------
-    # Hyperopted Parameters (ROI, Stoploss, Trailing)
+    # Hyperopted Parameters (ROI, Stoploss, Trailing) - NEW WINNING
     # -------------------------------------------------------------
     minimal_roi = {
-        "0": 0.297,
-        "10151": 0.182, 
-        "27171": 0.092, 
-        "41954": 0      
+        "0": 0.253,
+        "4973": 0.18,
+        "15350": 0.136,
+        "46070": 0
     }
 
-    stoploss = -0.293
+    stoploss = -0.024
 
     trailing_stop = True
-    trailing_stop_positive = 0.01
-    trailing_stop_positive_offset = 0.106
+    trailing_stop_positive = 0.105
+    trailing_stop_positive_offset = 0.187
     trailing_only_offset_is_reached = True
     
     # -------------------------------------------------------------
-    # Hyperopted Buy Parameters
+    # Hyperopted Buy Parameters - NEW WINNING
     # -------------------------------------------------------------
-    buy_donchian_period = 15
-    buy_ema_period = 35
-    buy_vol_multiplier = 1.334
+    buy_donchian_period = 10
+    buy_ema_period = 40
+    buy_vol_multiplier = 1.898
     
     # Options
     use_custom_stoploss = False
@@ -72,9 +72,7 @@ class WolfBreakout_Daily(IStrategy):
 
         # Explicit target columns for the Dashboard Signals tab
         dataframe["target_price"] = dataframe["donchian_high"]
-        # Use .value if it's a DecimalParameter, otherwise just the float
-        vol_mult = self.buy_vol_multiplier.value if hasattr(self.buy_vol_multiplier, 'value') else self.buy_vol_multiplier
-        dataframe["target_volume"] = dataframe["volume_mean20"] * vol_mult
+        dataframe["target_volume"] = dataframe["volume_mean20"] * self.buy_vol_multiplier
 
         return dataframe
 
@@ -88,7 +86,6 @@ class WolfBreakout_Daily(IStrategy):
             (dataframe["volume"] > (dataframe["volume_mean20"] * self.buy_vol_multiplier))
         ]
 
-        import numpy as np
         dataframe.loc[
             np.logical_and.reduce(conditions),
             ["enter_long", "enter_tag"]
@@ -102,7 +99,7 @@ class WolfBreakout_Daily(IStrategy):
             (dataframe["close"] < dataframe["ema_trend"]),
             (dataframe["close"].shift(1) >= dataframe["ema_trend"].shift(1))
         ]
-        import numpy as np
+        
         dataframe.loc[
             np.logical_and.reduce(conditions),
             ["exit_long", "exit_tag"]
