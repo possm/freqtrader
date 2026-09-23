@@ -434,7 +434,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
 
   return (
     <div style={{ display: "grid", gap: "var(--gap)", height: "auto",
-                  gridTemplateRows: isMobile ? "auto" : "auto 1fr" }}>
+                  }}>
       <div style={{ display: "grid", gap: "var(--gap)",
                     gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5, 1fr)" }}>
         <KpiCard label="Total P&L" loading={loading}
@@ -752,7 +752,7 @@ function PositionsView({ data, goToChart }) {
   const wins = filtered.filter(p => p.pnlAbs >= 0).length;
 
   return (
-    <div style={{ display: "grid", gridTemplateRows: "auto 1fr", gap: "var(--gap)", height: "auto", minHeight: 0 }}>
+    <div style={{ display: "grid", gap: "var(--gap)", height: "auto", minHeight: 0 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--gap)" }}>
         <KpiCard label="Open positions" loading={loading} value={filtered.length} sub={bot ? `${bot.openSlots - filtered.length} slots free` : "—"}/>
         <KpiCard label="Unrealized P&L" loading={loading} tone={pnlTone(totalPnl)}
@@ -836,7 +836,7 @@ function TradesView({ data, isMobile, goToChart, focusTradeId, clearFocus }) {
 
   return (
     <div style={{ display: "grid", gap: "var(--gap)", height: "auto",
-                  gridTemplateRows: isMobile ? "auto" : "auto 1fr" }}>
+                  }}>
       <div style={{ display: "grid", gap: "var(--gap)",
                     gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)" }}>
         <KpiCard label="Trades" loading={loading} value={filtered.length} sub={`window · ${range}`}/>
@@ -2568,30 +2568,42 @@ function StrategiesView({ data, baseUrl, isMobile }) {
         </div>
       </Card>
 
-      <Card title="Available Strategies" subtitle="All strategies loaded on the VPS">
-        {isLoading ? (
-          <div style={{ padding: 20, color: "var(--muted)" }}>Loading...</div>
-        ) : strategies.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {strategies.map(s => (
-              <div key={s} style={{ 
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "10px 14px", background: "var(--panel-2)", borderRadius: 8, border: "1px solid var(--border)"
+      <Card title="Strategieën" subtitle="Uitleg van de voornaamste algoritmes">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {(() => {
+            const descs = {
+              "WolfBreakout_Daily": "Een macro breakout strategie op de daily chart die inspeelt op langdurige trends. Maakt gebruik van ontkoppelde Buy/Sell signalen op basis van EMA's en is diep geoptimaliseerd voor grotere marktbewegingen.",
+              "WolfBreakout_PVB": "Geavanceerd kwantitatief model. Neemt posities in bij volatiliteitsexpansies (Parkinson Volatility) en breakouts uit Donchian/Keltner kanalen, gefilterd door een Bitcoin macro-trend (EMA200) gate.",
+              "WolfSqueeze_Anticipation": "Zoekt naar 'squeezes' (abnormaal lage volatiliteit) gecombineerd met korte termijn momentum. Stapt vroeg in bij de uitbraak om de nieuwe trend maximaal en langdurig uit te rijden."
+            };
+            
+            const list = Object.entries(descs).map(([name, desc]) => ({ name, desc }));
+            if (bot?.strategy && !descs[bot.strategy]) {
+              list.unshift({ name: bot.strategy, desc: "Geen specifieke beschrijving beschikbaar voor deze actieve strategie." });
+            }
+            
+            return list.map(({ name, desc }) => (
+              <div key={name} style={{ 
+                display: "flex", flexDirection: "column", gap: 6,
+                padding: "12px 14px", background: "var(--panel-2)", borderRadius: 8, border: "1px solid var(--border)"
               }}>
-                <span style={{ fontSize: 14, fontWeight: s === bot?.strategy ? 600 : 400, color: s === bot?.strategy ? "var(--accent)" : "var(--text)" }}>
-                  {s}
-                </span>
-                {s === bot?.strategy && (
-                  <span style={{ fontSize: 11, background: "var(--accent-soft)", color: "var(--accent)", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>
-                    ACTIVE
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: name === bot?.strategy ? "var(--accent)" : "var(--text)" }}>
+                    {name}
                   </span>
-                )}
+                  {name === bot?.strategy && (
+                    <span style={{ fontSize: 11, background: "var(--accent-soft)", color: "var(--accent)", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>
+                      ACTIEF
+                    </span>
+                  )}
+                </div>
+                <span style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.5 }}>
+                  {desc}
+                </span>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{ padding: 20, color: "var(--muted)" }}>No strategies found</div>
-        )}
+            ));
+          })()}
+        </div>
       </Card>
     </div>
   );
