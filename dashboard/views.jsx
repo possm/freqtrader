@@ -2568,40 +2568,39 @@ function StrategiesView({ data, baseUrl, isMobile }) {
         </div>
       </Card>
 
-      <Card title="Strategieën" subtitle="Uitleg van de voornaamste algoritmes">
+      <Card title="Actieve Strategie" subtitle="Uitleg van het huidige handelsalgoritme">
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {(() => {
             const descs = {
-              "WolfBreakout_Daily": "Een macro breakout strategie op de daily chart die inspeelt op langdurige trends. Maakt gebruik van ontkoppelde Buy/Sell signalen op basis van EMA's en is diep geoptimaliseerd voor grotere marktbewegingen.",
-              "WolfBreakout_PVB": "Geavanceerd kwantitatief model. Neemt posities in bij volatiliteitsexpansies (Parkinson Volatility) en breakouts uit Donchian/Keltner kanalen, gefilterd door een Bitcoin macro-trend (EMA200) gate.",
-              "WolfSqueeze_Anticipation": "Zoekt naar 'squeezes' (abnormaal lage volatiliteit) gecombineerd met korte termijn momentum. Stapt vroeg in bij de uitbraak om de nieuwe trend maximaal en langdurig uit te rijden."
+              "WolfBreakout_Daily": "Deze macro breakout strategie draait op de daily (1d) timeframe. De bot zoekt naar krachtige prijsuitbraken boven de Donchian High (historische weerstand). Om in te stappen moeten drie zaken kloppen: de prijs breekt uit, het handelsvolume is verhoogd (bevestiging van instroom), en de munt bevindt zich boven zijn macro EMA trendlijn. Het verkoopmoment is volledig ontkoppeld en gebeurt pas zodra de macro uptrend wordt gebroken.",
+              "WolfBreakout_PVB": "Dit kwantitatieve model (PVB) scant markten op plotse volatiliteitsexpansies. De basis is de academische Parkinson volatiliteitsschatting. Er wordt uitsluitend een positie ingenomen wanneer de koers uit historische weerstanden breekt (Donchian/Keltner kanalen) én er bewijs is van 'volatility clustering'. Tevens gebruikt de bot een Cross-Asset filter: altcoins worden alleen gekocht zolang Bitcoin zich in een macro uptrend bevindt.",
+              "WolfSqueeze_Anticipation": "Deze strategie jaagt op de daily timeframe naar 'Squeezes'. Een squeeze ontstaat als de markt tijdelijk stilvalt (Bollinger Bands vernauwen, volatiliteit droogt op). Zodra de koers vanuit deze extreme stilte plotseling opwaarts doorkruist terwijl de macro-trend nog bullish is, stapt de bot in om de verwachte volatiliteitsuitbraak voor te zijn. Winnaars worden vastgehouden tot de macro-steun breekt."
             };
             
-            const list = Object.entries(descs).map(([name, desc]) => ({ name, desc }));
-            if (bot?.strategy && !descs[bot.strategy]) {
-              list.unshift({ name: bot.strategy, desc: "Geen specifieke beschrijving beschikbaar voor deze actieve strategie." });
-            }
+            const activeStrat = bot?.strategy;
+            if (!activeStrat) return <div className="muted" style={{ padding: 14 }}>Geen actieve bot geselecteerd.</div>;
             
-            return list.map(({ name, desc }) => (
-              <div key={name} style={{ 
-                display: "flex", flexDirection: "column", gap: 6,
-                padding: "12px 14px", background: "var(--panel-2)", borderRadius: 8, border: "1px solid var(--border)"
+            const desc = descs[activeStrat] || "Geen specifieke beschrijving beschikbaar voor deze strategie.";
+            
+            return (
+              <div style={{ 
+                display: "flex", flexDirection: "column", gap: 8,
+                padding: "16px 18px", background: "var(--panel-2)", borderRadius: 8, border: "1px solid var(--border)",
+                borderLeft: "3px solid var(--accent)"
               }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 15, fontWeight: 600, color: name === bot?.strategy ? "var(--accent)" : "var(--text)" }}>
-                    {name}
+                  <span style={{ fontSize: 16, fontWeight: 600, color: "var(--accent)" }}>
+                    {activeStrat}
                   </span>
-                  {name === bot?.strategy && (
-                    <span style={{ fontSize: 11, background: "var(--accent-soft)", color: "var(--accent)", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>
-                      ACTIEF
-                    </span>
-                  )}
+                  <span style={{ fontSize: 11, background: "var(--accent-soft)", color: "var(--accent)", padding: "4px 8px", borderRadius: 4, fontWeight: 600, letterSpacing: ".03em" }}>
+                    ACTIEF
+                  </span>
                 </div>
-                <span style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.5 }}>
+                <span style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.6, marginTop: 4 }}>
                   {desc}
                 </span>
               </div>
-            ));
+            );
           })()}
         </div>
       </Card>
