@@ -2571,16 +2571,87 @@ function StrategiesView({ data, baseUrl, isMobile }) {
       <Card title="Actieve Strategie" subtitle="Uitleg van het huidige handelsalgoritme">
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {(() => {
+            const Label = ({ children }) => <span style={{ padding: "3px 8px", background: "var(--border)", borderRadius: 4, fontSize: 11, fontWeight: 600, color: "var(--text)" }}>{children}</span>;
+            const Title = ({ children }) => <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4, marginTop: 8 }}>{children}</div>;
+            const List = ({ children }) => <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: "var(--text-2)", lineHeight: 1.6 }}>{children}</ul>;
+
             const descs = {
-              "WolfBreakout_Daily": "Deze macro breakout strategie draait op de daily (1d) timeframe. De bot zoekt naar krachtige prijsuitbraken boven de Donchian High (historische weerstand). Om in te stappen moeten drie zaken kloppen: de prijs breekt uit, het handelsvolume is verhoogd (bevestiging van instroom), en de munt bevindt zich boven zijn macro EMA trendlijn. Het verkoopmoment is volledig ontkoppeld en gebeurt pas zodra de macro uptrend wordt gebroken.",
-              "WolfBreakout_PVB": "Dit kwantitatieve model (PVB) scant markten op plotse volatiliteitsexpansies. De basis is de academische Parkinson volatiliteitsschatting. Er wordt uitsluitend een positie ingenomen wanneer de koers uit historische weerstanden breekt (Donchian/Keltner kanalen) én er bewijs is van 'volatility clustering'. Tevens gebruikt de bot een Cross-Asset filter: altcoins worden alleen gekocht zolang Bitcoin zich in een macro uptrend bevindt.",
-              "WolfSqueeze_Anticipation": "Deze strategie jaagt op de daily timeframe naar 'Squeezes'. Een squeeze ontstaat als de markt tijdelijk stilvalt (Bollinger Bands vernauwen, volatiliteit droogt op). Zodra de koers vanuit deze extreme stilte plotseling opwaarts doorkruist terwijl de macro-trend nog bullish is, stapt de bot in om de verwachte volatiliteitsuitbraak voor te zijn. Winnaars worden vastgehouden tot de macro-steun breekt."
+              "WolfBreakout_Daily": (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                    <Label>1d Timeframe</Label><Label>Macro-Trend Breakout</Label><Label>USDC</Label>
+                  </div>
+                  <Title>Inkoop (Long)</Title>
+                  <List>
+                    <li><strong>Weerstand-breuk:</strong> Koers sluit > 7-daagse Donchian High.</li>
+                    <li><strong>Macro Trend:</strong> Koers handelt structureel > 62-daagse EMA.</li>
+                    <li><strong>Volume:</strong> 24u volume is minimaal 81,3% hoger dan het 20-daags gemiddelde.</li>
+                  </List>
+                  <Title>Verkoop (Exit)</Title>
+                  <List>
+                    <li><strong>Trendbreuk:</strong> Ontkoppelde exit. De bot verkoopt pas wanneer de koers definitief onder de trage 75-daagse EMA sluit (om fake-outs te negeren).</li>
+                  </List>
+                  <Title>Risico & Winst (Hyperopt V3)</Title>
+                  <List>
+                    <li><strong>Stoploss:</strong> Harde grens op -14,2%.</li>
+                    <li><strong>Trailing Stop:</strong> Activeert bij +7,9% winst en volgt dan strak met -2,0% marge.</li>
+                    <li><strong>ROI:</strong> Directe exit bij +18,5%. Na 6d: +12,7%. Na 16d: +6,4%. Na 37,7d: Break-even (0%).</li>
+                  </List>
+                </div>
+              ),
+              "WolfBreakout_PVB": (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                    <Label>1h Timeframe</Label><Label>Parkinson Volatility Breakout</Label><Label>USDC</Label>
+                  </div>
+                  <Title>Inkoop (Long)</Title>
+                  <List>
+                    <li><strong>Dubbele Breakout:</strong> Koers breekt uit het 36-perioden Donchian én overstijgt het Keltner kanaal (1.42x).</li>
+                    <li><strong>Volatility Gate:</strong> Parkinson Volatility Ratio > 1.13 (bewijs van volatiliteit-expansie).</li>
+                    <li><strong>Cross-Asset Filter:</strong> Altcoin is in uptrend (> EMA-155) én Bitcoin behoudt macro-steun (BTC > EMA-200).</li>
+                    <li><strong>Volume:</strong> Volume is > 47% hoger dan gemiddeld.</li>
+                  </List>
+                  <Title>Verkoop (Exit)</Title>
+                  <List>
+                    <li><strong>Momentum verlies:</strong> Koers valt terug tot onder de middellijn van het 36-perioden Donchian kanaal.</li>
+                  </List>
+                  <Title>Risico, Winst & Protecties</Title>
+                  <List>
+                    <li><strong>Stoploss & Trailing:</strong> Stoploss zeer ruim (-34%) tegen 'wicks'. Trailing stop activeert pas op +31,6% en volgt met -24,8%.</li>
+                    <li><strong>ROI:</strong> Doel +54,6%. Vervalt snel; dwingt na 22 uur al break-even (0%) af.</li>
+                    <li><strong>Protectie:</strong> Cooldown via StoplossGuard & MaxDrawdown (bij 10% DD in 72h).</li>
+                  </List>
+                </div>
+              ),
+              "WolfSqueeze_Anticipation": (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                    <Label>1d Timeframe</Label><Label>Bollinger Squeeze Anticipation</Label><Label>USDC</Label>
+                  </div>
+                  <Title>Inkoop (Long)</Title>
+                  <List>
+                    <li><strong>Trend Filter:</strong> Koers handelt > 20-daagse EMA.</li>
+                    <li><strong>Squeeze:</strong> Bollinger Band Width is kleiner dan het recente 21-daagse gemiddelde (volatiliteit droogt op).</li>
+                    <li><strong>Trigger:</strong> Tijdens deze squeeze kruist de koers onverwacht krachtig omhoog door de middellijn (midden-band).</li>
+                  </List>
+                  <Title>Verkoop (Exit)</Title>
+                  <List>
+                    <li><strong>Macro Breuk:</strong> Extreem lange hold. Exit volgt pas wanneer de koers definitief < 94-daagse EMA sluit.</li>
+                  </List>
+                  <Title>Risico & Winst (1000 Epochs)</Title>
+                  <List>
+                    <li><strong>Stoploss:</strong> Extreem ruim op -34,5% om initiële re-tests bij uitbraken te overleven.</li>
+                    <li><strong>Trailing Stop:</strong> Zéér strak; activeert bij +7,7% winst en volgt dan met slechts -1,4% speling.</li>
+                    <li><strong>ROI:</strong> Gemaakt voor lange vasthoudtijd (doel theoretisch +100%). Sluit pas op break-even (0%) na liefst 25 dagen inactiviteit.</li>
+                  </List>
+                </div>
+              )
             };
             
             const activeStrat = bot?.strategy;
             if (!activeStrat) return <div className="muted" style={{ padding: 14 }}>Geen actieve bot geselecteerd.</div>;
             
-            const desc = descs[activeStrat] || "Geen specifieke beschrijving beschikbaar voor deze strategie.";
+            const desc = descs[activeStrat] || <div style={{ fontSize: 13, color: "var(--text-2)" }}>Geen specifieke beschrijving beschikbaar voor deze strategie.</div>;
             
             return (
               <div style={{ 
@@ -2596,9 +2667,9 @@ function StrategiesView({ data, baseUrl, isMobile }) {
                     ACTIEF
                   </span>
                 </div>
-                <span style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.6, marginTop: 4 }}>
+                <div style={{ marginTop: 4 }}>
                   {desc}
-                </span>
+                </div>
               </div>
             );
           })()}
