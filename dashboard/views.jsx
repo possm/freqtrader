@@ -2583,8 +2583,8 @@ function StrategiesView({ data, baseUrl, isMobile }) {
                   </div>
                   <Title>Inkoop (Long)</Title>
                   <List>
-                    <li><strong>Weerstand-breuk:</strong> Koers sluit > 7-daagse Donchian High.</li>
-                    <li><strong>Macro Trend:</strong> Koers handelt structureel > 62-daagse EMA.</li>
+                    <li><strong>Weerstand-breuk:</strong> Koers sluit &gt; 7-daagse Donchian High.</li>
+                    <li><strong>Macro Trend:</strong> Koers handelt structureel &gt; 62-daagse EMA.</li>
                     <li><strong>Volume:</strong> 24u volume is minimaal 81,3% hoger dan het 20-daags gemiddelde.</li>
                   </List>
                   <Title>Verkoop (Exit)</Title>
@@ -2607,9 +2607,9 @@ function StrategiesView({ data, baseUrl, isMobile }) {
                   <Title>Inkoop (Long)</Title>
                   <List>
                     <li><strong>Dubbele Breakout:</strong> Koers breekt uit het 36-perioden Donchian én overstijgt het Keltner kanaal (1.42x).</li>
-                    <li><strong>Volatility Gate:</strong> Parkinson Volatility Ratio > 1.13 (bewijs van volatiliteit-expansie).</li>
-                    <li><strong>Cross-Asset Filter:</strong> Altcoin is in uptrend (> EMA-155) én Bitcoin behoudt macro-steun (BTC > EMA-200).</li>
-                    <li><strong>Volume:</strong> Volume is > 47% hoger dan gemiddeld.</li>
+                    <li><strong>Volatility Gate:</strong> Parkinson Volatility Ratio &gt; 1.13 (bewijs van volatiliteit-expansie).</li>
+                    <li><strong>Cross-Asset Filter:</strong> Altcoin is in uptrend (&gt; EMA-155) én Bitcoin behoudt macro-steun (BTC &gt; EMA-200).</li>
+                    <li><strong>Volume:</strong> Volume is &gt; 47% hoger dan gemiddeld.</li>
                   </List>
                   <Title>Verkoop (Exit)</Title>
                   <List>
@@ -2630,13 +2630,13 @@ function StrategiesView({ data, baseUrl, isMobile }) {
                   </div>
                   <Title>Inkoop (Long)</Title>
                   <List>
-                    <li><strong>Trend Filter:</strong> Koers handelt > 20-daagse EMA.</li>
+                    <li><strong>Trend Filter:</strong> Koers handelt &gt; 20-daagse EMA.</li>
                     <li><strong>Squeeze:</strong> Bollinger Band Width is kleiner dan het recente 21-daagse gemiddelde (volatiliteit droogt op).</li>
                     <li><strong>Trigger:</strong> Tijdens deze squeeze kruist de koers onverwacht krachtig omhoog door de middellijn (midden-band).</li>
                   </List>
                   <Title>Verkoop (Exit)</Title>
                   <List>
-                    <li><strong>Macro Breuk:</strong> Extreem lange hold. Exit volgt pas wanneer de koers definitief < 94-daagse EMA sluit.</li>
+                    <li><strong>Macro Breuk:</strong> Extreem lange hold. Exit volgt pas wanneer de koers definitief &lt; 94-daagse EMA sluit.</li>
                   </List>
                   <Title>Risico & Winst (1000 Epochs)</Title>
                   <List>
