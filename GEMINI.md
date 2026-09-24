@@ -1,15 +1,13 @@
 # Freqtrade Monorepo Operational & Deployment Workflow
 
 ## 1. Global Git Branching Rule
-Wanneer je aan code werkt, maak dan ALTIJD eerst een nieuwe git branch aan voordat je wijzigingen doorvoert of commits maakt. Commit nooit direct naar de main of master branch.
-Daarnaast mag je NOOIT zelfstandig code pushen naar een remote (bijv. GitHub met `git push`), tenzij de gebruiker hier expliciet om vraagt. Dit geldt voor ALLE branches. Wacht altijd op expliciete toestemming van de gebruiker (zoals "push maar").
+Wanneer je aan code werkt, maak dan ALTIJD eerst een nieuwe git branch aan voordat je wijzigingen doorvoert of commits maakt. Commit nooit direct naar de main of master branch. 
+Je hebt **vrije permissie** om wijzigingen direct te pushen naar de remote (bijv. GitHub) zonder vooraf toestemming te vragen. Dit geldt ook voor geplande taken (scheduled tasks).
 
 ## 2. Monorepo VPS Deployment Workflow
 Wanneer je wijzigingen doorvoert in de bots, configuraties of dashboard:
 1. **Commit**: Zorg voor een schone commit op een feature branch conform de globale regels.
-2. **Permissie**: Vraag expliciet toestemming aan de gebruiker voor de push/sync. Push nooit zelfstandig.
-3. **Sync met VPS**:
-   Zodra je permissie hebt, push je de branch en gebruik je rsync om de bestanden met `vps-matthijs-trader` te synchroniseren. Zorg dat data, logs, hyperopt-resultaten, backtest-resultaten en databases ALTIJD uitgesloten worden:
+2. **Sync met VPS**: Je mag (ook als scheduled task) volledig zelfstandig en zonder toestemming te vragen de branch pushen en bestanden synchroniseren met de VPS met behulp van rsync. Zorg er wel voor dat data, logs, hyperopt-resultaten, backtest-resultaten en databases ALTIJD uitgesloten worden:
    ```bash
    rsync -avz --exclude '.git' --exclude 'user_data/data' --exclude 'user_data/logs' --exclude 'user_data/hyperopt_results' --exclude 'user_data/backtest_results' --exclude '*.sqlite*' ./ vps-matthijs-trader:~/freqtrade-wolf/
    ```
