@@ -24,7 +24,7 @@ class WolfBreakout_Daily(IStrategy):
         "54320": 0
     }
 
-    stoploss = -0.142
+    stoploss = -0.250
 
     trailing_stop = True
     trailing_stop_positive = 0.02
