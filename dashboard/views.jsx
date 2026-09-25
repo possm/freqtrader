@@ -424,15 +424,6 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
     let gw = 0, gl = 0; return sorted.map(t => { if (t.pnlAbs > 0) gw += t.pnlAbs; else gl += Math.abs(t.pnlAbs); return gl === 0 ? gw : (gw / gl); });
   }, [trades]);
 
-  const bal24h = vUseMemo(() => {
-    if (!data.equity || data.equity.length < 2) return null;
-    const eq = data.equity;
-    const today = eq[eq.length - 1].v + (eq[eq.length - 1].unrealized || 0);
-    const yesterday = eq[eq.length - 2].v;
-    const diff = today - yesterday;
-    return { diff, pct: yesterday ? (diff / yesterday) * 100 : 0 };
-  }, [data.equity]);
-
   const [search, setSearch] = vUseState("");
   const [strat, setStrat] = vUseState("All");
 
@@ -466,16 +457,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                      )}
                    </div>
                  ) : "—"}
-                 sub={bot ? `${fmtUsd(bot.available)} free · ${fmtUsd(bot.allocated)} alloc` : "—"}
-                 info="Total equity (including unrealized profit)."
-                 rightSub={bal24h ? (
-                   <div style={{ display: "flex", alignItems: "center", gap: 4, color: pnlColor(bal24h.diff) }}>
-                     <Icon name={bal24h.diff >= 0 ? "trending-up" : "trending-down"} size={14}/>
-                     <span style={{ fontWeight: 600, fontSize: 13 }}>{fmtSignedUsd(bal24h.diff)}</span>
-                     <span style={{ opacity: 0.8, fontSize: 12 }}>({fmtPct(bal24h.pct)})</span>
-                   </div>
-                 ) : null}
-                 />
+                 info="Total equity (including unrealized profit)." />
         <KpiCard label="Win rate" loading={loading}
                  tone={summary && summary.winRate >= 50 ? "up" : "down"}
                  value={summary ? summary.winRate.toFixed(1) + "%" : "—"}
@@ -903,6 +885,14 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
   const { equity, daily, summary, bot, trades, positions, loading } = data;
 
   const s = summary;
+  
+  const bal24h = vUseMemo(() => {
+    if (!equity || equity.length < 2) return null;
+    const today = equity[equity.length - 1].v + (equity[equity.length - 1].unrealized || 0);
+    const yesterday = equity[equity.length - 2].v;
+    const diff = today - yesterday;
+    return { diff, pct: yesterday ? (diff / yesterday) * 100 : 0 };
+  }, [equity]);
 
   return (
     <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0, minWidth: 0,
@@ -939,6 +929,19 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                         ≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)}
                       </div>
                     )}
+                    
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginTop: 8, gap: 4 }}>
+                      <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                        {fmtUsd(bot.available)} free · {fmtUsd(bot.allocated)} alloc
+                      </div>
+                      {bal24h && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, color: pnlColor(bal24h.diff) }}>
+                           <Icon name={bal24h.diff >= 0 ? "trending-up" : "trending-down"} size={13}/>
+                           <span style={{ fontWeight: 500, fontSize: 13 }}>{fmtSignedUsd(bal24h.diff)}</span>
+                           <span style={{ opacity: 0.8, fontSize: 12 }}>({fmtPct(bal24h.pct)})</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

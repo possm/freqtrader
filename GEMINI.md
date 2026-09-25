@@ -32,9 +32,9 @@ Wanneer je wijzigingen doorvoert in de bots, configuraties of dashboard:
 - **Docker Nginx Rebuild (Deployment)**: Wanneer je wijzigingen aanbrengt in `dashboard/` en deze rsync't naar de VPS, dan is een simpele `docker compose restart` of `up -d` niet genoeg. De Nginx container gebruikt een multi-stage build om Vite uit te voeren. Je MOET de dashboard container na een rsync dus expliciet herbouwen en herstarten:
   `ssh vps-matthijs-trader "cd freqtrader && docker compose build freqtrader-dash && docker compose up -d freqtrader-dash"`
 
-## 4. Hyperopt Safety & Parameter Overrides
-- Voer `freqtrade hyperopt` NOOIT direct uit in de live strategieën map (`user_data/strategies/`). Freqtrade genereert automatisch `<strategy_name>.json` bestanden die bij een bot herstart de code overschrijven.
-- Verifieer vóór container herstart dat er geen onbedoelde `.json` bestanden in `user_data/strategies/` staan die live parameter overrides veroorzaken.
+## 4. Hyperopt Safety & Parameter Overrides (CRITICAL)
+- **Shared Volume Risk**: Alle bots (live én dry-runs) delen dezelfde `user_data` volume mount. Voer `freqtrade hyperopt` NOOIT direct uit in de live strategieën map (`user_data/strategies/`). Freqtrade genereert automatisch `<strategy_name>.json` bestanden die bij een bot herstart de code overschrijven. Een lek van een `.json` bestand infecteert potentieel **alle** draaiende bots.
+- **Cleanup**: Verifieer vóór container herstart altijd met `ls user_data/strategies/*.json` dat er geen onbedoelde `.json` bestanden aanwezig zijn. Als je ze wist, herstart dan óók de dry-run bots om hun werkgeheugen te wissen.
 
 ## 5. Bybit Fee Assumptions & Pairs (Updated Oct 2026)
 Wanneer je ROI, winst, of drawdowns berekent/simuleert, gebruik dan ALTIJD de actuele Bybit (SATOS) Spot tarieven (Unified Flat Fee per 5 okt 2026):
@@ -50,3 +50,8 @@ Let op: Voor Europese accounts (SATOS) is USDT Spot handel geblokkeerd. Gebruik 
 ## 7. Local Testing Safety (CRITICAL)
 - **NO LIVE BOTS LOCALLY**: Start NOOIT de `freqtrade-hopt-live` container lokaal via Docker Compose als je backend functionaliteit (zoals het dashboard of API-koppelingen) wilt testen. Omdat de lokale map een `.env` bestand bevat met actieve API-keys, zal de bot direct in `live` mode opstarten en **ECHTE TRADES** uitvoeren met echt geld op Bybit.
 - **Enkel Dry-Run**: Gebruik voor lokaal testen ALTIJD de `freqtrade-academic-dryrun` container, of zorg dat je expliciet `dry_run: true` forceert, zodat er nooit onbedoeld geld wordt uitgegeven.
+
+## 8. VPS Debugging & Database Access
+- Het `sqlite3` CLI commando is **niet** geïnstalleerd op de VPS (`vps-matthijs-trader`).
+- Om snel actieve trades uit de Freqtrade databases te lezen (bijv. `tradesv3_hopt_live.sqlite`), gebruik je een Python one-liner in plaats van de sqlite3 tool. Bijvoorbeeld:
+  `ssh vps-matthijs-trader "python3 -c \"import sqlite3; conn = sqlite3.connect('freqtrader/user_data/tradesv3_hopt_live.sqlite'); print(conn.execute('SELECT pair, open_rate FROM trades WHERE is_open=1').fetchall())\""`
