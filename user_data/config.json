@@ -100,8 +100,21 @@
         "format": "json",
         "retries": 3,
         "retry_delay": 0.5,
-        "exit": {
+        "webhookentry": {
+            "action": "entry",
+            "trade_id": "{trade_id}",
             "pair": "{pair}",
+            "direction": "{direction}",
+            "open_rate": "{open_rate}",
+            "amount": "{amount}",
+            "stake_amount": "{stake_amount}",
+            "stake_currency": "{stake_currency}"
+        },
+        "webhookexit": {
+            "action": "exit",
+            "trade_id": "{trade_id}",
+            "pair": "{pair}",
+            "direction": "{direction}",
             "profit_ratio": "{profit_ratio}",
             "profit_amount": "{profit_amount}",
             "stake_amount": "{stake_amount}",
