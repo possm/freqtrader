@@ -424,6 +424,20 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
     let gw = 0, gl = 0; return sorted.map(t => { if (t.pnlAbs > 0) gw += t.pnlAbs; else gl += Math.abs(t.pnlAbs); return gl === 0 ? gw : (gw / gl); });
   }, [trades]);
 
+  const bal24h = vUseMemo(() => {
+    if (!data.equity || data.equity.length < 2) return null;
+    const eq = data.equity;
+    const todayObj = eq[eq.length - 1];
+    const yesterdayObj = eq[eq.length - 2];
+    const today = todayObj.v + (todayObj.unrealized || 0);
+    const yesterday = yesterdayObj.v;
+    const diff = today - yesterday;
+    const pct = yesterday ? (diff / yesterday) * 100 : 0;
+    const fiatRatio = (bot && bot.balance) ? ((bot.fiatValue || 0) / bot.balance) : 0;
+    const diffFiat = diff * fiatRatio;
+    return { diff, pct, diffFiat };
+  }, [data.equity, bot]);
+
   const [search, setSearch] = vUseState("");
   const [strat, setStrat] = vUseState("All");
 
@@ -437,15 +451,6 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                   }}>
       <div style={{ display: "grid", gap: "var(--gap)",
                     gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5, 1fr)" }}>
-        <KpiCard label="Total P&L" loading={loading}
-                 tone={pnlTone(summary?.totalPnl)}
-                 value={summary ? fmtSignedUsd(summary.totalPnl) : "—"}
-                 sub={summary ? `ROI ${fmtPct(summary.roiPct)}` : "—"}
-                 spark={pnlSpark} sparkRow={true} big info="Total closed profit over all time."/>
-        <KpiCard label="Unrealized" loading={loading}
-                 tone={pnlTone(positions.reduce((a, p) => a + p.pnlAbs, 0))}
-                 value={fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0))}
-                 sub={`${positions.length} position${positions.length !== 1 ? "s" : ""}`}/>
         <KpiCard label="Balance" loading={loading}
                  value={bot ? (
                    <div style={{ display: "flex", flexDirection: "column" }}>
@@ -457,7 +462,31 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                      )}
                    </div>
                  ) : "—"}
-                 info="Total equity (including unrealized profit)." />
+                 info="Total equity (including unrealized profit)."
+                 rightSub={bal24h ? (
+                   <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
+                     <div style={{ display: "flex", alignItems: "center", gap: 4, color: pnlColor(bal24h.diff) }}>
+                       <Icon name={bal24h.diff >= 0 ? "trending-up" : "trending-down"} size={14}/>
+                       <span style={{ fontWeight: 600, fontSize: 13 }}>{fmtSignedUsd(bal24h.diff)}</span>
+                       <span style={{ opacity: 0.8, fontSize: 12 }}>({fmtPct(bal24h.pct)})</span>
+                     </div>
+                     {bot?.fiatValue != null && (
+                       <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
+                         ≈ {bal24h.diffFiat >= 0 ? "+" : ""}{new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bal24h.diffFiat)}
+                       </span>
+                     )}
+                   </div>
+                 ) : null}
+                 style={isMobile ? { gridColumn: "1 / -1" } : undefined} />
+        <KpiCard label="Total P&L" loading={loading}
+                 tone={pnlTone(summary?.totalPnl)}
+                 value={summary ? fmtSignedUsd(summary.totalPnl) : "—"}
+                 sub={summary ? `ROI ${fmtPct(summary.roiPct)}` : "—"}
+                 spark={pnlSpark} sparkRow={true} big info="Total closed profit over all time."/>
+        <KpiCard label="Unrealized" loading={loading}
+                 tone={pnlTone(positions.reduce((a, p) => a + p.pnlAbs, 0))}
+                 value={fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0))}
+                 sub={`${positions.length} position${positions.length !== 1 ? "s" : ""}`}/>
         <KpiCard label="Win rate" loading={loading}
                  tone={summary && summary.winRate >= 50 ? "up" : "down"}
                  value={summary ? summary.winRate.toFixed(1) + "%" : "—"}
@@ -467,8 +496,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                  tone={summary && summary.profitFactor >= 1 ? "up" : "down"}
                  value={summary ? summary.profitFactor.toFixed(2) : "—"}
                  sub={summary ? `avg win ${fmtUsd(summary.avgWin)}` : "—"}
-                 spark={pfSpark} sparkRow={true} info="Gross winning profit divided by gross losing profit."
-                 style={isMobile ? { gridColumn: "1 / -1" } : undefined}/>
+                 spark={pfSpark} sparkRow={true} info="Gross winning profit divided by gross losing profit." />
       </div>
 
       <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0,
