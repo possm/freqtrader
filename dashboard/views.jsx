@@ -424,6 +424,15 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
     let gw = 0, gl = 0; return sorted.map(t => { if (t.pnlAbs > 0) gw += t.pnlAbs; else gl += Math.abs(t.pnlAbs); return gl === 0 ? gw : (gw / gl); });
   }, [trades]);
 
+  const bal24h = vUseMemo(() => {
+    if (!data.equity || data.equity.length < 2) return null;
+    const eq = data.equity;
+    const today = eq[eq.length - 1].v + (eq[eq.length - 1].unrealized || 0);
+    const yesterday = eq[eq.length - 2].v;
+    const diff = today - yesterday;
+    return { diff, pct: yesterday ? (diff / yesterday) * 100 : 0 };
+  }, [data.equity]);
+
   const [search, setSearch] = vUseState("");
   const [strat, setStrat] = vUseState("All");
 
@@ -441,7 +450,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                  tone={pnlTone(summary?.totalPnl)}
                  value={summary ? fmtSignedUsd(summary.totalPnl) : "—"}
                  sub={summary ? `ROI ${fmtPct(summary.roiPct)}` : "—"}
-                 spark={pnlSpark} big info="Total closed profit over all time."/>
+                 spark={pnlSpark} sparkRow={true} big info="Total closed profit over all time."/>
         <KpiCard label="Unrealized" loading={loading}
                  tone={pnlTone(positions.reduce((a, p) => a + p.pnlAbs, 0))}
                  value={fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0))}
@@ -458,16 +467,25 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                    </div>
                  ) : "—"}
                  sub={bot ? `${fmtUsd(bot.available)} free · ${fmtUsd(bot.allocated)} alloc` : "—"}
-                 spark={balSpark} info="Total equity (including unrealized profit)."/>
+                 info="Total equity (including unrealized profit)."
+                 rightSub={bal24h ? (
+                   <div style={{ display: "flex", alignItems: "center", gap: 4, color: pnlColor(bal24h.diff) }}>
+                     <Icon name={bal24h.diff >= 0 ? "trending-up" : "trending-down"} size={14}/>
+                     <span style={{ fontWeight: 600, fontSize: 13 }}>{fmtSignedUsd(bal24h.diff)}</span>
+                     <span style={{ opacity: 0.8, fontSize: 12 }}>({fmtPct(bal24h.pct)})</span>
+                   </div>
+                 ) : null}
+                 />
         <KpiCard label="Win rate" loading={loading}
-                 tone="up"
+                 tone={summary && summary.winRate >= 50 ? "up" : "down"}
                  value={summary ? summary.winRate.toFixed(1) + "%" : "—"}
                  sub={summary ? `${summary.wins}W · ${summary.losses}L` : "—"}
-                 spark={winSpark} info="Percentage of closed trades that were profitable."/>
+                 spark={winSpark} sparkRow={true} info="Percentage of closed trades that were profitable."/>
         <KpiCard label="Profit factor" loading={loading}
+                 tone={summary && summary.profitFactor >= 1 ? "up" : "down"}
                  value={summary ? summary.profitFactor.toFixed(2) : "—"}
                  sub={summary ? `avg win ${fmtUsd(summary.avgWin)}` : "—"}
-                 spark={pfSpark} info="Gross winning profit divided by gross losing profit."
+                 spark={pfSpark} sparkRow={true} info="Gross winning profit divided by gross losing profit."
                  style={isMobile ? { gridColumn: "1 / -1" } : undefined}/>
       </div>
 

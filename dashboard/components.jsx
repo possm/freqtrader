@@ -314,27 +314,43 @@ function TableStack({ top, sub, topColor, topBold = false, align = "right" }) {
 
 // ── Sparkline ─────────────────────────────────────────────────────────────────
 function Sparkline({ data, width = 96, height = 28, color, fill = true, strokeWidth = 1.4 }) {
+  const wrapRef = useRef(null);
+  const [w, setW] = useState(typeof width === 'number' ? width : 200);
+
+  useLayoutEffect(() => {
+    if (typeof width === 'number') return;
+    if (!wrapRef.current) return;
+    const ro = new ResizeObserver(() => setW(wrapRef.current.clientWidth));
+    ro.observe(wrapRef.current);
+    return () => ro.disconnect();
+  }, [width]);
+
   if (!data || data.length < 2) return <span/>;
   const min = Math.min(...data), max = Math.max(...data);
   const range = max - min || 1;
   const last = data[data.length - 1];
   const c = color || (last >= data[0] ? "var(--up)" : "var(--down)");
-  const xs = (i) => (i / (data.length - 1)) * (width - 2) + 1;
+  
+  const actualW = typeof width === 'number' ? width : w;
+  const xs = (i) => (i / (data.length - 1)) * (actualW - 2) + 1;
   const ys = (v) => height - 2 - ((v - min) / range) * (height - 4);
   const line = data.map((v, i) => `${i ? "L" : "M"}${xs(i).toFixed(2)} ${ys(v).toFixed(2)}`).join(" ");
-  const area = line + ` L${(width - 1).toFixed(2)} ${height} L1 ${height} Z`;
+  const area = line + ` L${(actualW - 1).toFixed(2)} ${height} L1 ${height} Z`;
   const gid = "sg-" + Math.random().toString(36).slice(2, 8);
+  
   return (
-    <svg width={width} height={height} style={{ display: "block" }}>
-      <defs>
-        <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor={c} stopOpacity=".35"/>
-          <stop offset="100%" stopColor={c} stopOpacity="0"/>
-        </linearGradient>
-      </defs>
-      {fill && <path d={area} fill={`url(#${gid})`} />}
-      <path d={line} stroke={c} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
+    <div ref={wrapRef} style={{ width, height, display: "block" }}>
+      <svg width={actualW} height={height} style={{ display: "block" }}>
+        <defs>
+          <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor={c} stopOpacity=".35"/>
+            <stop offset="100%" stopColor={c} stopOpacity="0"/>
+          </linearGradient>
+        </defs>
+        {fill && <path d={area} fill={`url(#${gid})`} />}
+        <path d={line} stroke={c} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </div>
   );
 }
 
@@ -764,7 +780,7 @@ function SearchInput({ value, onChange, placeholder }) {
 }
 
 // ── KPI card ──────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, tone, spark, info, big, loading, style }) {
+function KpiCard({ label, value, sub, tone, spark, sparkRow, info, big, loading, style, rightSub }) {
   const color = tone === "up" ? "var(--up)" : tone === "down" ? "var(--down)" : "var(--text)";
   return (
     <div style={{
@@ -789,8 +805,15 @@ function KpiCard({ label, value, sub, tone, spark, info, big, loading, style }) 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
         {loading ? <div className="skeleton" style={{ height: 12, width: "80%" }}/> :
           sub && <span style={{ fontSize: 12.5, color: "var(--muted)" }}>{sub}</span>}
-        {!loading && spark && <div style={{ marginLeft: "auto" }}><Sparkline data={spark} width={90} height={26}/></div>}
+        
+        {rightSub && <div style={{ marginLeft: "auto" }}>{rightSub}</div>}
+        {!loading && spark && !sparkRow && <div style={{ marginLeft: "auto" }}><Sparkline data={spark} width={90} height={26} color={color !== "var(--text)" ? color : undefined}/></div>}
       </div>
+      {!loading && spark && sparkRow && (
+        <div style={{ marginTop: 12, marginLeft: -4, marginRight: -4 }}>
+          <Sparkline data={spark} width="100%" height={32} color={color !== "var(--text)" ? color : undefined}/>
+        </div>
+      )}
     </div>
   );
 }
