@@ -887,23 +887,43 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
   const s = summary;
 
   return (
-    <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0,
+    <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0, minWidth: 0,
                   gridTemplateRows: "auto auto auto" }}>
       
-      <div style={{ display: "grid", gap: "var(--gap)", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+      <div style={{ display: "grid", gap: "var(--gap)", minWidth: 0, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
         
         {/* FINANCIALS */}
         <Card title="Financial Performance" sub="All-time bottom line">
           {loading || !s ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div className="num" style={{ fontSize: isMobile ? 32 : 44, fontWeight: 600, color: pnlColor(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)), letterSpacing: "-.015em", lineHeight: 1.1 }}>
-                {fmtSignedUsd(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0))}
-              </div>
-              {s.totalAllFiat != null && (
-                <div style={{ fontSize: isMobile ? 18 : 22, color: "var(--muted)", fontWeight: 500, marginTop: -8 }}>
-                  ≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: bot?.fiatSymbol || "EUR"}).format(s.totalAllFiat)}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+              
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div className="muted" style={{ fontSize: 12, marginBottom: 4, textTransform: "uppercase", letterSpacing: ".05em", fontWeight: 600 }}>Current Profit</div>
+                  <div className="num" style={{ fontSize: isMobile ? 32 : 40, fontWeight: 600, color: pnlColor(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)), letterSpacing: "-.015em", lineHeight: 1.1, wordBreak: "break-word" }}>
+                    {fmtSignedUsd(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0))}
+                  </div>
+                  {s.totalAllFiat != null && (
+                    <div style={{ fontSize: isMobile ? 16 : 20, color: "var(--muted)", fontWeight: 500, marginTop: -4 }}>
+                      ≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: bot?.fiatSymbol || "EUR"}).format(s.totalAllFiat)}
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {bot?.balance != null && (
+                  <div style={{ textAlign: "right", minWidth: 0 }}>
+                    <div className="muted" style={{ fontSize: 12, marginBottom: 4, textTransform: "uppercase", letterSpacing: ".05em", fontWeight: 600 }}>Total Wallet</div>
+                    <div className="num" style={{ fontSize: isMobile ? 24 : 32, fontWeight: 600, letterSpacing: "-.015em", lineHeight: 1.1, color: "var(--text)", wordBreak: "break-word" }}>
+                      {fmtUsd(bot.balance)}
+                    </div>
+                    {bot.fiatValue != null && (
+                      <div style={{ fontSize: isMobile ? 14 : 16, color: "var(--muted)", fontWeight: 500, marginTop: -2 }}>
+                        ≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               
               <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", borderTop: "1px dashed var(--border)", paddingTop: 16 }}>
                 <div>
@@ -932,9 +952,9 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
         {/* STRATEGY */}
         <Card title="Strategy Metrics" sub="Win rate & expectancy">
           {loading || !s ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
-            <div style={{ display: "flex", alignItems: "center", gap: 24, flex: 1, minHeight: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 24, flex: 1, minHeight: 0, minWidth: 0, flexWrap: "wrap" }}>
               <WinLossDonut wins={s.wins} losses={s.losses} size={isMobile ? 100 : 132} stroke={isMobile ? 11 : 14}/>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1, minWidth: 150 }}>
                 <SplitRow color="var(--accent)" label="Profit Factor" count={s.profitFactor.toFixed(2)} sub="gross win ÷ gross loss" />
                 <SplitRow color="var(--up)" label="Expectancy" count={fmtSignedUsd((s.avgWin * s.winRate + s.avgLoss * s.lossRate) / 100)} sub="avg per trade" />
                 <SplitRow color="var(--muted)" label="Avg Win / Loss" count={`${fmtUsd(s.avgWin)} / ${fmtUsd(Math.abs(s.avgLoss))}`} sub="winning vs losing" />
@@ -974,14 +994,14 @@ function calcSharpe(daily) {
 
 function SplitRow({ color, label, count, sub }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
       <span style={{ width: 8, height: 8, background: color, borderRadius: 99, boxShadow: `0 0 0 3px ${color}22`, flexShrink: 0 }}/>
-      <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 13.5, fontWeight: 500 }}>{label}</span>
           <span className="num" style={{ fontSize: 15, fontWeight: 600 }}>{count}</span>
         </div>
-        <span className="muted" style={{ fontSize: 12 }}>{sub}</span>
+        <span className="muted" style={{ fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</span>
       </div>
     </div>
   );
@@ -1067,16 +1087,16 @@ function BW({ row, kind, title, goToChart }) {
         padding: 12, borderRadius: 10,
         background: kind === "up" ? "var(--up-soft)" : "var(--down-soft)",
         border: `1px solid ${kind === "up" ? "var(--up-line)" : "var(--down-line)"}`,
-        display: "flex", flexDirection: "column", gap: 6,
+        display: "flex", flexDirection: "column", gap: 6, minWidth: 0,
         cursor: goToChart ? "pointer" : "default",
       }}>
       <span style={{ fontSize: 11.5, letterSpacing: ".08em", textTransform: "uppercase", color: pnlColor(kind === "up"), fontWeight: 600 }}>{title}</span>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <PairToken pair={row.pair} size={22}/>
-        <span style={{ fontSize: 13.5, fontWeight: 500 }}>{row.pair}</span>
+        <span style={{ fontSize: 13.5, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.pair}</span>
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <span className="num" style={{ fontSize: 19, fontWeight: 600, color: pnlColor(kind === "up") }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+        <span className="num" style={{ fontSize: 19, fontWeight: 600, color: pnlColor(kind === "up"), wordBreak: "break-word" }}>
           {fmtSignedUsd(row.pnlAbs)}
         </span>
         <span className="num" style={{ fontSize: 13, color: pnlColor(kind === "up"), opacity: .85 }}>
