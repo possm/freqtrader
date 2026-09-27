@@ -473,18 +473,21 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                    </div>
                  ) : "—"}
                  info="Total equity (including unrealized profit)."
-                 rightSub={bal24h ? (
-                   <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
-                     <div style={{ display: "flex", alignItems: "center", gap: 4, color: pnlColor(bal24h.diff) }}>
-                       <Icon name={bal24h.diff >= 0 ? "trending-up" : "trending-down"} size={14}/>
-                       <span style={{ fontWeight: 600, fontSize: 13 }}>{isMobile ? fmtPct(bal24h.pct) : fmtSignedUsd(bal24h.diff)}</span>
-                       <span style={{ opacity: 0.8, fontSize: 12 }}>({isMobile ? fmtSignedUsd(bal24h.diff) : fmtPct(bal24h.pct)})</span>
+                 rightSub={balDelta ? (
+                   <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                     <Segmented value={balRange} options={["24h","7d","30d","All"]} onChange={setBalRange} size="sm" />
+                     <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
+                       <div style={{ display: "flex", alignItems: "center", gap: 4, color: pnlColor(balDelta.diff) }}>
+                         <Icon name={balDelta.diff >= 0 ? "trending-up" : "trending-down"} size={14}/>
+                         <span style={{ fontWeight: 600, fontSize: 13 }}>{isMobile ? fmtPct(balDelta.pct) : fmtSignedUsd(balDelta.diff)}</span>
+                         <span style={{ opacity: 0.8, fontSize: 12 }}>({isMobile ? fmtSignedUsd(balDelta.diff) : fmtPct(balDelta.pct)})</span>
+                       </div>
+                       {bot?.fiatValue != null && (
+                         <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
+                           ≈ {balDelta.diffFiat >= 0 ? "+" : ""}{new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(balDelta.diffFiat)}
+                         </span>
+                       )}
                      </div>
-                     {bot?.fiatValue != null && (
-                       <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
-                         ≈ {bal24h.diffFiat >= 0 ? "+" : ""}{new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bal24h.diffFiat)}
-                       </span>
-                     )}
                    </div>
                  ) : null}
                  style={isMobile ? { gridColumn: "1 / -1" } : undefined} />
