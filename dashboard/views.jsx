@@ -403,6 +403,7 @@ function TradesTable({ rows, goToChart, highlightId }) {
 // ════════════════════════════════════════════════════════════════════════════
 
 function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
+  const [balRange, setBalRange] = vUseState("24h");
   const { positions, trades, summary, bot, strats, locks, loading } = data;
   const pnlSpark = vUseMemo(() => {
     if (!trades || !trades.length) return [0, 0];
@@ -424,19 +425,28 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
     let gw = 0, gl = 0; return sorted.map(t => { if (t.pnlAbs > 0) gw += t.pnlAbs; else gl += Math.abs(t.pnlAbs); return gl === 0 ? gw : (gw / gl); });
   }, [trades]);
 
-  const bal24h = vUseMemo(() => {
+  const balDelta = vUseMemo(() => {
     if (!data.equity || data.equity.length < 2) return null;
     const eq = data.equity;
     const todayObj = eq[eq.length - 1];
-    const yesterdayObj = eq[eq.length - 2];
+    
+    let days = 2; // 24h
+    if (balRange === "7d") days = 8;
+    if (balRange === "30d") days = 31;
+    if (balRange === "All") days = eq.length;
+    if (days > eq.length) days = eq.length;
+    
+    const pastObj = eq[eq.length - days];
+    if (!pastObj) return null;
+    
     const today = todayObj.v + (todayObj.unrealized || 0);
-    const yesterday = yesterdayObj.v;
-    const diff = today - yesterday;
-    const pct = yesterday ? (diff / yesterday) * 100 : 0;
+    const past = pastObj.v;
+    const diff = today - past;
+    const pct = past ? (diff / past) * 100 : 0;
     const fiatRatio = (bot && bot.balance) ? ((bot.fiatValue || 0) / bot.balance) : 0;
     const diffFiat = diff * fiatRatio;
     return { diff, pct, diffFiat };
-  }, [data.equity, bot]);
+  }, [data.equity, bot, balRange]);
 
   const [search, setSearch] = vUseState("");
   const [strat, setStrat] = vUseState("All");
@@ -928,13 +938,24 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
     return daily.slice(-Math.min(days, daily.length));
   }, [daily, timeRange]);
 
-  const bal24h = vUseMemo(() => {
+  const balDelta = vUseMemo(() => {
     if (!equity || equity.length < 2) return null;
-    const today = equity[equity.length - 1].v + (equity[equity.length - 1].unrealized || 0);
-    const yesterday = equity[equity.length - 2].v;
-    const diff = today - yesterday;
-    return { diff, pct: yesterday ? (diff / yesterday) * 100 : 0 };
-  }, [equity]);
+    const todayObj = equity[equity.length - 1];
+    
+    let days = 2; // 24h
+    if (timeRange === "7d") days = 8;
+    if (timeRange === "30d") days = 31;
+    if (timeRange === "All") days = equity.length;
+    if (days > equity.length) days = equity.length;
+    
+    const pastObj = equity[equity.length - days];
+    if (!pastObj) return null;
+    
+    const today = todayObj.v + (todayObj.unrealized || 0);
+    const past = pastObj.v;
+    const diff = today - past;
+    return { diff, pct: past ? (diff / past) * 100 : 0 };
+  }, [equity, timeRange]);
 
   return (
     <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0, minWidth: 0,
@@ -976,11 +997,11 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                       <div style={{ fontSize: 12, color: "var(--muted)" }}>
                         {fmtUsd(bot.available)} free · {fmtUsd(bot.allocated)} alloc
                       </div>
-                      {bal24h && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 4, color: pnlColor(bal24h.diff) }}>
-                           <Icon name={bal24h.diff >= 0 ? "trending-up" : "trending-down"} size={13}/>
-                           <span style={{ fontWeight: 500, fontSize: 13 }}>{fmtSignedUsd(bal24h.diff)}</span>
-                           <span style={{ opacity: 0.8, fontSize: 12 }}>({fmtPct(bal24h.pct)})</span>
+                      {balDelta && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, color: pnlColor(balDelta.diff) }}>
+                           <Icon name={balDelta.diff >= 0 ? "trending-up" : "trending-down"} size={13}/>
+                           <span style={{ fontWeight: 500, fontSize: 13 }}>{fmtSignedUsd(balDelta.diff)}</span>
+                           <span style={{ opacity: 0.8, fontSize: 12 }}>({fmtPct(balDelta.pct)})</span>
                         </div>
                       )}
                     </div>
