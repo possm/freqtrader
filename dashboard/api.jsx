@@ -332,7 +332,7 @@ function useFreqtradeData(baseUrl) {
       const [trades, balance, daily, config, locksRes] = await Promise.all([
         ftFetch(baseUrl, "/api/v1/trades?limit=500"),
         ftFetch(baseUrl, "/api/v1/balance").catch(() => null),
-        ftFetch(baseUrl, "/api/v1/daily?timescale=30").catch(() => null),
+        ftFetch(baseUrl, "/api/v1/daily?timescale=3650").catch(() => null),
         ftFetch(baseUrl, "/api/v1/show_config").catch(() => null),
         ftFetch(baseUrl, "/api/v1/locks").catch(() => null),
       ]);

@@ -914,6 +914,20 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
 
   const s = summary;
   
+  const filteredEquity = vUseMemo(() => {
+    if (!equity || equity.length === 0) return [];
+    if (timeRange === "All") return equity;
+    const days = timeRange === "24h" ? 2 : timeRange === "7d" ? 8 : timeRange === "30d" ? 31 : equity.length;
+    return equity.slice(-Math.min(days, equity.length));
+  }, [equity, timeRange]);
+
+  const filteredDaily = vUseMemo(() => {
+    if (!daily || daily.length === 0) return [];
+    if (timeRange === "All") return daily;
+    const days = timeRange === "24h" ? 2 : timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : daily.length;
+    return daily.slice(-Math.min(days, daily.length));
+  }, [daily, timeRange]);
+
   const bal24h = vUseMemo(() => {
     if (!equity || equity.length < 2) return null;
     const today = equity[equity.length - 1].v + (equity[equity.length - 1].unrealized || 0);
@@ -1018,10 +1032,10 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
         <Card title="Equity curve" 
               sub={`Wallet value over time${bot?.fiatValue != null ? ` (≈ ${new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)})` : ""}`}
               right={<Segmented value={timeRange} options={["24h","7d","30d","All"]} onChange={setTimeRange} size="sm"/>}>
-          <EquityChart data={equity} height={isMobile ? 160 : 200} fiatRatio={bot?.balance ? (bot?.fiatValue || 0) / bot.balance : 0} fiatSymbol={bot?.fiatSymbol || "EUR"}/>
+          <EquityChart data={filteredEquity} height={isMobile ? 160 : 200} fiatRatio={bot?.balance ? (bot?.fiatValue || 0) / bot.balance : 0} fiatSymbol={bot?.fiatSymbol || "EUR"}/>
         </Card>
-        <Card title="Daily P&L" sub="Last 30 days">
-          <DailyBars data={daily} height={isMobile ? 140 : 200}/>
+        <Card title="Daily P&L" sub={timeRange === "All" ? "All time" : timeRange === "30d" ? "Last 30 days" : timeRange === "7d" ? "Last 7 days" : "Last 24 hours"}>
+          <DailyBars data={filteredDaily} height={isMobile ? 140 : 200}/>
         </Card>
       </div>
 
