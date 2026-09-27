@@ -467,8 +467,8 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                    <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
                      <div style={{ display: "flex", alignItems: "center", gap: 4, color: pnlColor(bal24h.diff) }}>
                        <Icon name={bal24h.diff >= 0 ? "trending-up" : "trending-down"} size={14}/>
-                       <span style={{ fontWeight: 600, fontSize: 13 }}>{fmtSignedUsd(bal24h.diff)}</span>
-                       <span style={{ opacity: 0.8, fontSize: 12 }}>({fmtPct(bal24h.pct)})</span>
+                       <span style={{ fontWeight: 600, fontSize: 13 }}>{isMobile ? fmtPct(bal24h.pct) : fmtSignedUsd(bal24h.diff)}</span>
+                       <span style={{ opacity: 0.8, fontSize: 12 }}>({isMobile ? fmtSignedUsd(bal24h.diff) : fmtPct(bal24h.pct)})</span>
                      </div>
                      {bot?.fiatValue != null && (
                        <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
@@ -480,8 +480,8 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                  style={isMobile ? { gridColumn: "1 / -1" } : undefined} />
         <KpiCard label="Total P&L" loading={loading}
                  tone={pnlTone(summary?.totalPnl)}
-                 value={summary ? fmtSignedUsd(summary.totalPnl) : "—"}
-                 sub={summary ? `ROI ${fmtPct(summary.roiPct)}` : "—"}
+                 value={summary ? (isMobile ? fmtPct(summary.roiPct) : fmtSignedUsd(summary.totalPnl)) : "—"}
+                 sub={summary ? (isMobile ? fmtSignedUsd(summary.totalPnl) : `ROI ${fmtPct(summary.roiPct)}`) : "—"}
                  spark={pnlSpark} sparkRow={true} big info="Total closed profit over all time."/>
         <KpiCard label="Unrealized" loading={loading}
                  tone={pnlTone(positions.reduce((a, p) => a + p.pnlAbs, 0))}
