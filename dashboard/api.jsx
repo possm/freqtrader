@@ -329,20 +329,34 @@ function useFreqtradeData(baseUrl) {
     queryKey: ['ft_slow', baseUrl],
     queryFn: async () => {
       if (!baseUrl) return null;
-      const [trades, balance, daily, config, locksRes] = await Promise.all([
+      const [trades, balance, config, locksRes] = await Promise.all([
         ftFetch(baseUrl, "/api/v1/trades?limit=500"),
         ftFetch(baseUrl, "/api/v1/balance").catch(() => null),
-        ftFetch(baseUrl, "/api/v1/daily?timescale=3650").catch(() => null),
         ftFetch(baseUrl, "/api/v1/show_config").catch(() => null),
         ftFetch(baseUrl, "/api/v1/locks").catch(() => null),
       ]);
-      return { trades, balance, daily, config, locksRes };
+      return { trades, balance, config, locksRes };
+    },
+    refetchInterval: 60000,
+    enabled: !!baseUrl,
+  });
+
+  // Daily data (heavy query) isolated
+  const {
+    data: dailyData,
+    refetch: refetchDaily
+  } = useQuery({
+    queryKey: ['ft_daily', baseUrl],
+    queryFn: async () => {
+      if (!baseUrl) return null;
+      return ftFetch(baseUrl, "/api/v1/daily?timescale=3650").catch(() => null);
     },
     refetchInterval: 60000,
     enabled: !!baseUrl,
   });
 
   const refresh = React.useCallback(() => {
+    if (refetchDaily) refetchDaily();
     if (refetchFast) refetchFast();
     if (refetchSlow) refetchSlow();
   }, [refetchFast, refetchSlow]);
@@ -369,7 +383,7 @@ function useFreqtradeData(baseUrl) {
     
     const trades = slowData?.trades ?? null;
     const balance = slowData?.balance ?? null;
-    const daily = slowData?.daily ?? null;
+    const daily = dailyData ?? null;
     const config = slowData?.config ?? null;
     const locksRes = slowData?.locksRes ?? null;
 
