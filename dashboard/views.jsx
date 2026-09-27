@@ -424,29 +424,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
     let gw = 0, gl = 0; return sorted.map(t => { if (t.pnlAbs > 0) gw += t.pnlAbs; else gl += Math.abs(t.pnlAbs); return gl === 0 ? gw : (gw / gl); });
   }, [trades]);
 
-  const balDeltas = vUseMemo(() => {
-    if (!data.equity || data.equity.length < 2) return [];
-    const eq = data.equity;
-    const todayObj = eq[eq.length - 1];
-    const today = todayObj.v + (todayObj.unrealized || 0);
 
-    return [
-      { label: "24h", days: 2 },
-      { label: "7d", days: 8 },
-      { label: "30d", days: 31 },
-      { label: "All", days: eq.length }
-    ].map(r => {
-      let d = Math.min(r.days, eq.length);
-      const pastObj = eq[eq.length - d];
-      if (!pastObj) return null;
-      const past = pastObj.v;
-      const diff = today - past;
-      const pct = past ? (diff / past) * 100 : 0;
-      const fiatRatio = (bot && bot.balance) ? ((bot.fiatValue || 0) / bot.balance) : 0;
-      const diffFiat = diff * fiatRatio;
-      return { label: r.label, diff, pct, diffFiat };
-    }).filter(Boolean);
-  }, [data.equity, bot]);
 
   const [search, setSearch] = vUseState("");
   const [strat, setStrat] = vUseState("All");
@@ -473,20 +451,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                    </div>
                  ) : "—"}
                  info="Total equity (including unrealized profit)."
-                 rightSub={balDeltas.length > 0 ? (
-                   <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
-                     {balDeltas.map(d => (
-                       <div key={d.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                         <span style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600, width: 26, textAlign: "right" }}>{d.label}</span>
-                         <div style={{ display: "flex", alignItems: "center", gap: 4, color: pnlColor(d.diff), minWidth: isMobile ? 65 : 85, justifyContent: "flex-end" }}>
-                           <Icon name={d.diff >= 0 ? "trending-up" : "trending-down"} size={12}/>
-                           <span style={{ fontWeight: 600, fontSize: 12 }}>{isMobile ? fmtPct(d.pct) : fmtSignedUsd(d.diff)}</span>
-                           <span style={{ opacity: 0.8, fontSize: 11 }}>({isMobile ? fmtSignedUsd(d.diff) : fmtPct(d.pct)})</span>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                 ) : null}
+
                  style={isMobile ? { gridColumn: "1 / -1" } : undefined} />
         <KpiCard label="Total P&L" loading={loading}
                  tone={pnlTone(summary?.totalPnl)}
@@ -962,7 +927,7 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
     <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0, minWidth: 0,
                   gridTemplateRows: "auto auto auto" }}>
       
-      <div style={{ display: "grid", gap: "var(--gap)", minWidth: 0, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+      <div style={{ display: "grid", gap: "var(--gap)", minWidth: 0, gridTemplateColumns: isMobile ? "1fr" : "1.2fr 0.9fr 1.1fr" }}>
         
         {/* FINANCIALS */}
         <Card title="Financial Performance" sub="All-time bottom line">
@@ -998,20 +963,7 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                       <div style={{ fontSize: 12, color: "var(--muted)" }}>
                         {fmtUsd(bot.available)} free · {fmtUsd(bot.allocated)} alloc
                       </div>
-                      {balDeltas.length > 0 && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", marginTop: 4 }}>
-                          {balDeltas.map(d => (
-                            <div key={d.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600, width: 26, textAlign: "right" }}>{d.label}</span>
-                              <div style={{ display: "flex", alignItems: "center", gap: 4, color: pnlColor(d.diff), minWidth: 65, justifyContent: "flex-end" }}>
-                                <Icon name={d.diff >= 0 ? "trending-up" : "trending-down"} size={12}/>
-                                <span style={{ fontWeight: 500, fontSize: 12 }}>{fmtSignedUsd(d.diff)}</span>
-                                <span style={{ opacity: 0.8, fontSize: 11 }}>({fmtPct(d.pct)})</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+
                     </div>
                   </div>
                 )}
@@ -1037,6 +989,24 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+        </Card>
+        
+        {/* BALANCE DELTAS */}
+        <Card title="Historical Delta" sub="Rolling portfolio change">
+          {loading || !equity ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+              {balDeltas.map(d => (
+                <div key={d.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600, letterSpacing: ".05em" }}>{d.label}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: pnlColor(d.diff) }}>
+                    <Icon name={d.diff >= 0 ? "trending-up" : "trending-down"} size={14}/>
+                    <span style={{ fontWeight: 600, fontSize: 14 }}>{fmtSignedUsd(d.diff)}</span>
+                    <span style={{ opacity: 0.8, fontSize: 13, width: 45, textAlign: "right" }}>({fmtPct(d.pct)})</span>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </Card>
