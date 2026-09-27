@@ -425,18 +425,15 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
   }, [trades]);
 
   const bal24h = vUseMemo(() => {
-    if (!data.equity || data.equity.length < 2) return null;
-    const eq = data.equity;
-    const todayObj = eq[eq.length - 1];
-    const yesterdayObj = eq[eq.length - 2];
-    const today = todayObj.v + (todayObj.unrealized || 0);
-    const yesterday = yesterdayObj.v;
-    const diff = today - yesterday;
-    const pct = yesterday ? (diff / yesterday) * 100 : 0;
+    if (!trades) return null;
+    const now = Date.now();
+    const trades24h = trades.filter(t => t.closedAt >= now - 86400000);
+    const diff = trades24h.reduce((a, t) => a + t.pnlAbs, 0);
+    const pct = bot && bot.balance ? (diff / bot.balance) * 100 : 0;
     const fiatRatio = (bot && bot.balance) ? ((bot.fiatValue || 0) / bot.balance) : 0;
     const diffFiat = diff * fiatRatio;
     return { diff, pct, diffFiat };
-  }, [data.equity, bot]);
+  }, [trades, bot]);
 
   const [search, setSearch] = vUseState("");
   const [strat, setStrat] = vUseState("All");
@@ -929,12 +926,13 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
   }, [daily, timeRange]);
 
   const bal24h = vUseMemo(() => {
-    if (!equity || equity.length < 2) return null;
-    const today = equity[equity.length - 1].v + (equity[equity.length - 1].unrealized || 0);
-    const yesterday = equity[equity.length - 2].v;
-    const diff = today - yesterday;
-    return { diff, pct: yesterday ? (diff / yesterday) * 100 : 0 };
-  }, [equity]);
+    if (!trades) return null;
+    const now = Date.now();
+    const trades24h = trades.filter(t => t.closedAt >= now - 86400000);
+    const diff = trades24h.reduce((a, t) => a + t.pnlAbs, 0);
+    const pct = bot && bot.balance ? (diff / bot.balance) * 100 : 0;
+    return { diff, pct };
+  }, [trades, bot]);
 
   return (
     <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0, minWidth: 0,
