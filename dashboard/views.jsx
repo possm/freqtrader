@@ -525,7 +525,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
           {isMobile
             ? (filtered.length === 0
                 ? <div style={{ padding: "20px 0", color: "var(--muted)", fontSize: 14, textAlign: "center" }}>No open positions</div>
-                : filtered.map(p => <MobilePositionCard key={p.id} p={p} onPairClick={goToChart} refresh={data.refresh}/>))
+                : applySort(filtered, { key: "pnlPct", dir: "desc" }).map(p => <MobilePositionCard key={p.id} p={p} onPairClick={goToChart} refresh={data.refresh}/>))
             : <PositionsTable rows={filtered} expandable={true} compact={false} goToChart={goToChart} refresh={data.refresh}/>
           }
         </Card>
@@ -896,7 +896,7 @@ function TradesView({ data, isMobile, goToChart, focusTradeId, clearFocus }) {
         {isMobile
           ? (filtered.length === 0
               ? <div style={{ padding: "20px 0", color: "var(--muted)", fontSize: 14, textAlign: "center" }}>No trades</div>
-              : filtered.map(t => <MobileTradeCard key={t.id} t={t} onPairClick={goToChart}
+              : applySort(filtered, { key: "closedAt", dir: "desc" }).map(t => <MobileTradeCard key={t.id} t={t} onPairClick={goToChart}
                   highlight={highlightId != null && String(t.id) === String(highlightId)}/>))
           : <TradesTable rows={filtered} goToChart={goToChart} highlightId={highlightId}/>
         }
