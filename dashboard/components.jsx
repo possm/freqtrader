@@ -820,7 +820,7 @@ function KpiCard({ label, value, sub, tone, spark, sparkRow, info, big, loading,
 
 
 // ── Mobile row card ───────────────────────────────────────────────────────────
-function MobileRowCard({ pair, pnlAbs, highlight, onClick, children }) {
+function MobileRowCard({ pair, pnlPct, highlight, onClick, children }) {
   const ref = useRef(null);
   useEffect(() => {
     if (highlight && ref.current) ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -842,8 +842,8 @@ function MobileRowCard({ pair, pnlAbs, highlight, onClick, children }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
           <span style={{ fontWeight: 600, fontSize: 14.5 }}>{pair}</span>
-          <span className="num" style={{ fontSize: 15, fontWeight: 700, color: pnlColor(pnlAbs) }}>
-            {fmtSignedUsd(pnlAbs)}
+          <span className="num" style={{ fontSize: 15, fontWeight: 700, color: pnlColor(pnlPct) }}>
+            {fmtPct(pnlPct)}
           </span>
         </div>
         {children}
@@ -875,12 +875,12 @@ function MobilePositionCard({ p, onPairClick, refresh }) {
   };
 
   return (
-    <MobileRowCard pair={p.pair} pnlAbs={p.pnlAbs} onClick={onPairClick ? () => onPairClick(p.pair) : undefined}>
+    <MobileRowCard pair={p.pair} pnlPct={p.pnlPct} onClick={onPairClick ? () => onPairClick(p.pair) : undefined}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span className="num muted" style={{ fontSize: 12 }}>
           {fmtPrice(p.entry)} → <span style={{ color: pnlColor(p.pnlPct) }}>{fmtPrice(p.current)}</span>
         </span>
-        <PnlPill pct={p.pnlPct} size="sm"/>
+        <PnlPill value={p.pnlAbs} size="sm"/>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
         <span className="muted" style={{ fontSize: 11.5 }}>
@@ -901,12 +901,12 @@ function MobilePositionCard({ p, onPairClick, refresh }) {
 function MobileTradeCard({ t, onPairClick, highlight }) {
   const pos = t.pnlAbs >= 0;
   return (
-    <MobileRowCard pair={t.pair} pnlAbs={t.pnlAbs} highlight={highlight} onClick={onPairClick ? () => onPairClick(t.pair) : undefined}>
+    <MobileRowCard pair={t.pair} pnlPct={t.pnlPct} highlight={highlight} onClick={onPairClick ? () => onPairClick(t.pair) : undefined}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span className="num muted" style={{ fontSize: 12 }}>
           {fmtPrice(t.entry)} → <span style={{ color: pnlColor(t.pnlPct) }}>{fmtPrice(t.exit)}</span>
         </span>
-        <PnlPill pct={t.pnlPct} size="sm"/>
+        <PnlPill value={t.pnlAbs} size="sm"/>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
         <span className="muted" style={{ fontSize: 11.5 }}>
