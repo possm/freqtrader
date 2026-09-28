@@ -920,11 +920,11 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
                 <div style={{ minWidth: 0 }}>
                   <div className="muted" style={{ fontSize: 12, marginBottom: 4, textTransform: "uppercase", letterSpacing: ".05em", fontWeight: 600 }}>Current Profit</div>
-                  <div className="num" style={{ fontSize: isMobile ? 32 : 40, fontWeight: 600, color: pnlColor(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)), letterSpacing: "-.015em", lineHeight: 1.1, wordBreak: "break-word" }}>
+                  <div className="num" style={{ fontSize: 31, fontWeight: 600, color: pnlColor(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)), letterSpacing: "-.015em", lineHeight: 1.1, wordBreak: "break-word" }}>
                     {fmtSignedUsd(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0))}
                   </div>
                   {s.totalAllFiat != null && (
-                    <div style={{ fontSize: isMobile ? 16 : 20, color: "var(--muted)", fontWeight: 500, marginTop: -4 }}>
+                    <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 500, marginTop: -4 }}>
                       ≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: bot?.fiatSymbol || "EUR"}).format(s.totalAllFiat)}
                     </div>
                   )}
@@ -933,11 +933,11 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                 {bot?.balance != null && (
                   <div style={{ textAlign: "right", minWidth: 0 }}>
                     <div className="muted" style={{ fontSize: 12, marginBottom: 4, textTransform: "uppercase", letterSpacing: ".05em", fontWeight: 600 }}>Total Wallet</div>
-                    <div className="num" style={{ fontSize: isMobile ? 24 : 32, fontWeight: 600, letterSpacing: "-.015em", lineHeight: 1.1, color: "var(--text)", wordBreak: "break-word" }}>
+                    <div className="num" style={{ fontSize: 31, fontWeight: 600, letterSpacing: "-.015em", lineHeight: 1.1, color: "var(--text)", wordBreak: "break-word" }}>
                       {fmtUsd(bot.balance)}
                     </div>
                     {bot.fiatValue != null && (
-                      <div style={{ fontSize: isMobile ? 14 : 16, color: "var(--muted)", fontWeight: 500, marginTop: -2 }}>
+                      <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 500, marginTop: -2 }}>
                         ≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)}
                       </div>
                     )}
