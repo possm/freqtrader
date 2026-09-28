@@ -2854,3 +2854,67 @@ function SettingsView({ data, baseUrl, isMobile, compactNav, setCompactNav }) {
     </div>
   );
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// ── PORTFOLIO VIEW ────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+export function PortfolioView() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['portfolio'],
+    queryFn: async () => {
+      const res = await fetch('/api/dashboard/portfolio');
+      if (!res.ok) throw new Error("Failed to load portfolio");
+      return res.json();
+    },
+    refetchInterval: 60000,
+  });
+
+  if (isLoading) return <div className="muted" style={{ padding: 24 }}>Loading aggregated portfolio data...</div>;
+  if (error) return <div style={{ padding: 24, color: "var(--warn)" }}>Error loading portfolio: {error.message}</div>;
+  
+  if (!data || data.length === 0) {
+    return (
+      <div style={{ padding: 24 }}>
+        <h3>Portfolio Aggregation</h3>
+        <p className="muted">No aggregated data yet. The background job runs every hour to snapshot your balances across all bots.</p>
+      </div>
+    );
+  }
+
+  const current = data[0];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, animation: "fade-in .3s ease-out" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <KpiCard label="Total Global Balance" value={`$${fmtMoney(current.total_balance)}`} />
+        <KpiCard label="Global Closed Profit" value={`$${fmtMoney(current.closed_profit)}`} />
+        <KpiCard label="Global Open Profit" value={`$${fmtMoney(current.open_profit)}`} color={pnlColor(current.open_profit)} />
+      </div>
+      
+      <Card title="Portfolio History">
+        <div style={{ overflowX: "auto" }}>
+          <table style={TABLE_STYLE}>
+            <thead>
+              <tr>
+                <th style={{ padding: "0 14px", borderBottom: "1px solid var(--border)", textAlign: "left", color: "var(--muted)", fontWeight: 500, fontSize: 12.5, height: 40 }}>Date</th>
+                <th style={{ padding: "0 14px", borderBottom: "1px solid var(--border)", textAlign: "right", color: "var(--muted)", fontWeight: 500, fontSize: 12.5, height: 40 }}>Total Balance</th>
+                <th style={{ padding: "0 14px", borderBottom: "1px solid var(--border)", textAlign: "right", color: "var(--muted)", fontWeight: 500, fontSize: 12.5, height: 40 }}>Open Profit</th>
+                <th style={{ padding: "0 14px", borderBottom: "1px solid var(--border)", textAlign: "right", color: "var(--muted)", fontWeight: 500, fontSize: 12.5, height: 40 }}>Closed Profit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map(row => (
+                <tr key={row.id} className="hover-bg">
+                  <td style={TD}>{new Date(row.timestamp).toLocaleString()}</td>
+                  <td style={{ ...TD, textAlign: "right" }} className="num">${fmtMoney(row.total_balance)}</td>
+                  <td style={{ ...TD, textAlign: "right", color: pnlColor(row.open_profit) }} className="num">${fmtMoney(row.open_profit)}</td>
+                  <td style={{ ...TD, textAlign: "right", color: pnlColor(row.closed_profit) }} className="num">${fmtMoney(row.closed_profit)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}

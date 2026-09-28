@@ -7,7 +7,7 @@ import {
   useFreqtradeData, login, loadConfig, saveConfig, clearConfig, loadBots, saveBots, addBot, removeBot
 } from './api.jsx';
 import {
-  OverviewView, ChartView, SignalsView, TradesView, PerformanceView, LocksView, StrategiesView, RiskView, SettingsView
+  OverviewView, ChartView, SignalsView, TradesView, PerformanceView, LocksView, StrategiesView, RiskView, SettingsView, PortfolioView
 } from './views.jsx';
 
 // App shell: login screen, sidebar, top header, tab routing + data polling.
@@ -180,6 +180,7 @@ function Sidebar({ tab, setTab, compact, activeBot }) {
     { id: "signals",     icon: "target",    label: "Signals" },
     { id: "trades",      icon: "trades",    label: "Trades" },
     { id: "performance", icon: "perf",      label: "Performance" },
+    { id: "portfolio",   icon: "pie",       label: "Portfolio" },
     { id: "locks",       icon: "lock",      label: "Pair locks" },
   ];
 
@@ -293,7 +294,7 @@ function MobileNav({ tab, setTab }) {
     { id: "overview",    icon: "dashboard", label: "Home" },
     { id: "chart",       icon: "candles",   label: "Chart" },
     { id: "trades",      icon: "trades",    label: "Trades" },
-    { id: "performance", icon: "perf",      label: "Perf" },
+    { id: "portfolio",   icon: "pie",       label: "Portfolio" },
     { id: "signals",     icon: "target",    label: "Signals" },
   ];
   return (
@@ -320,6 +321,7 @@ function MobileTopBar({ tab, connected, onRefresh, activeBot, onLogout }) {
   const titles = {
     overview: "Dashboard", chart: "Chart",
     signals: "Signals", trades: "Trades",
+    portfolio: "Portfolio Aggregation",
     performance: "Performance", locks: "Pair Locks",
     strategies: "Strategies", risk: "Risk", settings: "Settings",
   };
@@ -433,6 +435,7 @@ function TopHeader({ tab, onRefresh, onLogout, connected, activeBot, data, onSwi
     chart:       { t: "Chart",        s: "Live candlestick chart with Bollinger Bands, volume and RSI / MFI" },
     signals:     { t: "Signals",       s: "Per-pair indicator state · which entry conditions are firing right now" },
     trades:      { t: "Trade history", s: "Closed and cancelled trades · filter, sort, export" },
+    portfolio:   { t: "Portfolio",     s: "Aggregated global balances and profit across all configured bots" },
     performance: { t: "Performance",  s: "All-time metrics, equity curve, strategy breakdown" },
     locks:       { t: "Pair locks",    s: "Pairs currently blocked by protections — unlock from here" },
     strategies:  { t: "Strategies",    s: "Active strategy settings and available strategies" },
@@ -559,6 +562,7 @@ function App() {
       {tab === "chart"       && <ChartView       data={data} baseUrl={baseUrl}  isMobile={isMobile} selectedPair={chartPair} onPairChange={setChartPair}/>}
       {tab === "signals"     && <SignalsView     data={data} baseUrl={baseUrl}  isMobile={isMobile} goToChart={goToChart}/>}
       {tab === "trades"      && <TradesView      data={data}                    isMobile={isMobile} goToChart={goToChart} focusTradeId={tradeFocus} clearFocus={() => setTradeFocus(null)}/>}
+      {tab === "portfolio"   && <PortfolioView   />}
       {tab === "performance" && <PerformanceView data={data} timeRange={timeRange} setTimeRange={setTimeRange} isMobile={isMobile} goToChart={goToChart}/>}
       {tab === "locks"       && <LocksView       data={data}                    isMobile={isMobile} goToChart={goToChart}/>}
       {tab === "strategies"  && <StrategiesView  data={data} baseUrl={baseUrl}  isMobile={isMobile}/>}

@@ -11,6 +11,33 @@ const STORAGE_KEY = "ft_api_config";   // active bot config (back-compat)
 const BOTS_KEY = "ft_bots";            // list of all saved bots
 
 // ── Config (stored in localStorage) ──────────────────────────────────────────
+async function syncSettingsToBackend(key, value) {
+  try {
+    await fetch('/api/dashboard/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value })
+    });
+  } catch (e) {
+    console.error("Failed to sync settings to backend", e);
+  }
+}
+
+export async function initSettingsFromBackend() {
+  try {
+    const res = await fetch('/api/dashboard/settings');
+    if (res.ok) {
+      const settings = await res.json();
+      if (settings[STORAGE_KEY]) localStorage.setItem(STORAGE_KEY, JSON.stringify(settings[STORAGE_KEY]));
+      if (settings[BOTS_KEY]) localStorage.setItem(BOTS_KEY, JSON.stringify(settings[BOTS_KEY]));
+      return true;
+    }
+  } catch (e) {
+    console.warn("Backend not reachable or not configured yet.", e);
+  }
+  return false;
+}
+
 function loadConfig() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); }
   catch { return null; }
@@ -21,6 +48,7 @@ function saveConfig(cfg) {
     try { cfg.name = new URL(cfg.url).host; } catch { cfg.name = cfg.url; }
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+  syncSettingsToBackend(STORAGE_KEY, cfg);
   addBot(cfg);  // also add/update in the bot list
 }
 function clearConfig() {
@@ -28,6 +56,7 @@ function clearConfig() {
   localStorage.removeItem(STORAGE_KEY);
   sessionStorage.removeItem("ft_token");
   sessionStorage.removeItem("ft_refresh");
+  syncSettingsToBackend(STORAGE_KEY, null);
 }
 
 // ── Multi-bot support ─────────────────────────────────────────────────────────
@@ -39,6 +68,7 @@ function loadBots() {
 }
 function saveBots(arr) {
   localStorage.setItem(BOTS_KEY, JSON.stringify(arr));
+  syncSettingsToBackend(BOTS_KEY, arr);
 }
 function addBot(cfg) {
   const bots = loadBots();

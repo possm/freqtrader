@@ -9,6 +9,8 @@ services:
     restart: unless-stopped
     ports:
       - "${LISTEN_IP:-192.168.2.4}:80:80"
+    volumes:
+      - "./user_data:/app/user_data"
     networks:
       - freqtrade-net
 
