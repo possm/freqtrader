@@ -28,8 +28,14 @@ export async function initSettingsFromBackend() {
     const res = await fetch('/api/dashboard/settings');
     if (res.ok) {
       const settings = await res.json();
+      
+      // If backend has settings, use them
       if (settings[STORAGE_KEY]) localStorage.setItem(STORAGE_KEY, JSON.stringify(settings[STORAGE_KEY]));
+      else if (localStorage.getItem(STORAGE_KEY)) syncSettingsToBackend(STORAGE_KEY, JSON.parse(localStorage.getItem(STORAGE_KEY)));
+
       if (settings[BOTS_KEY]) localStorage.setItem(BOTS_KEY, JSON.stringify(settings[BOTS_KEY]));
+      else if (localStorage.getItem(BOTS_KEY)) syncSettingsToBackend(BOTS_KEY, JSON.parse(localStorage.getItem(BOTS_KEY)));
+
       return true;
     }
   } catch (e) {
