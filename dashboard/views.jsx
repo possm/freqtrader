@@ -979,16 +979,9 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
         {/* BALANCE DELTAS */}
         <Card title="Historical Delta" sub="Rolling portfolio change">
           {loading || !equity ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, flex: 1, justifyContent: "space-between" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 24px", minWidth: 0, flex: 1, alignContent: "center" }}>
               {balDeltas.map(d => (
-                <div key={d.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 13, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600, letterSpacing: ".05em" }}>{d.label}</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: pnlColor(d.diff) }}>
-                    <Icon name={d.diff >= 0 ? "trending-up" : "trending-down"} size={14}/>
-                    <span style={{ fontWeight: 600, fontSize: 14 }}>{fmtSignedUsd(d.diff)}</span>
-                    <span style={{ opacity: 0.8, fontSize: 13, width: 45, textAlign: "right" }}>({fmtPct(d.pct)})</span>
-                  </div>
-                </div>
+                <SplitRow key={d.label} color={pnlColor(d.diff)} label={d.label} count={fmtSignedUsd(d.diff)} sub={fmtPct(d.pct)} />
               ))}
             </div>
           )}
