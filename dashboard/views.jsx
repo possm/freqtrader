@@ -912,6 +912,8 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
       { label: "24h", days: 2 },
       { label: "7d", days: 8 },
       { label: "30d", days: 31 },
+      { label: "180d", days: 181 },
+      { label: "1y", days: 366 },
       { label: "All", days: equity.length }
     ].map(r => {
       let d = Math.min(r.days, equity.length);
