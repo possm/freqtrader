@@ -907,46 +907,44 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
   }, [equity]);
 
   return (
-    <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0, minWidth: 0,
-                  gridTemplateRows: "auto auto auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)", minHeight: 0, minWidth: 0 }}>
       
-      <div style={{ display: "grid", gap: "var(--gap)", minWidth: 0, gridTemplateColumns: isMobile ? "1fr" : "1.2fr 0.9fr 1.1fr" }}>
+      {/* ROW 1: Hero & Health */}
+      <div style={{ display: "grid", gap: "var(--gap)", minWidth: 0, gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr" }}>
         
         {/* FINANCIALS */}
-        <Card title="Financial Performance" sub="All-time bottom line">
+        <Card title="Financial Performance" sub="All-time bottom line" style={{ flex: 1 }}>
           {loading || !s ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, flex: 1, justifyContent: "space-between" }}>
               
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 24, paddingBottom: 20, borderBottom: "1px solid var(--border-2)", marginBottom: 16 }}>
                 <div style={{ minWidth: 0 }}>
-                  <div className="muted" style={{ fontSize: 12, marginBottom: 4, textTransform: "uppercase", letterSpacing: ".05em", fontWeight: 600 }}>Current Profit</div>
-                  <div className="num" style={{ fontSize: 31, fontWeight: 600, color: pnlColor(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)), letterSpacing: "-.015em", lineHeight: 1.1, wordBreak: "break-word" }}>
+                  <div className="muted" style={{ fontSize: 12, marginBottom: 6, textTransform: "uppercase", letterSpacing: ".05em", fontWeight: 600 }}>Current Profit</div>
+                  <div className="num" style={{ fontSize: 34, fontWeight: 600, color: pnlColor(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)), letterSpacing: "-.02em", lineHeight: 1.1, wordBreak: "break-word" }}>
                     {fmtSignedUsd(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0))}
                   </div>
                   {s.totalAllFiat != null && (
-                    <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 500, marginTop: -4 }}>
+                    <div style={{ fontSize: 15, color: "var(--muted)", fontWeight: 500, marginTop: 4 }}>
                       ≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: bot?.fiatSymbol || "EUR"}).format(s.totalAllFiat)}
                     </div>
                   )}
                 </div>
 
                 {bot?.balance != null && (
-                  <div style={{ textAlign: "right", minWidth: 0 }}>
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 4, textTransform: "uppercase", letterSpacing: ".05em", fontWeight: 600 }}>Total Wallet</div>
-                    <div className="num" style={{ fontSize: 31, fontWeight: 600, letterSpacing: "-.015em", lineHeight: 1.1, color: "var(--text)", wordBreak: "break-word" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="muted" style={{ fontSize: 12, marginBottom: 6, textTransform: "uppercase", letterSpacing: ".05em", fontWeight: 600 }}>Total Wallet</div>
+                    <div className="num" style={{ fontSize: 34, fontWeight: 600, letterSpacing: "-.02em", lineHeight: 1.1, color: "var(--text)", wordBreak: "break-word" }}>
                       {fmtUsd(bot.balance)}
                     </div>
                     {bot.fiatValue != null && (
-                      <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 500, marginTop: -2 }}>
+                      <div style={{ fontSize: 15, color: "var(--muted)", fontWeight: 500, marginTop: 4 }}>
                         ≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)}
                       </div>
                     )}
                     
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginTop: 8, gap: 4 }}>
-                      <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                        {fmtUsd(bot.available)} free · {fmtUsd(bot.allocated)} alloc
-                      </div>
-
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
+                      <Chip tone="default">{fmtUsd(bot.available)} free</Chip>
+                      <Chip tone="default">{fmtUsd(bot.allocated)} alloc</Chip>
                     </div>
                   </div>
                 )}
@@ -960,23 +958,12 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
             </div>
           )}
         </Card>
-        
-        {/* BALANCE DELTAS */}
-        <Card title="Historical Delta" sub="Rolling portfolio change">
-          {loading || !equity ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px 24px", minWidth: 0, flex: 1, alignContent: "center" }}>
-              {balDeltas.map(d => (
-                <KV key={d.label} label={d.label} value={fmtSignedUsd(d.diff)} valueColor={pnlColor(d.diff)} sub={fmtPct(d.pct)} mono />
-              ))}
-            </div>
-          )}
-        </Card>
 
         {/* STRATEGY */}
-        <Card title="Strategy Metrics" sub="Win rate & expectancy">
+        <Card title="Strategy Metrics" sub="Win rate & expectancy" style={{ flex: 1 }}>
           {loading || !s ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
             <div style={{ display: "flex", alignItems: "center", gap: 24, flex: 1, minHeight: 0, minWidth: 0, flexWrap: "wrap", justifyContent: "center" }}>
-              <WinLossDonut wins={s.wins} losses={s.losses} size={isMobile ? 100 : 132} stroke={isMobile ? 11 : 14}/>
+              <WinLossDonut wins={s.wins} losses={s.losses} size={isMobile ? 100 : 120} stroke={isMobile ? 11 : 12}/>
               <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1, minWidth: 150 }}>
                 <SplitRow color="var(--accent)" label="Profit Factor" count={s.profitFactor.toFixed(2)} sub="gross win ÷ gross loss" />
                 <SplitRow color="var(--up)" label="Expectancy" count={fmtSignedUsd((s.avgWin * s.winRate + s.avgLoss * s.lossRate) / 100)} sub="avg per trade" />
@@ -987,21 +974,37 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
         </Card>
       </div>
 
-      <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0,
-                    gridTemplateColumns: isMobile ? "1fr" : "1.5fr 1fr" }}>
+      {/* ROW 2: Charts */}
+      <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0, gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr" }}>
         <Card title="Equity curve" 
               sub={`Wallet value over time${bot?.fiatValue != null ? ` (≈ ${new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)})` : ""}`}
-              right={<Segmented value={timeRange} options={["24h","7d","30d","All"]} onChange={setTimeRange} size="sm"/>}>
+              right={<Segmented value={timeRange} options={["24h","7d","30d","All"]} onChange={setTimeRange} size="sm"/>}
+              style={{ flex: 1 }}>
           <EquityChart data={filteredEquity} height={isMobile ? 160 : 200} fiatRatio={bot?.balance ? (bot?.fiatValue || 0) / bot.balance : 0} fiatSymbol={bot?.fiatSymbol || "EUR"}/>
         </Card>
-        <Card title="Daily P&L" sub={timeRange === "All" ? "All time" : timeRange === "30d" ? "Last 30 days" : timeRange === "7d" ? "Last 7 days" : "Last 24 hours"}>
+        <Card title="Daily P&L" sub={timeRange === "All" ? "All time" : timeRange === "30d" ? "Last 30 days" : timeRange === "7d" ? "Last 7 days" : "Last 24 hours"} style={{ flex: 1 }}>
           <DailyBars data={filteredDaily} height={isMobile ? 140 : 200}/>
         </Card>
       </div>
 
-      <Card title="Best & worst trades">
-        {s ? <BestWorst summary={s} goToChart={goToChart}/> : <div className="skeleton" style={{ height: 80, width: "100%" }}/>}
-      </Card>
+      {/* ROW 3: History & Extremes */}
+      <div style={{ display: "grid", gap: "var(--gap)", minWidth: 0, gridTemplateColumns: isMobile ? "1fr" : "1fr 2fr" }}>
+        {/* BALANCE DELTAS */}
+        <Card title="Historical Delta" sub="Rolling portfolio change" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          {loading || !equity ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "20px 24px", minWidth: 0, flex: 1, alignContent: "center" }}>
+              {balDeltas.map(d => (
+                <KV key={d.label} label={d.label} value={fmtSignedUsd(d.diff)} valueColor={pnlColor(d.diff)} sub={fmtPct(d.pct)} mono />
+              ))}
+            </div>
+          )}
+        </Card>
+
+        <Card title="Best & worst trades" sub="Outliers in trading history" style={{ flex: 1 }}>
+          {s ? <BestWorst summary={s} goToChart={goToChart}/> : <div className="skeleton" style={{ height: 80, width: "100%" }}/>}
+        </Card>
+      </div>
+
     </div>
   );
 }
