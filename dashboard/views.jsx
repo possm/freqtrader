@@ -932,7 +932,7 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
         {/* FINANCIALS */}
         <Card title="Financial Performance" sub="All-time bottom line">
           {loading || !s ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, flex: 1, justifyContent: "space-between" }}>
               
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
                 <div style={{ minWidth: 0 }}>
@@ -996,7 +996,7 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
         {/* BALANCE DELTAS */}
         <Card title="Historical Delta" sub="Rolling portfolio change">
           {loading || !equity ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, flex: 1, justifyContent: "space-between" }}>
               {balDeltas.map(d => (
                 <div key={d.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 13, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600, letterSpacing: ".05em" }}>{d.label}</span>
@@ -1014,7 +1014,7 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
         {/* STRATEGY */}
         <Card title="Strategy Metrics" sub="Win rate & expectancy">
           {loading || !s ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
-            <div style={{ display: "flex", alignItems: "center", gap: 24, flex: 1, minHeight: 0, minWidth: 0, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 24, flex: 1, minHeight: 0, minWidth: 0, flexWrap: "wrap", justifyContent: "center" }}>
               <WinLossDonut wins={s.wins} losses={s.losses} size={isMobile ? 100 : 132} stroke={isMobile ? 11 : 14}/>
               <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1, minWidth: 150 }}>
                 <SplitRow color="var(--accent)" label="Profit Factor" count={s.profitFactor.toFixed(2)} sub="gross win ÷ gross loss" />
