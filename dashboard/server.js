@@ -83,7 +83,7 @@ import cron from 'node-cron';
 
 async function fetchFreqtradeData(botUrl, username, password) {
   try {
-    const baseUrl = botUrl.replace(/\\/$/, "");
+    const baseUrl = botUrl.replace(/\/$/, "");
     // Login
     const loginRes = await fetch(`${baseUrl}/api/v1/token/login`, {
       method: "POST",
