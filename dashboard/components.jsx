@@ -639,7 +639,7 @@ function WinLossDonut({ wins, losses, size = 132, stroke = 14 }) {
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <circle cx={size/2} cy={size/2} r={r} stroke="var(--down)" strokeWidth={stroke} fill="none" opacity=".25"/>
         <circle cx={size/2} cy={size/2} r={r} stroke="var(--up)" strokeWidth={stroke} fill="none"
-                strokeDasharray={`${winFrac * c} ${c}`} strokeDashoffset={c * 0.25}
+                strokeDasharray={`${winFrac * c} ${c}`}
                 transform={`rotate(-90 ${size/2} ${size/2})`}/>
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center" }}>
