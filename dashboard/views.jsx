@@ -952,25 +952,10 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                 )}
               </div>
               
-              <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", borderTop: "1px dashed var(--border)", paddingTop: 16 }}>
-                <div>
-                  <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Closed Profit</div>
-                  <div className="num" style={{ fontSize: 16, fontWeight: 500, color: pnlColor(s.totalPnl) }}>
-                    {fmtSignedUsd(s.totalPnl)}
-                  </div>
-                </div>
-                <div>
-                  <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Unrealized</div>
-                  <div className="num" style={{ fontSize: 16, fontWeight: 500, color: pnlColor(positions?.reduce((a, p) => a + p.pnlAbs, 0)) }}>
-                    {positions ? fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0)) : "—"}
-                  </div>
-                </div>
-                <div>
-                  <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Trades</div>
-                  <div className="num" style={{ fontSize: 16, fontWeight: 500 }}>
-                    {s.trades}
-                  </div>
-                </div>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
+                <Mini label="Closed Profit" value={<span style={{ color: pnlColor(s.totalPnl) }}>{fmtSignedUsd(s.totalPnl)}</span>} mono />
+                <Mini label="Unrealized" value={positions ? <span style={{ color: pnlColor(positions.reduce((a, p) => a + p.pnlAbs, 0)) }}>{fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0))}</span> : "—"} mono />
+                <Mini label="Trades" value={s.trades} mono />
               </div>
             </div>
           )}
@@ -979,9 +964,9 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
         {/* BALANCE DELTAS */}
         <Card title="Historical Delta" sub="Rolling portfolio change">
           {loading || !equity ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 24px", minWidth: 0, flex: 1, alignContent: "center" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px 24px", minWidth: 0, flex: 1, alignContent: "center" }}>
               {balDeltas.map(d => (
-                <SplitRow key={d.label} color={pnlColor(d.diff)} label={d.label} count={fmtSignedUsd(d.diff)} sub={fmtPct(d.pct)} />
+                <KV key={d.label} label={d.label} value={fmtSignedUsd(d.diff)} valueColor={pnlColor(d.diff)} sub={fmtPct(d.pct)} mono />
               ))}
             </div>
           )}
