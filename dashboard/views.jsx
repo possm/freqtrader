@@ -404,26 +404,7 @@ function TradesTable({ rows, goToChart, highlightId }) {
 
 function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
   const { positions, trades, summary, bot, strats, locks, loading } = data;
-  const pnlSpark = vUseMemo(() => {
-    if (!trades || !trades.length) return [0, 0];
-    const sorted = [...trades].sort((a, b) => a.closedAt - b.closedAt);
-    let cum = 0; return sorted.map(t => { cum += t.pnlAbs; return cum; });
-  }, [trades]);
-  const winSpark = vUseMemo(() => {
-    if (!trades || !trades.length) return [0, 0];
-    const sorted = [...trades].sort((a, b) => a.closedAt - b.closedAt);
-    let w = 0, tot = 0; return sorted.map(t => { tot++; if (t.pnlAbs > 0) w++; return (w / tot) * 100; });
-  }, [trades]);
-  const balSpark = vUseMemo(() => {
-    if (!data.equity || !data.equity.length) return [0, 0];
-    return data.equity.map(e => e.v);
-  }, [data.equity]);
-  const pfSpark = vUseMemo(() => {
-    if (!trades || !trades.length) return [0, 0];
-    const sorted = [...trades].sort((a, b) => a.closedAt - b.closedAt);
-    let gw = 0, gl = 0; return sorted.map(t => { if (t.pnlAbs > 0) gw += t.pnlAbs; else gl += Math.abs(t.pnlAbs); return gl === 0 ? gw : (gw / gl); });
-  }, [trades]);
-
+        
 
 
   const [search, setSearch] = vUseState("");
@@ -457,7 +438,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                  tone={pnlTone(summary?.totalPnl)}
                  value={summary ? (isMobile ? fmtPct(summary.roiPct) : fmtSignedUsd(summary.totalPnl)) : "—"}
                  sub={summary ? (isMobile ? fmtSignedUsd(summary.totalPnl) : `ROI ${fmtPct(summary.roiPct)}`) : "—"}
-                 spark={pnlSpark} sparkRow={true} big info="Total closed profit over all time."/>
+                 big info="Total closed profit over all time."/>
         <KpiCard label="Unrealized" loading={loading}
                  tone={pnlTone(positions.reduce((a, p) => a + p.pnlAbs, 0))}
                  value={fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0))}
@@ -466,12 +447,12 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                  tone={summary && summary.winRate >= 50 ? "up" : "down"}
                  value={summary ? summary.winRate.toFixed(1) + "%" : "—"}
                  sub={summary ? `${summary.wins}W · ${summary.losses}L` : "—"}
-                 spark={winSpark} sparkRow={true} info="Percentage of closed trades that were profitable."/>
+                 info="Percentage of closed trades that were profitable."/>
         <KpiCard label="Profit factor" loading={loading}
                  tone={summary && summary.profitFactor >= 1 ? "up" : "down"}
                  value={summary ? summary.profitFactor.toFixed(2) : "—"}
                  sub={summary ? `avg win ${fmtUsd(summary.avgWin)}` : "—"}
-                 spark={pfSpark} sparkRow={true} info="Gross winning profit divided by gross losing profit." />
+                 info="Gross winning profit divided by gross losing profit." />
       </div>
 
       <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0,
