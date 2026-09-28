@@ -112,11 +112,11 @@ async function fetchFreqtradeData(botUrl, username, password) {
   }
 }
 
-cron.schedule('0 * * * *', async () => {
-  console.log("Running hourly portfolio aggregation...");
+async function runAggregation() {
+  console.log("Running portfolio aggregation...");
   try {
     const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('ft_bots');
-    if (!row) return;
+    if (!row) return { success: false, error: "No bots configured" };
     const bots = JSON.parse(row.value);
     
     let totalBal = 0;
@@ -138,10 +138,20 @@ cron.schedule('0 * * * *', async () => {
       const stmt = db.prepare('INSERT INTO portfolio_snapshots (total_balance, open_profit, closed_profit) VALUES (?, ?, ?)');
       stmt.run(totalBal, totalOpenPnl, totalClosedPnl);
       console.log(`Saved snapshot: Bal=${totalBal}, ClosedPnl=${totalClosedPnl}`);
+      return { success: true, totalBal, totalClosedPnl, successCount };
     }
+    return { success: false, error: "Failed to fetch data from bots" };
   } catch (err) {
     console.error("Aggregator error:", err);
+    return { success: false, error: err.message };
   }
+}
+
+cron.schedule('0 * * * *', runAggregation);
+
+app.post('/api/dashboard/aggregate', async (req, res) => {
+  const result = await runAggregation();
+  res.json(result);
 });
 
 
