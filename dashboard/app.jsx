@@ -357,9 +357,14 @@ function FreqtradeMark() {
 }
 
 // ── Bot switcher dropdown ─────────────────────────────────────────────────────
-function BotSwitcher({ activeBot, onSwitch }) {
+function BotSwitcher({ activeBot, data, onSwitch }) {
   const [open, setOpen] = aUseState(false);
   const bots = loadBots();
+  
+  // Use actual bot strategy/name from API if available, fallback to manual alias
+  const apiName = data?.bot?.strategy || (data?.bot?.name && data.bot.name !== "freqtrade" ? data.bot.name : null) || data?.strats?.[0];
+  const activeName = apiName || activeBot?.name || activeBot?.url || "Select bot";
+
   if (bots.length <= 1) {
     // Just show the active bot name (no dropdown if only one)
     return activeBot ? (
@@ -369,7 +374,7 @@ function BotSwitcher({ activeBot, onSwitch }) {
         fontSize: 13, color: "var(--text)",
       }}>
         <Icon name="bot" size={13}/>
-        <span style={{ fontWeight: 600 }}>{activeBot.name || activeBot.url}</span>
+        <span style={{ fontWeight: 600 }}>{activeName}</span>
       </div>
     ) : null;
   }
@@ -384,7 +389,7 @@ function BotSwitcher({ activeBot, onSwitch }) {
         fontSize: 13, color: "var(--text)", cursor: "pointer", fontFamily: "inherit",
       }}>
         <Icon name="bot" size={13}/>
-        <span style={{ fontWeight: 600 }}>{activeBot?.name || activeBot?.url || "Select bot"}</span>
+        <span style={{ fontWeight: 600 }}>{activeName}</span>
         <span style={{ fontSize: 10, marginLeft: 2, opacity: .6 }}>▼</span>
       </button>
       {open && (
@@ -422,7 +427,7 @@ function BotSwitcher({ activeBot, onSwitch }) {
 }
 
 // ── Top header ─────────────────────────────────────────────────────────────────
-function TopHeader({ tab, onRefresh, onLogout, connected, activeBot, onSwitchBot }) {
+function TopHeader({ tab, onRefresh, onLogout, connected, activeBot, data, onSwitchBot }) {
   const titles = {
     overview:    { t: "Dashboard",    s: "Live overview of bot activity, P&L and active positions" },
     chart:       { t: "Chart",        s: "Live candlestick chart with Bollinger Bands, volume and RSI / MFI" },
@@ -451,7 +456,7 @@ function TopHeader({ tab, onRefresh, onLogout, connected, activeBot, onSwitchBot
         <span className="muted" style={{ fontSize: 12.5 }}>{cur.s}</span>
       </div>
 
-      <BotSwitcher activeBot={activeBot} onSwitch={onSwitchBot}/>
+      <BotSwitcher activeBot={activeBot} data={data} onSwitch={onSwitchBot}/>
 
       <div style={{
         display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 8,
@@ -590,7 +595,7 @@ function App() {
 
       <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--bg)", alignSelf: "stretch" }}>
         <TopHeader tab={tab} onRefresh={data.refresh} onLogout={handleLogout} connected={connected}
-                   activeBot={activeBot} onSwitchBot={handleSwitchBot}/>
+                   activeBot={activeBot} data={data} onSwitchBot={handleSwitchBot}/>
         {errorBanner}
 
         <div style={{ flex: 1, padding: 24 }}>
