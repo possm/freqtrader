@@ -202,7 +202,7 @@ function buildEquity(dailyStats, currentBalance, totalPnl, unrealizedPnl = 0) {
   });
 }
 
-function buildSummary(profit, trades, positions) {
+function buildSummary(profit, trades, positions, fiatRate) {
   const closedTrades = trades.filter(t => t.status === "closed");
   const wins   = closedTrades.filter(t => t.pnlAbs > 0);
   const losses  = closedTrades.filter(t => t.pnlAbs <= 0);
@@ -226,10 +226,13 @@ function buildSummary(profit, trades, positions) {
     };
   }).sort((a, b) => b.pnl - a.pnl);
   const sorted = closedTrades.slice().sort((a, b) => b.pnlAbs - a.pnlAbs);
+  
+  const unrealizedPnl = positions.reduce((a, p) => a + p.pnlAbs, 0);
+  
   return {
     totalPnl,
-    totalPnlFiat: profit?.profit_closed_fiat ?? null,
-    totalAllFiat: profit?.profit_all_fiat ?? null,
+    totalPnlFiat: fiatRate ? totalPnl * fiatRate : (profit?.profit_closed_fiat ?? null),
+    totalAllFiat: fiatRate ? (totalPnl + unrealizedPnl) * fiatRate : (profit?.profit_all_fiat ?? null),
     roiPct: profit?.profit_closed_percent ?? ((totalPnl / (profit?.holding_value ?? 10000)) * 100),
     winRate: closedTrades.length ? (wins.length / closedTrades.length) * 100 : 0,
     lossRate: closedTrades.length ? (losses.length / closedTrades.length) * 100 : 0,
@@ -267,7 +270,7 @@ function formatExchangeName(raw) {
   return EXCHANGE_DISPLAY_NAMES[key] || rawStr.charAt(0).toUpperCase() + rawStr.slice(1);
 }
 
-function buildBot(config, balance, positions) {
+function buildBot(config, balance, positions, fiatRate) {
   const maxSlots = config?.max_open_trades ?? 10;
   const stakeCurr = config?.stake_currency ?? "USDT";
   let avail = 0;
@@ -275,6 +278,8 @@ function buildBot(config, balance, positions) {
     const c = balance.currencies.find(x => x.currency === stakeCurr);
     if (c) avail = c.bot_owned ?? c.free;
   }
+
+  const balTotal = balance?.total_bot ?? balance?.total ?? 0;
 
   return {
     name: config?.bot_name ?? "freqtrade",
@@ -284,9 +289,9 @@ function buildBot(config, balance, positions) {
     stake: stakeCurr,
     openSlots: maxSlots < 0 ? 99 : maxSlots,
     usedSlots: positions.length,
-    balance: balance?.total_bot ?? balance?.total ?? 0,
-    fiatValue: balance?.value_bot ?? balance?.value ?? null,
-    fiatSymbol: balance?.symbol ?? null,
+    balance: balTotal,
+    fiatValue: fiatRate ? balTotal * fiatRate : (balance?.value_bot ?? balance?.value ?? null),
+    fiatSymbol: balance?.symbol ?? "EUR",
     available: avail,
     allocated: positions.reduce((a, p) => a + (p.stakeAmount || 0), 0),
     uptime: "—",
@@ -295,9 +300,32 @@ function buildBot(config, balance, positions) {
   };
 }
 
-// ── Main data hook ────────────────────────────────────────────────────────────
+export function useFiatRate() {
+  return useQuery({
+    queryKey: ['ft_fiat_rate'],
+    queryFn: async () => {
+      const now = Date.now();
+      try {
+        const cached = JSON.parse(localStorage.getItem("ft_fiat_rate") || "null");
+        if (cached && cached.timestamp && (now - cached.timestamp < 24 * 60 * 60 * 1000)) {
+          return cached.rate;
+        }
+      } catch (e) {}
+      const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=eur");
+      if (!res.ok) throw new Error("Fiat fetch failed");
+      const data = await res.json();
+      const rate = data["usd-coin"].eur;
+      localStorage.setItem("ft_fiat_rate", JSON.stringify({ rate, timestamp: now }));
+      return rate;
+    },
+    refetchInterval: 24 * 60 * 60 * 1000,
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+}
+
 function useFreqtradeData(baseUrl) {
-  
+  const fiatRateQuery = useFiatRate();
+  const fiatRate = fiatRateQuery.data;
 
   // Fast-polling query (every 5s)
   const {
@@ -399,8 +427,8 @@ function useFreqtradeData(baseUrl) {
       unrealized: i === arr.length - 1 ? unrealizedPnl : 0,
     }));
 
-    const summary = buildSummary(profit, allTrades, positions);
-    const bot = buildBot(config, balance, positions);
+    const summary = buildSummary(profit, allTrades, positions, fiatRate);
+    const bot = buildBot(config, balance, positions, fiatRate);
     setCurrency(bot.stake);
     const equity = buildEquity(daily?.data ?? [], bot.balance, summary.totalPnl, unrealizedPnl);
     const strats = [...new Set([...allTrades].reverse().map(t => t.strategy).filter(Boolean))];
