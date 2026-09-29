@@ -231,8 +231,8 @@ function buildSummary(profit, trades, positions, fiatRate) {
   
   return {
     totalPnl,
-    totalPnlFiat: fiatRate ? totalPnl * fiatRate : (profit?.profit_closed_fiat ?? null),
-    totalAllFiat: fiatRate ? (totalPnl + unrealizedPnl) * fiatRate : (profit?.profit_all_fiat ?? null),
+    totalPnlFiat: fiatRate ? totalPnl * fiatRate : (profit?.profit_closed_fiat || null),
+    totalAllFiat: fiatRate ? (totalPnl + unrealizedPnl) * fiatRate : (profit?.profit_all_fiat || null),
     roiPct: profit?.profit_closed_percent ?? ((totalPnl / (profit?.holding_value ?? 10000)) * 100),
     winRate: closedTrades.length ? (wins.length / closedTrades.length) * 100 : 0,
     lossRate: closedTrades.length ? (losses.length / closedTrades.length) * 100 : 0,
@@ -290,7 +290,7 @@ function buildBot(config, balance, positions, fiatRate) {
     openSlots: maxSlots < 0 ? 99 : maxSlots,
     usedSlots: positions.length,
     balance: balTotal,
-    fiatValue: fiatRate ? balTotal * fiatRate : (balance?.value_bot ?? balance?.value ?? null),
+    fiatValue: fiatRate ? balTotal * fiatRate : (balance?.value_bot || balance?.value || null),
     fiatSymbol: balance?.symbol ?? "EUR",
     available: avail,
     allocated: positions.reduce((a, p) => a + (p.stakeAmount || 0), 0),
@@ -311,10 +311,10 @@ export function useFiatRate() {
           return cached.rate;
         }
       } catch (e) {}
-      const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=eur");
+      const res = await fetch("https://api.frankfurter.app/latest?from=USD&to=EUR");
       if (!res.ok) throw new Error("Fiat fetch failed");
       const data = await res.json();
-      const rate = data["usd-coin"].eur;
+      const rate = data.rates.EUR;
       localStorage.setItem("ft_fiat_rate", JSON.stringify({ rate, timestamp: now }));
       return rate;
     },
