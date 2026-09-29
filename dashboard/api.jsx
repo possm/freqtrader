@@ -324,7 +324,7 @@ export function useFiatRate() {
         throw err;
       }
     },
-    refetchInterval: 24 * 60 * 60 * 1000,
+    refetchInterval: () => 24 * 60 * 60 * 1000,
     staleTime: 24 * 60 * 60 * 1000,
   });
 }
@@ -349,7 +349,7 @@ function useFreqtradeData(baseUrl) {
       ]);
       return { status, profit };
     },
-    refetchInterval: 5000,
+    refetchInterval: () => 5000,
     enabled: !!baseUrl,
   });
 
@@ -371,7 +371,7 @@ function useFreqtradeData(baseUrl) {
       ]);
       return { trades, balance, config, locksRes };
     },
-    refetchInterval: 60000,
+    refetchInterval: () => 60000,
     enabled: !!baseUrl,
   });
 
