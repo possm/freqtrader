@@ -446,7 +446,7 @@ function useFreqtradeData(baseUrl) {
       lastUpdated: fastData ? Date.now() : null,
       refresh
     };
-  }, [baseUrl, fastData, slowData, fastError, slowError, isFastFetching, isSlowFetching, refresh]);
+  }, [baseUrl, fastData, slowData, dailyData, fiatRate, fastError, slowError, isFastFetching, isSlowFetching, refresh]);
 }
 
 // Delete a pair lock by id — used by the dashboard's "unlock" action.
