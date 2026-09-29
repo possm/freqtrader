@@ -307,16 +307,22 @@ export function useFiatRate() {
       const now = Date.now();
       try {
         const cached = JSON.parse(localStorage.getItem("ft_fiat_rate") || "null");
-        if (cached && cached.timestamp && (now - cached.timestamp < 24 * 60 * 60 * 1000)) {
+        if (cached && cached.timestamp && (now - cached.timestamp < 24 * 60 * 60 * 1000) && typeof cached.rate === "number" && cached.rate > 0) {
           return cached.rate;
         }
       } catch (e) {}
-      const res = await fetch("https://api.frankfurter.app/latest?from=USD&to=EUR");
-      if (!res.ok) throw new Error("Fiat fetch failed");
-      const data = await res.json();
-      const rate = data.rates.EUR;
-      localStorage.setItem("ft_fiat_rate", JSON.stringify({ rate, timestamp: now }));
-      return rate;
+      try {
+        const res = await fetch("https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR");
+        if (!res.ok) throw new Error("Fiat fetch failed: " + res.status);
+        const data = await res.json();
+        const rate = data.rates.EUR;
+        if (!rate || rate <= 0) throw new Error("Invalid rate from API");
+        localStorage.setItem("ft_fiat_rate", JSON.stringify({ rate, timestamp: now }));
+        return rate;
+      } catch (err) {
+        console.error("Dashboard Fiat Fetch Error:", err);
+        throw err;
+      }
     },
     refetchInterval: 24 * 60 * 60 * 1000,
     staleTime: 24 * 60 * 60 * 1000,
