@@ -431,7 +431,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                      )}
                    </div>
                  ) : "—"}
-                 sub={bot?.startBalance > 0 ? `${fmtPct(((bot.balance - bot.startBalance) / bot.startBalance) * 100)} vs start` : "—"}
+                 sub={bot?.startBalance > 0 ? `${fmtPct(((bot.balance - bot.startBalance) / bot.startBalance) * 100)} vs ${fmtUsd(bot.startBalance)}` : "—"}
                  info="Total equity (including unrealized profit)."
                  style={isMobile ? { gridColumn: "1 / -1" } : undefined} />
         <KpiCard label="Total P&L" loading={loading}
@@ -933,7 +933,7 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                   </div>
                   <div style={{ fontSize: 15, color: "var(--muted)", fontWeight: 500, marginTop: 4 }}>
                     {s.totalAllFiat != null && `≈ ${new Intl.NumberFormat("en-US", {style: "currency", currency: bot?.fiatSymbol || "EUR"}).format(s.totalAllFiat)} `}
-                    {bot?.startBalance > 0 && `(${fmtPct(((s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)) / bot.startBalance) * 100)} vs start)`}
+                    {bot?.startBalance > 0 && `(${fmtPct(((s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)) / bot.startBalance) * 100)} vs ${fmtUsd(bot.startBalance)})`}
                   </div>
                 </div>
 
@@ -945,7 +945,7 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                     </div>
                     <div style={{ fontSize: 15, color: "var(--muted)", fontWeight: 500, marginTop: 4 }}>
                       {bot.fiatValue != null && `≈ ${new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)} `}
-                      {bot?.startBalance > 0 && `(${fmtPct(((bot.balance - bot.startBalance) / bot.startBalance) * 100)} vs start)`}
+                      {bot?.startBalance > 0 && `(${fmtPct(((bot.balance - bot.startBalance) / bot.startBalance) * 100)} vs ${fmtUsd(bot.startBalance)})`}
                     </div>
                     
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
