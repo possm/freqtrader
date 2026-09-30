@@ -435,6 +435,7 @@ function useFreqtradeData(baseUrl) {
 
     const summary = buildSummary(profit, allTrades, positions, fiatRate);
     const bot = buildBot(config, balance, positions, fiatRate);
+    bot.startBalance = (bot.balance ?? 0) - unrealizedPnl - (summary.totalPnl ?? 0);
     setCurrency(bot.stake);
     const equity = buildEquity(daily?.data ?? [], bot.balance, summary.totalPnl, unrealizedPnl);
     const strats = [...new Set([...allTrades].reverse().map(t => t.strategy).filter(Boolean))];

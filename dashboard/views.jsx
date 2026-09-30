@@ -431,18 +431,22 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                      )}
                    </div>
                  ) : "—"}
+                 sub={bot?.startBalance > 0 ? `${fmtPct(((bot.balance - bot.startBalance) / bot.startBalance) * 100)} vs start` : "—"}
                  info="Total equity (including unrealized profit)."
-
                  style={isMobile ? { gridColumn: "1 / -1" } : undefined} />
         <KpiCard label="Total P&L" loading={loading}
                  tone={pnlTone(summary?.totalPnl)}
-                 value={summary ? (isMobile ? fmtPct(summary.roiPct) : fmtSignedUsd(summary.totalPnl)) : "—"}
-                 sub={summary ? (isMobile ? fmtSignedUsd(summary.totalPnl) : `ROI ${fmtPct(summary.roiPct)}`) : "—"}
+                 value={summary ? (isMobile ? (bot?.startBalance > 0 ? fmtPct((summary.totalPnl / bot.startBalance) * 100) : fmtPct(summary.roiPct)) : fmtSignedUsd(summary.totalPnl)) : "—"}
+                 sub={summary ? (isMobile ? fmtSignedUsd(summary.totalPnl) : `ROI ${bot?.startBalance > 0 ? fmtPct((summary.totalPnl / bot.startBalance) * 100) : fmtPct(summary.roiPct)}`) : "—"}
                  big info="Total closed profit over all time."/>
         <KpiCard label="Unrealized" loading={loading}
                  tone={pnlTone(positions.reduce((a, p) => a + p.pnlAbs, 0))}
                  value={fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0))}
-                 sub={`${positions.length} position${positions.length !== 1 ? "s" : ""}`}/>
+                 sub={(() => {
+                   const unPnl = positions.reduce((a, p) => a + p.pnlAbs, 0);
+                   const unPct = bot?.startBalance > 0 ? ` (${fmtPct((unPnl / bot.startBalance) * 100)})` : "";
+                   return `${positions.length} position${positions.length !== 1 ? "s" : ""}${unPct}`;
+                 })()}/>
         <KpiCard label="Win rate" loading={loading}
                  tone={summary && summary.winRate >= 50 ? "up" : "down"}
                  value={summary ? summary.winRate.toFixed(1) + "%" : "—"}
@@ -740,7 +744,8 @@ function PositionsView({ data, goToChart }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--gap)" }}>
         <KpiCard label="Open positions" loading={loading} value={filtered.length} sub={bot ? `${bot.openSlots - filtered.length} slots free` : "—"}/>
         <KpiCard label="Unrealized P&L" loading={loading} tone={pnlTone(totalPnl)}
-                 value={fmtSignedUsd(totalPnl)} sub={`across ${filtered.length} positions`}/>
+                 value={fmtSignedUsd(totalPnl)} 
+                 sub={`across ${filtered.length} pos${bot?.startBalance > 0 ? ` (${fmtPct((totalPnl / bot.startBalance) * 100)})` : ""}`}/>
         <KpiCard label="Total exposure" loading={loading}
                  value={fmtUsd(totalNotional)}
                  sub={bot ? `${((totalNotional / (bot.balance || 1)) * 100).toFixed(1)}% of wallet` : "—"}/>
@@ -826,7 +831,7 @@ function TradesView({ data, isMobile, goToChart, focusTradeId, clearFocus }) {
         <KpiCard label="Trades" loading={loading} value={filtered.length} sub={`window · ${range}`}/>
         <KpiCard label="Realized P&L" loading={loading} tone={pnlTone(totalPnl)}
                  value={fmtSignedUsd(totalPnl)}
-                 sub={`avg ${fmtSignedUsd(totalPnl / (filtered.length || 1))}`}/>
+                 sub={`avg ${fmtSignedUsd(totalPnl / (filtered.length || 1))}${bot?.startBalance > 0 ? ` · ROI ${fmtPct((totalPnl / bot.startBalance) * 100)}` : ""}`}/>
         <KpiCard label="Win rate" loading={loading} tone="up" value={winRate.toFixed(1) + "%"}
                  sub={`${wins.length}W · ${filtered.length - wins.length}L`}/>
         <KpiCard label="Avg duration" loading={loading}
