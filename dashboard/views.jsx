@@ -928,11 +928,10 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                   <div className="num" style={{ fontSize: 34, fontWeight: 600, color: pnlColor(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)), letterSpacing: "-.02em", lineHeight: 1.1, wordBreak: "break-word" }}>
                     {fmtSignedUsd(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0))}
                   </div>
-                  {s.totalAllFiat != null && (
-                    <div style={{ fontSize: 15, color: "var(--muted)", fontWeight: 500, marginTop: 4 }}>
-                      ≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: bot?.fiatSymbol || "EUR"}).format(s.totalAllFiat)}
-                    </div>
-                  )}
+                  <div style={{ fontSize: 15, color: "var(--muted)", fontWeight: 500, marginTop: 4 }}>
+                    {s.totalAllFiat != null && `≈ ${new Intl.NumberFormat("en-US", {style: "currency", currency: bot?.fiatSymbol || "EUR"}).format(s.totalAllFiat)} `}
+                    {bot?.startBalance > 0 && `(${fmtPct(((s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)) / bot.startBalance) * 100)} vs start)`}
+                  </div>
                 </div>
 
                 {bot?.balance != null && (
@@ -941,11 +940,10 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                     <div className="num" style={{ fontSize: 34, fontWeight: 600, letterSpacing: "-.02em", lineHeight: 1.1, color: "var(--text)", wordBreak: "break-word" }}>
                       {fmtUsd(bot.balance)}
                     </div>
-                    {bot.fiatValue != null && (
-                      <div style={{ fontSize: 15, color: "var(--muted)", fontWeight: 500, marginTop: 4 }}>
-                        ≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)}
-                      </div>
-                    )}
+                    <div style={{ fontSize: 15, color: "var(--muted)", fontWeight: 500, marginTop: 4 }}>
+                      {bot.fiatValue != null && `≈ ${new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)} `}
+                      {bot?.startBalance > 0 && `(${fmtPct(((bot.balance - bot.startBalance) / bot.startBalance) * 100)} vs start)`}
+                    </div>
                     
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
                       <Chip tone="default">{fmtUsd(bot.available)} free</Chip>
@@ -956,8 +954,8 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
               </div>
               
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
-                <Mini label="Closed Profit" value={<span style={{ color: pnlColor(s.totalPnl) }}>{fmtSignedUsd(s.totalPnl)}</span>} mono />
-                <Mini label="Unrealized" value={positions ? <span style={{ color: pnlColor(positions.reduce((a, p) => a + p.pnlAbs, 0)) }}>{fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0))}</span> : "—"} mono />
+                <Mini label="Closed Profit" value={<span style={{ color: pnlColor(s.totalPnl) }}>{fmtSignedUsd(s.totalPnl)}{bot?.startBalance > 0 ? ` (${fmtPct((s.totalPnl / bot.startBalance) * 100)})` : ""}</span>} mono />
+                <Mini label="Unrealized" value={positions ? <span style={{ color: pnlColor(positions.reduce((a, p) => a + p.pnlAbs, 0)) }}>{fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0))}{bot?.startBalance > 0 ? ` (${fmtPct((positions.reduce((a, p) => a + p.pnlAbs, 0) / bot.startBalance) * 100)})` : ""}</span> : "—"} mono />
                 <Mini label="Trades" value={s.trades} mono />
               </div>
             </div>
