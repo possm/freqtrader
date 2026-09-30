@@ -438,7 +438,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                  tone={pnlTone(summary?.totalPnl)}
                  value={summary ? (isMobile ? (bot?.startBalance > 0 ? fmtPct((summary.totalPnl / bot.startBalance) * 100) : fmtPct(summary.roiPct)) : fmtSignedUsd(summary.totalPnl)) : "—"}
                  sub={summary ? (isMobile ? fmtSignedUsd(summary.totalPnl) : `ROI ${bot?.startBalance > 0 ? fmtPct((summary.totalPnl / bot.startBalance) * 100) : fmtPct(summary.roiPct)}`) : "—"}
-                 big info="Total closed profit over all time."/>
+                 info="Total closed profit over all time."/>
         <KpiCard label="Unrealized" loading={loading}
                  tone={pnlTone(positions.reduce((a, p) => a + p.pnlAbs, 0))}
                  value={(() => {
@@ -449,7 +449,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                    const unPnl = positions.reduce((a, p) => a + p.pnlAbs, 0);
                    return isMobile ? fmtSignedUsd(unPnl) : `ROI ${bot?.startBalance > 0 ? fmtPct((unPnl / bot.startBalance) * 100) : "—"}`;
                  })()}
-                 big info="Current open unrealized profit."/>
+                 info="Current open unrealized profit."/>
         <KpiCard label="Win rate" loading={loading}
                  tone={summary && summary.winRate >= 50 ? "up" : "down"}
                  value={summary ? summary.winRate.toFixed(1) + "%" : "—"}
