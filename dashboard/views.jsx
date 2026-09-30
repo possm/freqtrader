@@ -783,7 +783,7 @@ function PositionsView({ data, goToChart }) {
 // ════════════════════════════════════════════════════════════════════════════
 
 function TradesView({ data, isMobile, goToChart, focusTradeId, clearFocus }) {
-  const { trades, strats, loading } = data;
+  const { trades, strats, loading, bot } = data;
   const [search, setSearch] = vUseState("");
   const [strat, setStrat] = vUseState("All");
   const [result, setResult] = vUseState("All");
