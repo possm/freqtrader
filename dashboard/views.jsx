@@ -441,12 +441,15 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
                  big info="Total closed profit over all time."/>
         <KpiCard label="Unrealized" loading={loading}
                  tone={pnlTone(positions.reduce((a, p) => a + p.pnlAbs, 0))}
-                 value={fmtSignedUsd(positions.reduce((a, p) => a + p.pnlAbs, 0))}
+                 value={(() => {
+                   const unPnl = positions.reduce((a, p) => a + p.pnlAbs, 0);
+                   return isMobile ? (bot?.startBalance > 0 ? fmtPct((unPnl / bot.startBalance) * 100) : "—") : fmtSignedUsd(unPnl);
+                 })()}
                  sub={(() => {
                    const unPnl = positions.reduce((a, p) => a + p.pnlAbs, 0);
-                   const unPct = bot?.startBalance > 0 ? ` (${fmtPct((unPnl / bot.startBalance) * 100)})` : "";
-                   return `${positions.length} position${positions.length !== 1 ? "s" : ""}${unPct}`;
-                 })()}/>
+                   return isMobile ? fmtSignedUsd(unPnl) : `ROI ${bot?.startBalance > 0 ? fmtPct((unPnl / bot.startBalance) * 100) : "—"}`;
+                 })()}
+                 big info="Current open unrealized profit."/>
         <KpiCard label="Win rate" loading={loading}
                  tone={summary && summary.winRate >= 50 ? "up" : "down"}
                  value={summary ? summary.winRate.toFixed(1) + "%" : "—"}
@@ -745,7 +748,7 @@ function PositionsView({ data, goToChart }) {
         <KpiCard label="Open positions" loading={loading} value={filtered.length} sub={bot ? `${bot.openSlots - filtered.length} slots free` : "—"}/>
         <KpiCard label="Unrealized P&L" loading={loading} tone={pnlTone(totalPnl)}
                  value={fmtSignedUsd(totalPnl)} 
-                 sub={`across ${filtered.length} pos${bot?.startBalance > 0 ? ` (${fmtPct((totalPnl / bot.startBalance) * 100)})` : ""}`}/>
+                 sub={`ROI ${bot?.startBalance > 0 ? fmtPct((totalPnl / bot.startBalance) * 100) : "—"}`}/>
         <KpiCard label="Total exposure" loading={loading}
                  value={fmtUsd(totalNotional)}
                  sub={bot ? `${((totalNotional / (bot.balance || 1)) * 100).toFixed(1)}% of wallet` : "—"}/>
