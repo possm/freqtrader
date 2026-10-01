@@ -61,7 +61,6 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
             <ColHead sortKey="openedAt" sort={sort} setSort={setSort}>Age</ColHead>
             <ColHead sortKey="pair" sort={sort} setSort={setSort}>Pair</ColHead>
             {!compact && <ColHead sortKey="size" sort={sort} setSort={setSort} align="right">Size</ColHead>}
-            <ColHead sortKey="current" sort={sort} setSort={setSort} align="right">Price</ColHead>
             {!compact && <ColHead sortKey="notional" sort={sort} setSort={setSort} align="right">Value</ColHead>}
             <ColHead sortKey="pnlPct" sort={sort} setSort={setSort} align="right">Result</ColHead>
             <ColHead align="right" style={{ width: 60 }}>Action</ColHead>
@@ -85,7 +84,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                     <TableStack top={fmtDuration(Date.now() - p.openedAt)} sub={fmtTime(p.openedAt)} align="left" />
                   </td>
                   <td style={TD}>
-                    <PairLabel pair={p.pair} size={26} onClick={goToChart}/>
+                    <PairLabel pair={p.pair} size={22} onClick={goToChart}/>
                     {p.entries > 1 && (
                       <div style={{ fontSize: 10, marginTop: 4, color: "var(--up)", fontWeight: 600, letterSpacing: ".02em", background: "rgba(0, 255, 120, 0.1)", display: "inline-block", padding: "2px 6px", borderRadius: 4 }}>
                         GRID: {p.entries} LAYERS
@@ -100,9 +99,7 @@ function PositionsTable({ rows, expandable = true, compact = false, goToChart, r
                       <span className="muted" style={{ fontSize: 11, marginLeft: 4 }}>{p.pair.split("/")[0]}</span>
                     </td>
                   )}
-                  <td style={{ ...TD, textAlign: "right" }}>
-                    <TableStack top={fmtPrice(p.current)} sub={fmtPrice(p.entry)} topColor={pnlColor(p.pnlPct)} />
-                  </td>
+
                   {!compact && (
                     <td style={{ ...TD, textAlign: "right" }}>
                       <TableStack top={fmtUsd(p.notional)} sub={fmtUsd(p.stakeAmount)} />
@@ -365,7 +362,7 @@ function TradesTable({ rows, goToChart, highlightId }) {
                 <td style={TD}>
                   <TableStack top={fmtTime(t.closedAt)} sub={fmtDuration(t.durMin * 60000)} align="left" />
                 </td>
-                <td style={TD}><PairLabel pair={t.pair} size={26} onClick={goToChart}/></td>
+                <td style={TD}><PairLabel pair={t.pair} size={22} onClick={goToChart}/></td>
                 <td style={{ ...TD, textAlign: "right" }} className="num">
                   <span style={{ fontSize: 13.5 }}>
                     {t.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })}

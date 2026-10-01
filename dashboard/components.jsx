@@ -179,7 +179,7 @@ const PAIR_COLORS = {
   AAVE:  ["#b6509e", "#1d0d1a"],
 };
 
-function PairToken({ pair, size = 26, onClick }) {
+function PairToken({ pair, size = 22, onClick }) {
   const sym = pair.split("/")[0];
   const [fg, bg] = PAIR_COLORS[sym] || ["#9aa5b9", "#1d2740"];
   
@@ -214,7 +214,7 @@ function PairToken({ pair, size = 26, onClick }) {
   );
 }
 
-function PairLabel({ pair, sub, size = 26, onClick }) {
+function PairLabel({ pair, sub, size = 22, onClick }) {
   const clickable = !!onClick;
   return (
     <div
