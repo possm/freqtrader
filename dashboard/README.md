@@ -6,24 +6,22 @@ inspection.
 
 ## What it is
 
-- **In-browser React 18 app** — no build step. JSX is compiled live in the
-  browser by Babel standalone. Just static files served by nginx.
+- **Vite React 18 app** — built with ES modules and a standard Node toolchain.
 - **Reads from Freqtrade's REST API** (`/api/v1/...`) — credentials live in
   the browser's localStorage; the JWT in sessionStorage.
-- Designed to be light enough to deploy as a single nginx container, no
-  Node toolchain or build pipeline required.
+- **Navigation & Deep Linking** — Integrates seamlessly with browser history, allowing the use of Back/Forward buttons and deep-linking to specific tabs, charts, or trades (e.g., `/#chart?pair=BTC/USDT`).
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `index.html` | Entry point — loads React, Babel, and the four JSX files |
+| `index.html` | Entry point — loads the compiled Vite bundle |
 | `app.jsx` | App shell — login screen, sidebar, top header, tab routing, polling |
 | `api.jsx` | REST client + `useFreqtradeData()` hook |
 | `views.jsx` | Page-level components (Overview, Trades, Performance, Locks, Signals) |
 | `components.jsx` | Reusable UI (cards, buttons, charts, formatters) |
-| `nginx.conf` | Nginx config (just serves the static files) |
-| `Dockerfile` | `nginx:alpine` + COPY |
+| `nginx.conf` | Nginx config (serves static assets with aggressive caching) |
+| `Dockerfile` | Multi-stage build (`node:alpine` for build, `nginx:alpine` to serve) |
 | `docker-compose.yml` | Single service binding to host port 80 |
 
 ## Pages
@@ -37,8 +35,11 @@ inspection.
 
 ## Deploy
 
+Code edits must be explicitly deployed to the VPS and rebuilt:
+
 ```bash
-docker compose up -d --build
+docker compose build freqtrader-dash
+docker compose up -d freqtrader-dash
 ```
 
 Then navigate to `http://<host>/` and add your Freqtrade bot(s) on the login
@@ -58,10 +59,3 @@ In `views.jsx`, add an entry to `STRATEGY_SIGNALS` keyed by the strategy class
 name. Each signal needs `getValue` and `isFired` callbacks that read columns
 from the analyzed dataframe (whatever `populate_indicators` puts in there).
 See existing entries for `WolfTrend_EMA`, `WolfMR_4h_btc`, etc.
-
-## Why no build step?
-
-This started as a personal tool. In-browser Babel keeps the deploy story tiny:
-edit a `.jsx` file, rsync, restart container. No npm, no bundlers, no source
-maps to worry about. If/when complexity outgrows this, Vite would be the next
-step.
