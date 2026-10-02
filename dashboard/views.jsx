@@ -7,7 +7,7 @@ import {
   DailyBars, WinLossDonut, ColHead, Segmented, Chip, Btn, SearchInput, MobileRowCard, 
   MobilePositionCard, MobileTradeCard, MobileSignalCard, applySort, getCurrency, PairLabel
 } from './components.jsx';
-import { formatExchangeName, forceExit, deleteLock, fetchWhitelist, fetchPlotConfig, fetchChartCandles, fetchAllPairSignals, fetchVersion, fetchStrategies } from './api.jsx';
+import { formatExchangeName, forceExit, deleteLock, fetchWhitelist, fetchPlotConfig, fetchChartCandles, fetchAllPairSignals, fetchVersion, fetchStrategies, startBot, stopBot, fetchSysInfo, loadConfig } from './api.jsx';
 
 // Tab views: Overview, Positions, Trades, Performance.
 // All views receive data as props from the App's data context.
@@ -462,7 +462,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
       <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0,
                     gridTemplateColumns: isMobile ? "1fr" : "300px 1fr" }}>
         <Card title="Bot status">
-          {bot ? <BotStatus bot={bot} trades={trades} locks={locks} setTab={setTab} goToTrade={goToTrade}/> : <div style={{ flex: 1, display: "grid", placeItems: "center" }}><span className="muted" style={{ fontSize: 13 }}>Loading…</span></div>}
+          {bot ? <BotStatus bot={bot} trades={trades} locks={locks} setTab={setTab} goToTrade={goToTrade} baseUrl={data?.baseUrl || loadConfig()?.url || ""} refresh={data?.refresh}/> : <div style={{ flex: 1, display: "grid", placeItems: "center" }}><span className="muted" style={{ fontSize: 13 }}>Loading…</span></div>}
         </Card>
         <Card title={`Active positions · ${filtered.length}`}
               sub={bot ? `${bot.usedSlots} of ${bot.openSlots} slots used` : "—"}
@@ -632,7 +632,63 @@ function humanizeLockReason(raw) {
   return tidy || r;
 }
 
-function BotStatus({ bot, trades, locks = [], setTab, goToTrade }) {
+function BotStatus({ bot, trades, locks = [], setTab, goToTrade, baseUrl: propBaseUrl, refresh }) {
+  const baseUrl = propBaseUrl || loadConfig()?.url || "";
+  const [actionLoading, setActionLoading] = vUseState(false);
+  const isRunning = (bot?.status || "running").toLowerCase() === "running";
+
+  const handleToggle = async () => {
+    if (actionLoading) return;
+    if (!window.confirm(isRunning ? "Are you sure you want to stop the trading bot?" : "Are you sure you want to start the trading bot?")) return;
+    try {
+      setActionLoading(true);
+      if (isRunning) {
+        await stopBot(baseUrl);
+      } else {
+        await startBot(baseUrl);
+      }
+      if (refresh) await refresh();
+    } catch (err) {
+      console.error(`Failed to ${isRunning ? "stop" : "start"} bot:`, err);
+      alert(`Failed to ${isRunning ? "stop" : "start"} bot: ${err?.message || "Unknown error"}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const { data: sysData } = useQuery({
+    queryKey: ['ft_sysinfo', baseUrl],
+    queryFn: () => fetchSysInfo(baseUrl),
+    refetchInterval: 30000,
+    enabled: !!baseUrl,
+  });
+
+  let cpuPct = null;
+  if (sysData) {
+    if (typeof sysData.cpu_pct === 'number') cpuPct = sysData.cpu_pct;
+    else if (typeof sysData.cpu_avg === 'number') cpuPct = sysData.cpu_avg;
+    else if (typeof sysData.cpu === 'number') cpuPct = sysData.cpu;
+    else if (Array.isArray(sysData.cpu_load) && sysData.cpu_load.length > 0) {
+      const first = Number(sysData.cpu_load[0]);
+      if (!isNaN(first)) cpuPct = first <= 1 ? first * 100 : first;
+    } else if (typeof sysData.cpu_load === 'number') {
+      cpuPct = sysData.cpu_load <= 1 ? sysData.cpu_load * 100 : sysData.cpu_load;
+    }
+  }
+
+  let ramPct = null;
+  if (sysData) {
+    if (typeof sysData.ram_pct === 'number') ramPct = sysData.ram_pct;
+    else if (typeof sysData.ram === 'number') ramPct = sysData.ram;
+    else if (typeof sysData.memory_pct === 'number') ramPct = sysData.memory_pct;
+    else if (typeof sysData.used_ram === 'number' && typeof sysData.sys_ram === 'number' && sysData.sys_ram > 0) {
+      ramPct = (sysData.used_ram / sysData.sys_ram) * 100;
+    }
+  }
+
+  const clampedCpu = cpuPct != null ? Math.min(100, Math.max(0, cpuPct)) : 0;
+  const clampedRam = ramPct != null ? Math.min(100, Math.max(0, ramPct)) : 0;
+
   const slotPct = bot.openSlots > 0 ? (bot.usedSlots / bot.openSlots) * 100 : 0;
   // Sort by close time descending so "Recent activity" actually shows the most
   // recently closed trades (Freqtrade's /trades response isn't guaranteed sorted).
@@ -647,13 +703,16 @@ function BotStatus({ bot, trades, locks = [], setTab, goToTrade }) {
   const lockBg    = hasGlobalLock ? "var(--down-soft)" : "var(--up-soft)";
   const lockLine  = hasGlobalLock ? "var(--down-line)" : "var(--up-line)";
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18, height: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <StatusDot kind="up" pulse/>
+        <StatusDot kind={isRunning ? "up" : "down"} pulse={isRunning}/>
         <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
-          <span style={{ fontWeight: 600, fontSize: 14 }}>Running</span>
+          <span style={{ fontWeight: 600, fontSize: 14 }}>{isRunning ? "Running" : "Stopped"}</span>
           <span className="muted" style={{ fontSize: 12.5 }}>{bot.exchange} · {bot.mode}</span>
         </div>
+        <Btn size="sm" tone={isRunning ? "danger" : "accent"} disabled={actionLoading} onClick={handleToggle}>
+          {isRunning ? "Stop" : "Start"}
+        </Btn>
         <button
           type="button"
           onClick={() => setTab && setTab("locks")}
@@ -674,6 +733,21 @@ function BotStatus({ bot, trades, locks = [], setTab, goToTrade }) {
           <Mini label="Slots" value={`${bot.usedSlots} / ${bot.openSlots}`} mono/>
           <div style={{ height: 4, background: "var(--panel-3)", borderRadius: 99, overflow: "hidden", marginTop: 6 }}>
             <div style={{ width: slotPct + "%", height: "100%", background: "linear-gradient(90deg, var(--accent), var(--up))" }}/>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 16 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Mini label="CPU" value={cpuPct != null ? `${Math.round(cpuPct)}%` : "—"} mono/>
+          <div style={{ height: 4, background: "var(--panel-3)", borderRadius: 99, overflow: "hidden", marginTop: 6 }}>
+            <div style={{ width: clampedCpu + "%", height: "100%", background: clampedCpu >= 90 ? "var(--down)" : "linear-gradient(90deg, var(--accent), var(--up))" }}/>
+          </div>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Mini label="RAM" value={ramPct != null ? `${Math.round(ramPct)}%` : "—"} mono/>
+          <div style={{ height: 4, background: "var(--panel-3)", borderRadius: 99, overflow: "hidden", marginTop: 6 }}>
+            <div style={{ width: clampedRam + "%", height: "100%", background: clampedRam >= 90 ? "var(--down)" : "linear-gradient(90deg, var(--accent), var(--up))" }}/>
           </div>
         </div>
       </div>
