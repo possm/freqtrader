@@ -3195,8 +3195,9 @@ function LogsView({ baseUrl: propBaseUrl, isMobile }) {
                     key={item.id}
                     style={{
                       display: "flex",
-                      alignItems: "flex-start",
-                      gap: 8,
+                      flexDirection: isMobile ? "column" : "row",
+                      alignItems: isMobile ? "flex-start" : "flex-start",
+                      gap: isMobile ? 3 : 8,
                       padding: "4px 6px",
                       borderRadius: 4,
                       lineHeight: 1.5,
@@ -3205,32 +3206,34 @@ function LogsView({ baseUrl: propBaseUrl, isMobile }) {
                       transition: "background .1s",
                     }}
                   >
-                    {item.timestamp && (
-                      <span style={{ color: "var(--muted)", flexShrink: 0, fontSize: 11 }}>
-                        {item.timestamp}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
+                      {item.timestamp && (
+                        <span style={{ color: "var(--muted)", flexShrink: 0, fontSize: 11 }}>
+                          {item.timestamp}
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          flexShrink: 0,
+                          padding: "0 5px",
+                          borderRadius: 3,
+                          fontSize: 10.5,
+                          fontWeight: 600,
+                          background: badge.bg,
+                          color: badge.fg,
+                          border: badge.border,
+                          letterSpacing: ".02em",
+                        }}
+                      >
+                        [{item.level}]
                       </span>
-                    )}
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        padding: "0 5px",
-                        borderRadius: 3,
-                        fontSize: 10.5,
-                        fontWeight: 600,
-                        background: badge.bg,
-                        color: badge.fg,
-                        border: badge.border,
-                        letterSpacing: ".02em",
-                      }}
-                    >
-                      [{item.level}]
-                    </span>
-                    {item.logger && (
-                      <span style={{ color: "var(--text-2)", flexShrink: 0, fontWeight: 500 }}>
-                        {item.logger}:
-                      </span>
-                    )}
-                    <span style={{ color: "var(--text)", flex: 1, whiteSpace: "pre-wrap" }}>
+                      {item.logger && (
+                        <span style={{ color: "var(--text-2)", flexShrink: 0, fontWeight: 500 }}>
+                          {item.logger}:
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ color: "var(--text)", flex: isMobile ? "none" : 1, width: isMobile ? "100%" : "auto", whiteSpace: "pre-wrap" }}>
                       {item.message}
                     </span>
                   </div>
