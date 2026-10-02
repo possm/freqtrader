@@ -1059,6 +1059,8 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                 <SplitRow color="var(--accent)" label="Profit Factor" count={s.profitFactor.toFixed(2)} sub="gross win ÷ gross loss" />
                 <SplitRow color="var(--up)" label="Expectancy" count={fmtSignedUsd((s.avgWin * s.winRate + s.avgLoss * s.lossRate) / 100)} sub="avg per trade" />
                 <SplitRow color="var(--muted)" label="Avg Win / Loss" count={`${fmtUsd(s.avgWin)} / ${fmtUsd(Math.abs(s.avgLoss))}`} sub="winning vs losing" />
+                <SplitRow color="var(--up)" label="Max Win Streak" count={s.maxWinStreak != null ? `${s.maxWinStreak} trades` : "—"} sub="consecutive wins" />
+                <SplitRow color="var(--down)" label="Max Loss Streak" count={s.maxLossStreak != null ? `${s.maxLossStreak} trades` : "—"} sub="consecutive losses" />
               </div>
             </div>
           )}
@@ -1095,6 +1097,15 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
           {s ? <BestWorst summary={s} goToChart={goToChart}/> : <div className="skeleton" style={{ height: 80, width: "100%" }}/>}
         </Card>
       </div>
+
+      {/* ROW 4: Pair Performance Leaderboard */}
+      <Card title="Pair Performance Leaderboard" sub="Performance breakdown aggregated by trading pair" pad={false}>
+        {loading || !s ? (
+          <div className="skeleton" style={{ height: 160, width: "100%" }}/>
+        ) : (
+          <PairPerformanceTable stats={s.PAIR_STATS || s.pairStats || []} goToChart={goToChart}/>
+        )}
+      </Card>
 
     </div>
   );
@@ -1162,6 +1173,59 @@ function StrategyTable({ stats }) {
               </td>
               <td style={TD}>
                 <BarTrace v={s.pnl} max={maxPnl}/>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PairPerformanceTable({ stats = [], goToChart }) {
+  const [sort, setSort] = vUseState({ key: "pnl", dir: "desc" });
+  const rows = vUseMemo(() => applySort(stats, sort), [stats, sort]);
+  const maxPnl = Math.max(...(stats || []).map(p => Math.abs(p.pnl || 0)), 1);
+
+  if (!stats || stats.length === 0) {
+    return (
+      <div style={{ padding: "24px 18px" }}>
+        <span className="muted" style={{ fontSize: 13 }}>No closed trade data available for pair performance.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ overflow: "visible", flex: 1 }}>
+      <table style={TABLE_STYLE}>
+        <thead>
+          <tr style={{ background: "var(--panel)", position: "sticky", top: 0, zIndex: 1 }}>
+            <ColHead sortKey="pair" sort={sort} setSort={setSort}>Pair</ColHead>
+            <ColHead sortKey="trades" sort={sort} setSort={setSort} align="right">Trades</ColHead>
+            <ColHead sortKey="winRate" sort={sort} setSort={setSort} align="right">Win rate</ColHead>
+            <ColHead sortKey="avgPct" sort={sort} setSort={setSort} align="right">Avg %</ColHead>
+            <ColHead sortKey="pnl" sort={sort} setSort={setSort} align="right">P&amp;L</ColHead>
+            <ColHead style={{ minWidth: 120 }}></ColHead>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(item => (
+            <tr key={item.pair}>
+              <td style={TD}>
+                <PairLabel pair={item.pair} size={22} onClick={goToChart}/>
+              </td>
+              <td style={{ ...TD, textAlign: "right", color: "var(--text-2)" }} className="num">{item.trades}</td>
+              <td style={{ ...TD, textAlign: "right" }} className="num">{(item.winRate ?? 0).toFixed(1)}%</td>
+              <td style={{ ...TD, textAlign: "right" }}>
+                <span className="num" style={{ color: pnlColor(item.avgPct) }}>{fmtPct(item.avgPct)}</span>
+              </td>
+              <td style={{ ...TD, textAlign: "right" }}>
+                <span className="num" style={{ fontWeight: 600, color: pnlColor(item.pnl) }}>
+                  {fmtSignedUsd(item.pnl)}
+                </span>
+              </td>
+              <td style={TD}>
+                <BarTrace v={item.pnl} max={maxPnl}/>
               </td>
             </tr>
           ))}
@@ -2971,7 +3035,15 @@ function SettingsView({ data, baseUrl, isMobile, compactNav, setCompactNav }) {
     enabled: !!baseUrl,
   });
 
-  const { bot } = data;
+  const { data: stratData, isLoading: stratLoading, isError: stratError } = useQuery({
+    queryKey: ['strategies', baseUrl],
+    queryFn: () => fetchStrategies(baseUrl),
+    enabled: !!baseUrl,
+  });
+  const activeStrategy = data?.bot?.strategy || data?.strats?.[0] || null;
+  const stratList = stratData?.strategies || [];
+
+  const { bot } = data || {};
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 800 }}>
@@ -3030,6 +3102,45 @@ function SettingsView({ data, baseUrl, isMobile, compactNav, setCompactNav }) {
             <div style={{ fontSize: 14, fontFamily: "var(--mono)", color: "var(--text-2)", wordBreak: "break-all" }}>{baseUrl}</div>
           </div>
         </div>
+      </Card>
+
+      <Card title="Available Strategies" sub="Strategies loaded on this Freqtrade instance">
+        {stratLoading ? (
+          <div className="skeleton" style={{ height: 60, width: "100%" }}/>
+        ) : stratError ? (
+          <div style={{ color: "var(--down)", fontSize: 13.5 }}>Failed to load strategies</div>
+        ) : (!stratList || stratList.length === 0) ? (
+          <div className="muted" style={{ fontSize: 13.5 }}>No strategies reported by bot.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {stratList.map(name => {
+              const isActive = name === activeStrategy;
+              return (
+                <div
+                  key={name}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 14px",
+                    background: isActive ? "rgba(42,208,123,.06)" : "var(--bg-2)",
+                    border: `1px solid ${isActive ? "var(--up-line)" : "var(--border)"}`,
+                    borderRadius: 8,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontWeight: 600, fontSize: 14 }}>{name}</span>
+                  </div>
+                  {isActive ? (
+                    <Chip tone="up">Active</Chip>
+                  ) : (
+                    <span className="muted" style={{ fontSize: 12 }}>Available</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
     </div>
   );
