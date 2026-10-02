@@ -7,7 +7,7 @@ import {
   useFreqtradeData, login, loadConfig, saveConfig, clearConfig, loadBots, saveBots, addBot, removeBot
 } from './api.jsx';
 import {
-  OverviewView, ChartView, SignalsView, TradesView, PerformanceView, LocksView, StrategiesView, RiskView, SettingsView
+  OverviewView, ChartView, SignalsView, TradesView, PerformanceView, LocksView, StrategiesView, RiskView, SettingsView, LogsView
 } from './views.jsx';
 
 // App shell: login screen, sidebar, top header, tab routing + data polling.
@@ -22,6 +22,7 @@ const VALID_TABS = new Set([
   "strategies",
   "risk",
   "settings",
+  "logs",
 ]);
 
 function parseLocationHash(hashStr, state) {
@@ -207,6 +208,7 @@ function Sidebar({ tab, setTab, compact, activeBot }) {
     { id: "trades",      icon: "trades",    label: "Trades" },
     { id: "performance", icon: "perf",      label: "Performance" },
     { id: "locks",       icon: "lock",      label: "Pair locks" },
+    { id: "logs",        icon: "terminal",  label: "Logs" },
   ];
 
   const getBacktestResult = (name) => {
@@ -321,6 +323,7 @@ function MobileNav({ tab, setTab }) {
     { id: "trades",      icon: "trades",    label: "Trades" },
     { id: "performance", icon: "perf",      label: "Perf" },
     { id: "signals",     icon: "target",    label: "Signals" },
+    { id: "logs",        icon: "terminal",  label: "Logs" },
   ];
   return (
     <nav className="mobile-nav chrome">
@@ -348,6 +351,7 @@ function MobileTopBar({ tab, connected, onRefresh, activeBot, onLogout }) {
     signals: "Signals", trades: "Trades",
     performance: "Performance", locks: "Pair Locks",
     strategies: "Strategies", risk: "Risk", settings: "Settings",
+    logs: "Logs",
   };
   return (
     <header className="chrome mobile-topbar" style={{
@@ -464,6 +468,7 @@ function TopHeader({ tab, onRefresh, onLogout, connected, activeBot, data, onSwi
     strategies:  { t: "Strategies",    s: "Active strategy settings and available strategies" },
     risk:        { t: "Risk",          s: "Risk management, limits, and exposure" },
     settings:    { t: "Settings",      s: "Dashboard preferences and bot information" },
+    logs:        { t: "Logs",          s: "Bot activity and engine logs" },
   };
   const cur = titles[tab] || titles.overview;
   const [now, setNow] = aUseState(new Date());
@@ -655,6 +660,8 @@ function App() {
     </div>
   );
 
+  const currentBaseUrl = baseUrl || data?.baseUrl || loadConfig()?.url || "";
+
   const views = (
     <>
       {tab === "overview"    && <OverviewView    data={data} setTab={setTab}    isMobile={isMobile} goToChart={goToChart} goToTrade={goToTrade}/>}
@@ -666,6 +673,7 @@ function App() {
       {tab === "strategies"  && <StrategiesView  data={data} baseUrl={baseUrl}  isMobile={isMobile}/>}
       {tab === "risk"        && <RiskView        data={data}                    isMobile={isMobile}/>}
       {tab === "settings"    && <SettingsView    data={data} baseUrl={baseUrl}  isMobile={isMobile} compactNav={compactNav} setCompactNav={setCompactNav}/>}
+      {tab === "logs"        && <LogsView        baseUrl={currentBaseUrl}        isMobile={isMobile}/>}
     </>
   );
 

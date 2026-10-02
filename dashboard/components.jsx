@@ -150,6 +150,12 @@ const Icon = ({ name, size = 16, style: s, ...rest }) => {
     case "lock":      return <svg {...common}><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>;
     case "unlock":    return <svg {...common}><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 014-4 4 4 0 014 3"/></svg>;
     case "candles":   return <svg {...common}><line x1="4" y1="5" x2="4" y2="19"/><rect x="2" y="8" width="4" height="7" rx="0.5"/><line x1="12" y1="3" x2="12" y2="21"/><rect x="10" y="6" width="4" height="9" rx="0.5"/><line x1="20" y1="6" x2="20" y2="18"/><rect x="18" y="9" width="4" height="6" rx="0.5"/></svg>;
+    case "terminal":  return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", flexShrink: 0, ...s }} {...rest}>
+        <polyline points="4 17 10 11 4 5"/>
+        <line x1="12" y1="19" x2="20" y2="19"/>
+      </svg>
+    );
     default: return <svg {...common}/>;
   }
 };

@@ -7,7 +7,7 @@ import {
   DailyBars, WinLossDonut, ColHead, Segmented, Chip, Btn, SearchInput, MobileRowCard, 
   MobilePositionCard, MobileTradeCard, MobileSignalCard, applySort, getCurrency, PairLabel
 } from './components.jsx';
-import { formatExchangeName, forceExit, deleteLock, fetchWhitelist, fetchPlotConfig, fetchChartCandles, fetchAllPairSignals, fetchVersion, fetchStrategies, startBot, stopBot, fetchSysInfo, loadConfig } from './api.jsx';
+import { formatExchangeName, forceExit, deleteLock, fetchWhitelist, fetchPlotConfig, fetchChartCandles, fetchAllPairSignals, fetchVersion, fetchStrategies, startBot, stopBot, fetchSysInfo, loadConfig, fetchLogs } from './api.jsx';
 
 // Tab views: Overview, Positions, Trades, Performance.
 // All views receive data as props from the App's data context.
@@ -2649,7 +2649,7 @@ Object.assign(window, {
 
 export {
   OverviewView, ChartView, SignalsView, TradesView, PerformanceView, LocksView,
-  StrategiesView, RiskView, SettingsView
+  StrategiesView, RiskView, SettingsView, LogsView
 };
 
 
@@ -2944,6 +2944,300 @@ function SettingsView({ data, baseUrl, isMobile, compactNav, setCompactNav }) {
             <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>API URL</div>
             <div style={{ fontSize: 14, fontFamily: "var(--mono)", color: "var(--text-2)", wordBreak: "break-all" }}>{baseUrl}</div>
           </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                            LOGS VIEW
+// ════════════════════════════════════════════════════════════════════════════
+
+function LogsView({ baseUrl: propBaseUrl, isMobile }) {
+  const baseUrl = propBaseUrl || loadConfig()?.url || "";
+  const [limit, setLimit] = vUseState(200);
+  const [filterLevel, setFilterLevel] = vUseState("all");
+  const logContainerRef = useRef(null);
+
+  const { data: logsData, isLoading, isError, refetch } = useQuery({
+    queryKey: ['logs', baseUrl, limit],
+    queryFn: () => fetchLogs(baseUrl, limit),
+    enabled: !!baseUrl,
+    refetchInterval: 5000,
+  });
+
+  const parsedLogs = vUseMemo(() => {
+    const raw = logsData?.logs || [];
+    return raw.map((entry, idx) => {
+      if (Array.isArray(entry)) {
+        return {
+          id: idx,
+          timestamp: entry[0] || "",
+          code: entry[1],
+          logger: entry[2] || "",
+          level: (entry[3] || "INFO").toUpperCase(),
+          message: entry[4] || "",
+        };
+      } else if (typeof entry === "string") {
+        const match = entry.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?)\s*-\s*([^\s-]+)\s*-\s*([A-Z]+)\s*-\s*(.*)$/);
+        if (match) {
+          return {
+            id: idx,
+            timestamp: match[1],
+            logger: match[2],
+            level: match[3].toUpperCase(),
+            message: match[4],
+          };
+        }
+        let level = "INFO";
+        if (/ERROR|CRITICAL/i.test(entry)) level = "ERROR";
+        else if (/WARN/i.test(entry)) level = "WARNING";
+        else if (/DEBUG/i.test(entry)) level = "DEBUG";
+        return { id: idx, timestamp: "", logger: "", level, message: entry };
+      } else if (entry && typeof entry === "object") {
+        return {
+          id: idx,
+          timestamp: entry.timestamp || entry.time || entry.date || "",
+          logger: entry.logger || entry.name || "",
+          level: (entry.level || entry.levelname || "INFO").toUpperCase(),
+          message: entry.message || entry.msg || JSON.stringify(entry),
+        };
+      }
+      return { id: idx, timestamp: "", logger: "", level: "INFO", message: String(entry) };
+    });
+  }, [logsData]);
+
+  const filteredLogs = vUseMemo(() => {
+    if (filterLevel === "all") return parsedLogs;
+    const target = filterLevel.toUpperCase();
+    return parsedLogs.filter(item => {
+      const lvl = item.level;
+      if (target === "WARNING") return lvl === "WARNING" || lvl === "WARN";
+      if (target === "ERROR") return lvl === "ERROR" || lvl === "CRITICAL";
+      return lvl === target;
+    });
+  }, [parsedLogs, filterLevel]);
+
+  useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [filteredLogs.length]);
+
+  const getBadgeStyle = (level) => {
+    const lvl = String(level || "").toUpperCase();
+    if (lvl.includes("ERR") || lvl.includes("CRIT")) {
+      return {
+        bg: "var(--down-soft)",
+        fg: "var(--down)",
+        border: "1px solid var(--down-line)",
+      };
+    }
+    if (lvl.includes("WARN")) {
+      return {
+        bg: "rgba(255,183,74,.12)",
+        fg: "var(--warn)",
+        border: "1px solid rgba(255,183,74,.32)",
+      };
+    }
+    if (lvl.includes("INFO")) {
+      return {
+        bg: "var(--accent-soft)",
+        fg: "var(--accent)",
+        border: "1px solid var(--accent-line)",
+      };
+    }
+    return {
+      bg: "var(--panel-2)",
+      fg: "var(--muted)",
+      border: "1px solid var(--border)",
+    };
+  };
+
+  const levelOptions = [
+    { id: "all", label: "All" },
+    { id: "INFO", label: "INFO" },
+    { id: "WARNING", label: "WARNING" },
+    { id: "ERROR", label: "ERROR" },
+  ];
+
+  const limitOptions = [50, 100, 200, 500];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 1200, width: "100%" }}>
+      <Card
+        title="Bot Engine Logs"
+        sub={baseUrl ? `Real-time log buffer from ${baseUrl}` : "Real-time log buffer"}
+        right={
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="muted" style={{ fontSize: 12, fontFamily: "var(--mono)" }}>
+              {filteredLogs.length} {filteredLogs.length === 1 ? "line" : "lines"}
+            </span>
+            <Btn
+              size="sm"
+              tone="ghost"
+              icon="refresh"
+              onClick={() => refetch()}
+              title="Refresh logs"
+            />
+          </div>
+        }
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Toolbar */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 12,
+            paddingBottom: 12,
+            borderBottom: "1px solid var(--border)",
+          }}>
+            {/* Filter pills */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <span className="muted" style={{ fontSize: 12, marginRight: 4 }}>Filter:</span>
+              {levelOptions.map(opt => {
+                const active = filterLevel === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setFilterLevel(opt.id)}
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: 999,
+                      border: active ? "1px solid var(--accent)" : "1px solid var(--border)",
+                      background: active ? "var(--accent-soft)" : "var(--panel-2)",
+                      color: active ? "var(--accent)" : "var(--text-2)",
+                      fontSize: 12,
+                      fontWeight: active ? 600 : 500,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      transition: "all .15s ease",
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Line limit selector */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span className="muted" style={{ fontSize: 12, marginRight: 2 }}>Lines:</span>
+              {limitOptions.map(opt => {
+                const active = limit === opt;
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setLimit(opt)}
+                    style={{
+                      padding: "3px 9px",
+                      borderRadius: 6,
+                      border: active ? "1px solid var(--border-2)" : "1px solid transparent",
+                      background: active ? "var(--panel-3)" : "transparent",
+                      color: active ? "var(--text)" : "var(--muted)",
+                      fontSize: 12,
+                      fontWeight: active ? 600 : 500,
+                      cursor: "pointer",
+                      fontFamily: "var(--mono)",
+                      transition: "all .15s ease",
+                    }}
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Log Stream Container */}
+          {filteredLogs.length === 0 ? (
+            <div style={{
+              display: "grid",
+              placeItems: "center",
+              padding: "60px 20px",
+              color: "var(--muted)",
+              fontSize: 14,
+              fontFamily: "var(--mono)",
+              background: "var(--bg-2)",
+              borderRadius: 8,
+              border: "1px dashed var(--border)",
+            }}>
+              {isLoading ? "Fetching logs..." : "No logs available or bot offline"}
+            </div>
+          ) : (
+            <div
+              ref={logContainerRef}
+              style={{
+                background: "var(--bg-2)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                padding: "10px 12px",
+                fontFamily: "var(--mono)",
+                fontSize: 12,
+                maxHeight: isMobile ? "calc(100vh - 280px)" : "600px",
+                minHeight: 320,
+                overflowY: "auto",
+                overflowX: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+              }}
+            >
+              {filteredLogs.map(item => {
+                const badge = getBadgeStyle(item.level);
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 8,
+                      padding: "4px 6px",
+                      borderRadius: 4,
+                      lineHeight: 1.5,
+                      wordBreak: "break-word",
+                      background: "transparent",
+                      transition: "background .1s",
+                    }}
+                  >
+                    {item.timestamp && (
+                      <span style={{ color: "var(--muted)", flexShrink: 0, fontSize: 11 }}>
+                        {item.timestamp}
+                      </span>
+                    )}
+                    <span
+                      style={{
+                        flexShrink: 0,
+                        padding: "0 5px",
+                        borderRadius: 3,
+                        fontSize: 10.5,
+                        fontWeight: 600,
+                        background: badge.bg,
+                        color: badge.fg,
+                        border: badge.border,
+                        letterSpacing: ".02em",
+                      }}
+                    >
+                      [{item.level}]
+                    </span>
+                    {item.logger && (
+                      <span style={{ color: "var(--text-2)", flexShrink: 0, fontWeight: 500 }}>
+                        {item.logger}:
+                      </span>
+                    )}
+                    <span style={{ color: "var(--text)", flex: 1, whiteSpace: "pre-wrap" }}>
+                      {item.message}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </Card>
     </div>
