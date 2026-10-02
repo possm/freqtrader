@@ -924,18 +924,36 @@ function MobileTradeCard({ t, onPairClick, highlight }) {
 }
 
 // ── Mobile signal card ────────────────────────────────────────────────────────
-function MobileSignalCard({ r, onPairClick }) {
+function MobileSignalCard({ r, onPairClick, onForceBuy, isBuying }) {
   if (!r.ok) {
     return (
       <div
         onClick={onPairClick ? () => onPairClick(r.pair) : undefined}
         style={{
-          display: "flex", alignItems: "center", gap: 10, padding: "10px 0",
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 0",
           borderBottom: "1px solid var(--border)",
           cursor: onPairClick ? "pointer" : "default",
         }}>
-        <PairToken pair={r.pair} size={32}/>
-        <span className="muted" style={{ fontSize: 12 }}>No candle data</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, overflow: "hidden" }}>
+          <PairToken pair={r.pair} size={32}/>
+          <span className="muted" style={{ fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {r.pair} · No candle data
+          </span>
+        </div>
+        {onForceBuy && (
+          <Btn
+            size="sm"
+            tone="accent"
+            disabled={isBuying}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (e.preventDefault) e.preventDefault();
+              if (onForceBuy) onForceBuy(r.pair, e);
+            }}
+          >
+            {isBuying ? "..." : "Force Buy"}
+          </Btn>
+        )}
       </div>
     );
   }
@@ -952,9 +970,28 @@ function MobileSignalCard({ r, onPairClick }) {
       }}>
       <PairToken pair={r.pair} size={34}/>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-          <span style={{ fontWeight: 600, fontSize: 14 }}>{r.pair}</span>
-          <Chip tone={summaryTone}>{summaryText}</Chip>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3, gap: 8 }}>
+          <span style={{ fontWeight: 600, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {r.pair}
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <Chip tone={summaryTone}>{summaryText}</Chip>
+            {onForceBuy && (
+              <Btn
+                size="sm"
+                tone={r.ready ? "accent" : "default"}
+                disabled={isBuying}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (e.preventDefault) e.preventDefault();
+                  onForceBuy(r.pair, e);
+                }}
+                title={`Force enter ${r.pair}`}
+              >
+                {isBuying ? "..." : "Force Buy"}
+              </Btn>
+            )}
+          </div>
         </div>
         <div className="muted" style={{ fontSize: 11.5 }}>
           {r.close != null ? `Close: ${fmtPrice(r.close)}` : "—"}

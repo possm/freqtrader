@@ -7,7 +7,7 @@ import {
   DailyBars, WinLossDonut, ColHead, Segmented, Chip, Btn, SearchInput, MobileRowCard, 
   MobilePositionCard, MobileTradeCard, MobileSignalCard, applySort, getCurrency, PairLabel
 } from './components.jsx';
-import { formatExchangeName, forceExit, deleteLock, fetchWhitelist, fetchPlotConfig, fetchChartCandles, fetchAllPairSignals, fetchVersion, fetchStrategies, startBot, stopBot, fetchSysInfo, loadConfig, fetchLogs } from './api.jsx';
+import { formatExchangeName, forceExit, deleteLock, fetchWhitelist, fetchPlotConfig, fetchChartCandles, fetchAllPairSignals, fetchVersion, fetchStrategies, startBot, stopBot, fetchSysInfo, loadConfig, fetchLogs, forceEnter } from './api.jsx';
 
 // Tab views: Overview, Positions, Trades, Performance.
 // All views receive data as props from the App's data context.
@@ -1300,25 +1300,30 @@ function getEntrySignal(c) {
 function SignalsView({ data, baseUrl, isMobile, goToChart }) {
   const stratName = data?.bot?.strategy || data?.strats?.[0] || null;
   const timeframe = data?.bot?.timeframe || "4h";
+  const effectiveBaseUrl = baseUrl || (typeof loadConfig === 'function' ? loadConfig()?.url : '') || data?.baseUrl || '';
+  const [buyingPair, setBuyingPair] = vUseState(null);
+
+  const rawStake = data?.bot?.defaultStakeAmount ?? data?.rawConfig?.stake_amount ?? data?.config?.stake_amount;
+  const defaultStake = (typeof rawStake === 'number' && rawStake > 0) ? rawStake : (typeof rawStake === 'string' && !isNaN(Number(rawStake)) && Number(rawStake) > 0) ? Number(rawStake) : null;
 
   const [signals, setSignals] = vUseState({
     loading: true, rows: [], plotCfg: null, lastUpdated: null, error: null,
   });
 
   const refresh = React.useCallback(async () => {
-    if (!baseUrl) return;
+    if (!effectiveBaseUrl) return;
     setSignals(s => ({ ...s, loading: true, error: null }));
     try {
       const [pairs, plotCfg] = await Promise.all([
-        fetchWhitelist(baseUrl),
-        fetchPlotConfig(baseUrl),
+        fetchWhitelist(effectiveBaseUrl),
+        fetchPlotConfig(effectiveBaseUrl),
       ]);
-      const rows = await fetchAllPairSignals(baseUrl, pairs, timeframe);
+      const rows = await fetchAllPairSignals(effectiveBaseUrl, pairs, timeframe);
       setSignals({ loading: false, rows, plotCfg, lastUpdated: Date.now(), error: null });
     } catch (e) {
       setSignals(s => ({ ...s, loading: false, error: e.message || "Failed to load signals" }));
     }
-  }, [baseUrl, timeframe]);
+  }, [effectiveBaseUrl, timeframe]);
 
   React.useEffect(() => {
     refresh();
@@ -1326,6 +1331,38 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
     const id = setInterval(refresh, 60_000);
     return () => clearInterval(id);
   }, [refresh]);
+
+  const handleForceBuy = React.useCallback(async (pairOrEvent, maybeEventOrPair) => {
+    let pair = pairOrEvent;
+    let e = maybeEventOrPair;
+    if (typeof pairOrEvent === 'object' && pairOrEvent?.stopPropagation) {
+      e = pairOrEvent;
+      pair = maybeEventOrPair;
+    }
+    if (e) {
+      if (e.stopPropagation) e.stopPropagation();
+      if (e.preventDefault) e.preventDefault();
+    }
+    if (!effectiveBaseUrl) {
+      alert("Bot API URL is not configured.");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to force enter (buy) ${pair}?`)) {
+      return;
+    }
+    setBuyingPair(pair);
+    try {
+      await forceEnter(effectiveBaseUrl, pair, "long", defaultStake);
+      await refresh();
+      if (typeof data?.refresh === 'function') {
+        await data.refresh();
+      }
+    } catch (err) {
+      alert(`Failed to force enter ${pair}: ${err?.message || "Force enter failed"}`);
+    } finally {
+      setBuyingPair(null);
+    }
+  }, [effectiveBaseUrl, defaultStake, refresh, data]);
 
   const signalDefs = vUseMemo(
     () => buildSignalDefs(signals.plotCfg, signals.rows),
@@ -1434,7 +1471,15 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
           </div>
         ) : isMobile ? (
           <div style={{ padding: "0 14px" }}>
-            {sorted.map(r => <MobileSignalCard key={r.pair} r={r} onPairClick={goToChart}/>)}
+            {sorted.map(r => (
+              <MobileSignalCard
+                key={r.pair}
+                r={r}
+                onPairClick={goToChart}
+                onForceBuy={handleForceBuy}
+                isBuying={buyingPair === r.pair}
+              />
+            ))}
           </div>
         ) : (
           <div style={{ overflow: "visible" }}>
@@ -1451,10 +1496,20 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
                       w={def.type === "price" ? 130 : 110}/>
                   ))}
                   <SignalHeaderCell label="Signal" align="right" w={140}/>
+                  <SignalHeaderCell label="Action" align="right" w={110}/>
                 </tr>
               </thead>
               <tbody>
-                {sorted.map(r => <SignalRow key={r.pair} r={r} goToChart={goToChart}/>)}
+                {sorted.map(r => (
+                  <SignalRow
+                    key={r.pair}
+                    r={r}
+                    goToChart={goToChart}
+                    onForceBuy={handleForceBuy}
+                    isBuying={buyingPair === r.pair}
+                    totalCols={4 + signalDefs.length}
+                  />
+                ))}
               </tbody>
             </table>
           </div>
@@ -1488,13 +1543,28 @@ function SignalHeaderCell({ label, sub, align, w }) {
   );
 }
 
-function SignalRow({ r, goToChart }) {
+function SignalRow({ r, goToChart, onForceBuy, isBuying, totalCols = 4 }) {
   if (!r.ok) {
     return (
       <tr>
         <td style={TD}><PairLabel pair={r.pair} size={22} onClick={goToChart}/></td>
-        <td colSpan={99} style={{ ...TD, color: "var(--muted)" }}>
+        <td colSpan={Math.max(1, totalCols - 2)} style={{ ...TD, color: "var(--muted)" }}>
           — {r.error || "no candle data"}
+        </td>
+        <td style={{ ...TD, textAlign: "right" }}>
+          <Btn
+            size="sm"
+            tone="accent"
+            disabled={isBuying}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (e.preventDefault) e.preventDefault();
+              if (onForceBuy) onForceBuy(r.pair, e);
+            }}
+            title={`Force enter ${r.pair}`}
+          >
+            {isBuying ? "Buying…" : "Force Buy"}
+          </Btn>
         </td>
       </tr>
     );
@@ -1511,6 +1581,21 @@ function SignalRow({ r, goToChart }) {
       {r.cells.map(cell => <SignalCell key={cell.key} cell={cell} row={r}/>)}
       <td style={{ ...TD, textAlign: "right" }}>
         <Chip tone={summaryTone}>{summaryText}</Chip>
+      </td>
+      <td style={{ ...TD, textAlign: "right" }}>
+        <Btn
+          size="sm"
+          tone="accent"
+          disabled={isBuying}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (e.preventDefault) e.preventDefault();
+            if (onForceBuy) onForceBuy(r.pair, e);
+          }}
+          title={`Force enter ${r.pair}`}
+        >
+          {isBuying ? "Buying…" : "Force Buy"}
+        </Btn>
       </td>
     </tr>
   );
