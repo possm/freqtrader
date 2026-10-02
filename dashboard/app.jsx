@@ -1,4 +1,4 @@
-import React, { useState as aUseState, useEffect as aUseEffect, useCallback as aUseCallback } from 'react';
+import React, { useState as aUseState, useEffect as aUseEffect, useCallback as aUseCallback, useRef as aUseRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Icon, Btn, useBreakpoint, Card
@@ -12,7 +12,33 @@ import {
 
 // App shell: login screen, sidebar, top header, tab routing + data polling.
 
+const VALID_TABS = new Set([
+  "overview",
+  "chart",
+  "signals",
+  "trades",
+  "performance",
+  "locks",
+  "strategies",
+  "risk",
+  "settings",
+]);
 
+function parseLocationHash(hashStr, state) {
+  const hash = (hashStr != null ? hashStr : (typeof window !== "undefined" ? window.location.hash : "")) || "";
+  const cleaned = hash.replace(/^#+\/*/, "");
+  const [rawRoute, queryPart] = cleaned.split("?");
+  const routePart = (rawRoute || "").replace(/^\/+|\/+$/g, "").toLowerCase();
+  const params = new URLSearchParams(queryPart || "");
+  const tabFromHash = VALID_TABS.has(routePart) ? routePart : null;
+  const tabFromState = state?.tab && VALID_TABS.has(String(state.tab).toLowerCase()) ? String(state.tab).toLowerCase() : null;
+  const tab = tabFromHash || tabFromState || "overview";
+  const rawPair = params.get("pair") || state?.pair || "";
+  const pair = tab === "chart" ? rawPair : "";
+  const rawId = params.get("id") || (state?.tradeId != null ? String(state.tradeId) : null);
+  const tradeId = tab === "trades" ? (rawId || null) : null;
+  return { tab, pair, tradeId };
+}
 
 // ── Login screen ──────────────────────────────────────────────────────────────
 function LoginScreen({ onLogin }) {
@@ -439,7 +465,7 @@ function TopHeader({ tab, onRefresh, onLogout, connected, activeBot, data, onSwi
     risk:        { t: "Risk",          s: "Risk management, limits, and exposure" },
     settings:    { t: "Settings",      s: "Dashboard preferences and bot information" },
   };
-  const cur = titles[tab];
+  const cur = titles[tab] || titles.overview;
   const [now, setNow] = aUseState(new Date());
   aUseEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -482,23 +508,99 @@ function App() {
   const { isMobile } = useBreakpoint();
   const [activeBot, setActiveBot] = aUseState(() => loadConfig());
   const [authed, setAuthed] = aUseState(() => !!sessionStorage.getItem("ft_token"));
-  const [tab, setTab] = aUseState("overview");
+  const [tab, setTabState] = aUseState(() => parseLocationHash().tab);
   const [timeRange, setTimeRange] = aUseState("30d");
   const [compactNav, setCompactNav] = aUseState(true);
-  const [chartPair, setChartPair] = aUseState("");
-  const [tradeFocus, setTradeFocus] = aUseState(null);
+  const [chartPair, setChartPair] = aUseState(() => parseLocationHash().pair);
+  const [tradeFocus, setTradeFocus] = aUseState(() => parseLocationHash().tradeId);
+
+  const currentTabRef = aUseRef(tab);
+  currentTabRef.current = tab;
+
+  // Sync navigation tab with browser history
+  const setTab = aUseCallback((next) => {
+    const currentTab = currentTabRef.current;
+    const rawTarget = typeof next === "function" ? next(currentTab) : next;
+    const target = rawTarget ? String(rawTarget).toLowerCase() : "";
+    if (!VALID_TABS.has(target)) return;
+
+    if (target === currentTab) {
+      // Clicking the active tab clears specific query focus without bloating history
+      const currentHash = window.location.hash.replace(/^#\/*/, "").toLowerCase();
+      if (currentHash !== target) {
+        setTradeFocus(null);
+        setChartPair("");
+        window.history.replaceState({ tab: target }, "", `#${target}`);
+      }
+      return;
+    }
+
+    // Reset focused trade and query parameters when switching tabs
+    setTradeFocus(null);
+    setChartPair("");
+    window.history.pushState({ tab: target }, "", `#${target}`);
+    setTabState(target);
+  }, []);
 
   // Centralized callback: any view can call goToChart(pair) to deep-link
-  // into the Chart tab with that pair pre-selected.
+  // into the Chart tab with that pair pre-selected and push to history.
   const goToChart = aUseCallback((pair) => {
-    setChartPair(pair);
-    setTab("chart");
+    const targetPair = pair || "";
+    const hash = targetPair ? `#chart?pair=${encodeURIComponent(targetPair)}` : "#chart";
+    const parsed = parseLocationHash();
+    if (parsed.tab === "chart" && parsed.pair === targetPair) return;
+    setTradeFocus(null);
+    setChartPair(targetPair);
+    setTabState("chart");
+    window.history.pushState({ tab: "chart", pair: targetPair }, "", hash);
+  }, []);
+
+  // Synchronize pair changes from within ChartView dropdown with the URL hash
+  // via replaceState when user selects a pair or a pair query parameter is active,
+  // so deep-links/refresh stay accurate without overriding initial base #chart whitelist load.
+  const handlePairChange = aUseCallback((p, isUser = false) => {
+    const targetPair = p || "";
+    setChartPair(targetPair);
+    if (currentTabRef.current === "chart" && (isUser || window.location.hash.includes("pair="))) {
+      const hash = targetPair ? `#chart?pair=${encodeURIComponent(targetPair)}` : "#chart";
+      if (window.location.hash !== hash) {
+        window.history.replaceState({ tab: "chart", pair: targetPair }, "", hash);
+      }
+    }
   }, []);
 
   // Deep-link into the Trades tab, scrolled to and highlighting one trade.
   const goToTrade = aUseCallback((tradeId) => {
-    setTradeFocus(tradeId);
-    setTab("trades");
+    const idStr = tradeId != null ? String(tradeId) : null;
+    const hash = idStr != null ? `#trades?id=${encodeURIComponent(idStr)}` : "#trades";
+    const parsed = parseLocationHash();
+    if (parsed.tab === "trades" && parsed.tradeId === idStr) return;
+    setChartPair("");
+    setTradeFocus(idStr);
+    setTabState("trades");
+    window.history.pushState({ tab: "trades", tradeId: idStr }, "", hash);
+  }, []);
+
+  // Listen for browser native Back/Forward buttons and hash navigation
+  aUseEffect(() => {
+    const raw = window.location.hash.replace(/^#\/*/, "");
+    if (!raw) {
+      window.history.replaceState({ tab: "overview" }, "", "#overview");
+    }
+
+    const handlePopState = (e) => {
+      const parsed = parseLocationHash(window.location.hash, e?.state);
+      setTabState(parsed.tab);
+      setChartPair(parsed.pair);
+      setTradeFocus(parsed.tradeId);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("hashchange", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("hashchange", handlePopState);
+    };
   }, []);
 
   const baseUrl = activeBot?.url ?? null;
@@ -556,7 +658,7 @@ function App() {
   const views = (
     <>
       {tab === "overview"    && <OverviewView    data={data} setTab={setTab}    isMobile={isMobile} goToChart={goToChart} goToTrade={goToTrade}/>}
-      {tab === "chart"       && <ChartView       data={data} baseUrl={baseUrl}  isMobile={isMobile} selectedPair={chartPair} onPairChange={setChartPair}/>}
+      {tab === "chart"       && <ChartView       data={data} baseUrl={baseUrl}  isMobile={isMobile} selectedPair={chartPair} onPairChange={handlePairChange}/>}
       {tab === "signals"     && <SignalsView     data={data} baseUrl={baseUrl}  isMobile={isMobile} goToChart={goToChart}/>}
       {tab === "trades"      && <TradesView      data={data}                    isMobile={isMobile} goToChart={goToChart} focusTradeId={tradeFocus} clearFocus={() => setTradeFocus(null)}/>}
       {tab === "performance" && <PerformanceView data={data} timeRange={timeRange} setTimeRange={setTimeRange} isMobile={isMobile} goToChart={goToChart}/>}

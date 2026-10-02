@@ -790,10 +790,12 @@ function TradesView({ data, isMobile, goToChart, focusTradeId, clearFocus }) {
   // When deep-linked to a specific trade, widen the window so it can't be
   // filtered out, and remember which row to highlight.
   const [range, setRange] = vUseState(focusTradeId != null ? "All" : "30d");
-  const [highlightId] = vUseState(focusTradeId ?? null);
+  const [highlightId, setHighlightId] = vUseState(focusTradeId ?? null);
 
-  // Consume the deep-link once so revisiting the tab doesn't re-highlight.
-  React.useEffect(() => { if (focusTradeId != null && clearFocus) clearFocus(); }, []);
+  React.useEffect(() => {
+    setHighlightId(focusTradeId ?? null);
+    if (focusTradeId != null) setRange("All");
+  }, [focusTradeId]);
 
   const filtered = vUseMemo(() => {
     const now = Date.now();
@@ -2271,15 +2273,19 @@ function ChartView({ data, baseUrl, isMobile, selectedPair, onPairChange }) {
   const [haMode,     setHaMode]     = vUseState(true);
 
   // Wrapped setter so the App's chartPair stays in sync with the dropdown
-  const setPair = React.useCallback((p) => {
+  const setPair = React.useCallback((p, isUser = false) => {
     setLocalPair(p);
-    if (onPairChange) onPairChange(p);
+    if (onPairChange) onPairChange(p, isUser);
   }, [onPairChange]);
 
-  // External pair selection (deep-link from another view) overrides local state
+  // External pair selection (deep-link or back/forward navigation) overrides local state
   React.useEffect(() => {
-    if (selectedPair && selectedPair !== pair) setLocalPair(selectedPair);
-  }, [selectedPair]);
+    if (selectedPair && selectedPair !== pair) {
+      setLocalPair(selectedPair);
+    } else if (!selectedPair && pair && pairs.length > 0 && pair !== pairs[0]) {
+      setLocalPair(pairs[0]);
+    }
+  }, [selectedPair, pairs]);
 
   // Load whitelist per bot. Keep the current pair only if the new bot offers
   // it; otherwise fall back to its first pair (switching bots can invalidate it).
@@ -2289,7 +2295,7 @@ function ChartView({ data, baseUrl, isMobile, selectedPair, onPairChange }) {
       .then(wl => {
         setPairs(wl);
         const next = (pair && wl.includes(pair)) ? pair : (wl[0] || "");
-        if (next !== pair) setPair(next);
+        if (next !== pair) setPair(next, false);
       })
       .catch(e => setError(e.message));
   }, [baseUrl]);
@@ -2373,7 +2379,7 @@ function ChartView({ data, baseUrl, isMobile, selectedPair, onPairChange }) {
     }}>
       {/* ── Toolbar ─────────────────────────────────────────────────── */}
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", flexShrink: 0 }}>
-        <select value={pair} onChange={e => setPair(e.target.value)} style={{ ...selectStyle, minWidth: 130 }}>
+        <select value={pair} onChange={e => setPair(e.target.value, true)} style={{ ...selectStyle, minWidth: 130 }}>
           {pairs.map(p => <option key={p}>{p}</option>)}
         </select>
         <Btn tone={haMode ? "accent" : "ghost"} size="sm" onClick={() => setHaMode(v => !v)}>HA</Btn>
