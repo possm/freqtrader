@@ -665,12 +665,24 @@ function BotStatus({ bot, trades, locks = [], setTab, goToTrade, baseUrl: propBa
 
   let cpuPct = null;
   if (sysData) {
-    if (typeof sysData.cpu_pct === 'number') cpuPct = sysData.cpu_pct;
-    else if (typeof sysData.cpu_avg === 'number') cpuPct = sysData.cpu_avg;
-    else if (typeof sysData.cpu === 'number') cpuPct = sysData.cpu;
-    else if (Array.isArray(sysData.cpu_load) && sysData.cpu_load.length > 0) {
-      const first = Number(sysData.cpu_load[0]);
-      if (!isNaN(first)) cpuPct = first <= 1 ? first * 100 : first;
+    if (typeof sysData.cpu_avg === 'number') {
+      cpuPct = sysData.cpu_avg;
+    } else if (typeof sysData.cpu_pct === 'number') {
+      cpuPct = sysData.cpu_pct;
+    } else if (Array.isArray(sysData.cpu_pct) && sysData.cpu_pct.length > 0) {
+      const sum = sysData.cpu_pct.reduce((acc, v) => acc + (Number(v) || 0), 0);
+      cpuPct = sum / sysData.cpu_pct.length;
+    } else if (typeof sysData.cpu === 'number') {
+      cpuPct = sysData.cpu;
+    } else if (Array.isArray(sysData.cpu_load) && sysData.cpu_load.length > 0) {
+      const firstItem = sysData.cpu_load[0];
+      if (typeof firstItem === 'object' && firstItem !== null && typeof firstItem.pct === 'number') {
+        const sum = sysData.cpu_load.reduce((acc, v) => acc + (Number(v?.pct) || 0), 0);
+        cpuPct = sum / sysData.cpu_load.length;
+      } else {
+        const first = Number(firstItem);
+        if (!isNaN(first)) cpuPct = first <= 1 ? first * 100 : first;
+      }
     } else if (typeof sysData.cpu_load === 'number') {
       cpuPct = sysData.cpu_load <= 1 ? sysData.cpu_load * 100 : sysData.cpu_load;
     }
