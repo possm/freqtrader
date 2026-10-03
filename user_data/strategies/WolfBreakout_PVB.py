@@ -123,9 +123,6 @@ class WolfBreakout_PVB(KrakenSlippageMixin, IStrategy):
             "PVR (Parkinson Ratio)": {
                 "pvr": {"color": "#a855f7"},
             },
-            "Macro BTC Filter": {
-                "btc_uptrend_1h": {"color": "#10b981", "type": "bar"},
-            },
         },
     }
 
