@@ -995,12 +995,29 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
       {/* ROW 3: History & Extremes */}
       <div style={{ display: "grid", gap: "var(--gap)", minWidth: 0, gridTemplateColumns: isMobile ? "1fr" : "1fr 2fr" }}>
         {/* BALANCE DELTAS */}
-        <Card title="Historical Delta" sub="Rolling portfolio change" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <Card title="Historical Delta" sub="Rolling portfolio change" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {loading || !equity ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 24px", minWidth: 0, flex: 1, alignContent: "center" }}>
-              {balDeltas.map(d => (
-                <SplitRow key={d.label} color={pnlColor(d.diff)} label={d.label} count={fmtSignedUsd(d.diff)} sub={fmtPct(d.pct)} />
-              ))}
+            <div style={{ overflowX: "auto", flex: 1 }}>
+              <table style={TABLE_STYLE}>
+                <thead>
+                  <tr style={{ background: "var(--panel)", position: "sticky", top: 0, zIndex: 1 }}>
+                    <ColHead>Period</ColHead>
+                    <ColHead align="right">Delta</ColHead>
+                    <ColHead align="right">% Change</ColHead>
+                  </tr>
+                </thead>
+                <tbody>
+                  {balDeltas.map(d => (
+                    <tr key={d.label}>
+                      <td style={TD}>{d.label}</td>
+                      <td style={{ ...TD, textAlign: "right" }} className="num">
+                        <span style={{ color: pnlColor(d.diff) }}>{fmtSignedUsd(d.diff)}</span>
+                      </td>
+                      <td style={{ ...TD, textAlign: "right" }} className="num">{fmtPct(d.pct)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </Card>
