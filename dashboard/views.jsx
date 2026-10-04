@@ -997,9 +997,9 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
         {/* BALANCE DELTAS */}
         <Card title="Historical Delta" sub="Rolling portfolio change" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
           {loading || !equity ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "20px 24px", minWidth: 0, flex: 1, alignContent: "center" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 24px", minWidth: 0, flex: 1, alignContent: "center" }}>
               {balDeltas.map(d => (
-                <KV key={d.label} label={d.label} value={fmtSignedUsd(d.diff)} valueColor={pnlColor(d.diff)} sub={fmtPct(d.pct)} mono />
+                <SplitRow key={d.label} color={pnlColor(d.diff)} label={d.label} count={fmtSignedUsd(d.diff)} sub={fmtPct(d.pct)} />
               ))}
             </div>
           )}
