@@ -1009,11 +1009,11 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                 <tbody>
                   {balDeltas.map(d => (
                     <tr key={d.label}>
-                      <td style={TD}>{d.label}</td>
-                      <td style={{ ...TD, textAlign: "right" }} className="num">
+                      <td style={{ ...TD, height: 32 }}>{d.label}</td>
+                      <td style={{ ...TD, textAlign: "right", height: 32 }} className="num">
                         <span style={{ color: pnlColor(d.diff) }}>{fmtSignedUsd(d.diff)}</span>
                       </td>
-                      <td style={{ ...TD, textAlign: "right" }} className="num">{fmtPct(d.pct)}</td>
+                      <td style={{ ...TD, textAlign: "right", height: 32 }} className="num">{fmtPct(d.pct)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1120,7 +1120,7 @@ function BarTrace({ v, max }) {
 
 function BestWorst({ summary: s, goToChart }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, flex: 1, minHeight: 0 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, flex: 1, minHeight: 0, alignContent: "start" }}>
       {s.best  && <BW row={s.best}  kind="up"   title="Best trade"  goToChart={goToChart}/>}
       {s.worst && <BW row={s.worst} kind="down" title="Worst trade" goToChart={goToChart}/>}
     </div>
