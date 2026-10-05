@@ -14,12 +14,12 @@ class MomentumDip(IStrategy):
     """
     INTERFACE_VERSION = 3
     
-    # 1m timeframe voor tick-like rapid evaluation
+    # 15m timeframe
     timeframe = '15m'
     
-    # Max 4999 candles voor Bybit 1m timeframe (Freqtrade limit is 5x exchange API limit)
-    # 4999 candles = ~3.4 dagen. (We kunnen daardoor max een 3-day ROC gebruiken).
-    startup_candle_count = 4999
+    # We only need enough candles to warm up the 1h ROC 3d (72 1h candles = 288 15m candles).
+    # 400 candles is plenty.
+    startup_candle_count = 400
 
 
     position_adjustment_enable = False
