@@ -27,8 +27,8 @@ class WolfBreakout_Daily(IStrategy):
     stoploss = -0.142
 
     trailing_stop = True
-    trailing_stop_positive = 0.02
-    trailing_stop_positive_offset = 0.079
+    trailing_stop_positive = 0.011
+    trailing_stop_positive_offset = 0.071
     trailing_only_offset_is_reached = True
     
     # -------------------------------------------------------------
