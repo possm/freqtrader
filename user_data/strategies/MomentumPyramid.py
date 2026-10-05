@@ -30,6 +30,23 @@ class MomentumPyramid(IStrategy):
     
     stoploss = -0.15
 
+    # Visualisatie instellingen voor FreqUI / Dashboard
+    plot_config = {
+        'main_plot': {
+            'ema_short': {'color': 'orange'},
+        },
+        'subplots': {
+            "ROC 3-Daags (1H)": {
+                'roc_3d_1h': {'color': 'blue'},
+                'roc_3d_sma_1h': {'color': 'red'}
+            },
+            "Volume Trend (1H)": {
+                'volume_1h': {'color': 'gray'},
+                'sma_volume_1h': {'color': 'purple'}
+            }
+        }
+    }
+
     # --- INFORMATIVE PAIR (1-UUR GRAFIEK) ---
     @informative('1h')
     def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
