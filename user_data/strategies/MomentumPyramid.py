@@ -110,6 +110,11 @@ class MomentumPyramid(IStrategy):
         for p in whitelist:
             if p == pair:
                 continue
+                
+            # Als de andere munt geblokkeerd is (bijv. na een exit), 
+            # mag hij niet meedoen in de "wie is de sterkste" verkiezing.
+            if PairLocks.is_pair_locked(p, current_time):
+                continue
             
             p_df, _ = self.dp.get_analyzed_dataframe(p, self.timeframe)
             if p_df is not None and len(p_df) > 0:
