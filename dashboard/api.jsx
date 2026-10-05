@@ -435,7 +435,7 @@ function useFreqtradeData(baseUrl) {
       ]);
       return { trades, balance, config, locksRes };
     },
-    refetchInterval: () => 60000,
+    refetchInterval: () => 300000,
     refetchOnWindowFocus: false,
     enabled: !!baseUrl,
   });
