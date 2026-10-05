@@ -66,25 +66,26 @@ class MomentumPyramid(IStrategy):
         return dataframe
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # Prijs trend op 5m (snel)
+        # Buy the dip indicatoren (5m)
+        dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+        
+        # We houden de EMA bij als mogelijke trend-filter, maar focussen op RSI
         dataframe['ema_short'] = ta.EMA(dataframe, timeperiod=5)
         dataframe['ema_long'] = ta.EMA(dataframe, timeperiod=20)
-        dataframe['price_rising'] = dataframe['close'] > dataframe['ema_short']
         
-        # Volume breakout
-        dataframe['volume_mean_5m'] = ta.SMA(dataframe['volume'], timeperiod=12)
-        dataframe['volume_breakout'] = dataframe['volume'] > (dataframe['volume_mean_5m'] * 1.5)
-
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
+                # Macro trend: De munt moet stijgend zijn op de langere termijn
                 (dataframe['roc_3d_1h'] > 0) &
-                (dataframe['volume_rising_1h'] == True) &
-                (dataframe['ema_short'] > dataframe['ema_long']) &
-                (dataframe['price_rising'] == True) &
-                (dataframe['volume_breakout'] == True)
+                
+                # Micro trend (Dip): RSI duikt onder de 30 (oversold) op de 5m
+                (dataframe['rsi'] < 30) &
+                
+                # Basis volume check
+                (dataframe['volume'] > 0)
             ),
             'enter_long'] = 1
 
@@ -152,12 +153,12 @@ class MomentumPyramid(IStrategy):
             
         last_candle = dataframe.iloc[-1].squeeze()
 
-        # Exit als de 5m trend breekt (EMA short kruist onder EMA long)
-        if last_candle.get('ema_short') < last_candle.get('ema_long'):
-            # Lock pair for 1 hour to prevent immediate re-entry
-            lock_time = current_time + timedelta(hours=1)
-            PairLocks.lock_pair(pair, lock_time, "Trend_Reversal")
-            return "5m_trend_reversal"
+        # Exit wanneer de munt herstelt van de dip (RSI is overbought)
+        if last_candle.get('rsi', 50) > 70:
+            # Kleine afkoelperiode om niet direct weer in te stappen op de top
+            lock_time = current_time + timedelta(minutes=30)
+            PairLocks.lock_pair(pair, lock_time, "RSI_Overbought")
+            return "rsi_overbought_recovery"
 
         return None
 
