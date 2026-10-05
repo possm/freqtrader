@@ -65,6 +65,7 @@
             ".*/USDC"
         ],
         "pair_blacklist": [
+            "GRASS/USDC",
             "USDT/USDC",
             "USDE/USDC",
             "USDD/USDC",
