@@ -15,7 +15,7 @@ class MomentumDip(IStrategy):
     INTERFACE_VERSION = 3
     
     # 1m timeframe voor tick-like rapid evaluation
-    timeframe = '5m'
+    timeframe = '15m'
     
     # Max 4999 candles voor Bybit 1m timeframe (Freqtrade limit is 5x exchange API limit)
     # 4999 candles = ~3.4 dagen. (We kunnen daardoor max een 3-day ROC gebruiken).
@@ -26,23 +26,23 @@ class MomentumDip(IStrategy):
     max_entry_position_adjustment = 0
 
     # Hyperopt Spaces
-    buy_rsi = IntParameter(15, 35, default=19, space='buy', optimize=True)
-    sell_rsi = IntParameter(60, 85, default=84, space='sell', optimize=True)
+    buy_rsi = IntParameter(15, 35, default=26, space='buy', optimize=True)
+    sell_rsi = IntParameter(60, 85, default=85, space='sell', optimize=True)
 
 
     minimal_roi = {
-        "0": 0.188,
-        "22": 0.044,
-        "50": 0.024,
-        "60": 0
+        "0": 0.226,
+        "36": 0.074,
+        "215": 0.059,
+        "533": 0
     }
     
-    stoploss = -0.10
+    stoploss = -0.148
 
     # Trailing stop parameters:
     trailing_stop = True
-    trailing_stop_positive = 0.05
-    trailing_stop_positive_offset = 0.145
+    trailing_stop_positive = 0.037
+    trailing_stop_positive_offset = 0.048
     trailing_only_offset_is_reached = True
 
     # Visualisatie instellingen voor FreqUI / Dashboard
