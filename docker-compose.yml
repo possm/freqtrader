@@ -80,7 +80,7 @@ services:
 
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # 8083 — DRY-RUN: MomentumPyramid
+  # 8083 — DRY-RUN: MomentumDip
   # ─────────────────────────────────────────────────────────────────────────────
   freqtrade-momentum-dryrun:
     image: freqtradeorg/freqtrade:stable
@@ -97,7 +97,7 @@ services:
       --logfile /freqtrade/user_data/logs/freqtrade_momentum_dryrun.log
       --db-url sqlite:////freqtrade/user_data/tradesv3_momentum_dryrun.sqlite
       --config /freqtrade/user_data/config_momentum_dryrun.json
-      --strategy MomentumPyramid
+      --strategy MomentumDip
     networks:
       - freqtrade-net
 

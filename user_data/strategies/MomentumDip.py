@@ -7,9 +7,9 @@ from freqtrade.strategy import IStrategy, informative, IntParameter
 from freqtrade.persistence import PairLocks
 import talib.abstract as ta
 
-class MomentumPyramid(IStrategy):
+class MomentumDip(IStrategy):
     """
-    MomentumPyramid Strategy - Geoptimaliseerd
+    MomentumDip Strategy - Geoptimaliseerd
     Combineert 1m snelle executie met 1h lange termijn trend (smoothing).
     """
     INTERFACE_VERSION = 3
