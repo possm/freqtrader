@@ -2648,6 +2648,30 @@ function StrategiesView({ data, baseUrl, isMobile }) {
             const List = ({ children }) => <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: "var(--text-2)", lineHeight: 1.6 }}>{children}</ul>;
 
             const descs = {
+              "MomentumDip": (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                    <Label>15m Timeframe</Label><Label>Buy The Dip Sniper</Label><Label>USDC</Label>
+                  </div>
+                  <Title>Inkoop (Long)</Title>
+                  <List>
+                    <li><strong>Trend Filter:</strong> Koers bevindt zich in een opwaartse 1-uur trend (Rate of Change 3D &gt; 0).</li>
+                    <li><strong>Oversold Dip:</strong> Binnen deze macro-stijging crasht de 15m RSI extreem hard tot onder de 16 (Sniper entry).</li>
+                    <li><strong>Dynamic Pairlist:</strong> Zoekt continu naar dips in de top 50 meest verhandelde USDC munten op Bybit.</li>
+                  </List>
+                  <Title>Verkoop (Exit)</Title>
+                  <List>
+                    <li><strong>RSI Bounce:</strong> Zodra de 15m RSI herstelt boven de 63, wordt de positie gesloten.</li>
+                  </List>
+                  <Title>Risico, Winst & Protecties</Title>
+                  <List>
+                    <li><strong>Stoploss:</strong> Extra ruim op -25.5% (Wide Structural Stop) om volatiliteit / flash-crashes te overleven (omdat de RSI al oversold was).</li>
+                    <li><strong>Trailing Stop:</strong> Volgt mee zodra 11.4% winst behaald is.</li>
+                    <li><strong>ROI:</strong> Forceert snelle exits als een trade te lang duurt (+11.8% na 100m, break-even na ~10 uur).</li>
+                  </List>
+                </div>
+              ),
+
               "WolfBreakout_Daily": (
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
