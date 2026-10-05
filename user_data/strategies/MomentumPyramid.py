@@ -3,7 +3,7 @@ import pandas as pd
 from pandas import DataFrame
 from datetime import datetime, timedelta, timezone
 
-from freqtrade.strategy import IStrategy, informative
+from freqtrade.strategy import IStrategy, informative, IntParameter
 from freqtrade.persistence import PairLocks
 import talib.abstract as ta
 
@@ -21,14 +21,29 @@ class MomentumPyramid(IStrategy):
     # 4999 candles = ~3.4 dagen. (We kunnen daardoor max een 3-day ROC gebruiken).
     startup_candle_count = 4999
 
+
     position_adjustment_enable = False
     max_entry_position_adjustment = 0
 
+    # Hyperopt Spaces
+    buy_rsi = IntParameter(15, 35, default=19, space='buy', optimize=True)
+    sell_rsi = IntParameter(60, 85, default=84, space='sell', optimize=True)
+
+
     minimal_roi = {
-        "0": 100.0
+        "0": 0.188,
+        "22": 0.044,
+        "50": 0.024,
+        "60": 0
     }
     
-    stoploss = -0.15
+    stoploss = -0.10
+
+    # Trailing stop parameters:
+    trailing_stop = True
+    trailing_stop_positive = 0.05
+    trailing_stop_positive_offset = 0.145
+    trailing_only_offset_is_reached = True
 
     # Visualisatie instellingen voor FreqUI / Dashboard
     plot_config = {
@@ -82,7 +97,7 @@ class MomentumPyramid(IStrategy):
                 (dataframe['roc_3d_1h'] > 0) &
                 
                 # Micro trend (Dip): RSI duikt onder de 30 (oversold) op de 5m
-                (dataframe['rsi'] < 30) &
+                (dataframe['rsi'] < self.buy_rsi.value) &
                 
                 # Basis volume check
                 (dataframe['volume'] > 0)
@@ -154,7 +169,7 @@ class MomentumPyramid(IStrategy):
         last_candle = dataframe.iloc[-1].squeeze()
 
         # Exit wanneer de munt herstelt van de dip (RSI is overbought)
-        if last_candle.get('rsi', 50) > 70:
+        if last_candle.get('rsi', 50) > self.sell_rsi.value:
             # Kleine afkoelperiode om niet direct weer in te stappen op de top
             lock_time = current_time + timedelta(minutes=30)
             PairLocks.lock_pair(pair, lock_time, "RSI_Overbought")
