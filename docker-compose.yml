@@ -52,7 +52,7 @@ services:
       --logfile /freqtrade/user_data/logs/freqtrade_academic_dryrun.log
       --db-url sqlite:////freqtrade/user_data/tradesv3_academic_dryrun.sqlite
       --config /freqtrade/user_data/config_academic_dryrun.json
-      --strategy MomentumPyramid
+      --strategy WolfBreakout_PVB
     networks:
       - freqtrade-net
 
@@ -75,6 +75,29 @@ services:
       --db-url sqlite:////freqtrade/user_data/tradesv3_squeeze_dryrun.sqlite
       --config /freqtrade/user_data/config_squeeze_dryrun.json
       --strategy WolfSqueeze_Anticipation
+    networks:
+      - freqtrade-net
+
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 8083 — DRY-RUN: MomentumPyramid
+  # ─────────────────────────────────────────────────────────────────────────────
+  freqtrade-momentum-dryrun:
+    image: freqtradeorg/freqtrade:stable
+    restart: unless-stopped
+    container_name: freqtrade-momentum-dryrun
+    env_file:
+      - .env
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+    ports:
+      - "${LISTEN_IP:-192.168.2.4}:8083:8080"
+    command: >
+      trade
+      --logfile /freqtrade/user_data/logs/freqtrade_momentum_dryrun.log
+      --db-url sqlite:////freqtrade/user_data/tradesv3_momentum_dryrun.sqlite
+      --config /freqtrade/user_data/config_momentum_dryrun.json
+      --strategy MomentumPyramid
     networks:
       - freqtrade-net
 
