@@ -58,26 +58,38 @@
         },
         "ccxt_async_config": {},
         "pair_whitelist": [
-            "XLM/USDC",
-            "XRP/USDC",
+            "AAVE/USDC",
             "ADA/USDC",
+            "ARB/USDC",
             "BTC/USDC",
-            "LINK/USDC",
-            "SUI/USDC",
             "ETH/USDC",
-            "DOGE/USDC",
-            "TRX/USDC",
-            "UNI/USDC",
-            "SHIB/USDC",
-            "PEPE/USDC",
-            "WIF/USDC",
-            "RENDER/USDC",
-            "OP/USDC",
+            "HBAR/USDC",
             "INJ/USDC",
-            "TIA/USDC",
-            "AAVE/USDC"
+            "LINK/USDC",
+            "NEAR/USDC",
+            "OP/USDC",
+            "POL/USDC",
+            "RENDER/USDC",
+            "SOL/USDC",
+            "SUI/USDC",
+            "TIA/USDC"
         ],
-        "pair_blacklist": []
+        "pair_blacklist": [
+            "USDT/USDC",
+            "USDE/USDC",
+            "USDD/USDC",
+            "DAI/USDC",
+            "TUSD/USDC",
+            "FDUSD/USDC",
+            "PYUSD/USDC",
+            "EUR/USDC",
+            "EURT/USDC",
+            "GBP/USDC",
+            ".*DOWN/USDC",
+            ".*UP/USDC",
+            ".*BULL/USDC",
+            ".*BEAR/USDC"
+        ]
     },
     "pairlists": [
         {
