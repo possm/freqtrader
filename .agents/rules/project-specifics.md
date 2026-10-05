@@ -41,3 +41,4 @@ trigger: always_on
 
 ## Strategy Modifications
 - **Description Syncing**: When modifying a Freqtrade strategy (e.g., in `user_data/strategies/`) or its associated configuration parameters (ROI, Stoploss, Trailing stop, etc.), you MUST also check and update the corresponding strategy description in `dashboard/views.jsx` so that the dashboard always reflects the exact technical parameters of the current strategy.
+- **Always Backtest First**: Before requesting permission to sync/push strategy changes or strategy configuration changes to the live VPS, you MUST first run a local backtest to explicitly prove the effectiveness and safety of the proposed changes. Never ask to sync untested strategy modifications.
