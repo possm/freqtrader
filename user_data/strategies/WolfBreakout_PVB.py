@@ -119,14 +119,7 @@ class WolfBreakout_PVB(KrakenSlippageMixin, IStrategy):
             "keltner_upper": {"color": "#d18b2c"},
             "ema_trend": {"color": "#ff9d4a"},
         },
-        "subplots": {
-            "PVR (Parkinson Ratio)": {
-                "pvr": {"color": "#a855f7"},
-            },
-            "Macro BTC Filter": {
-                "btc_uptrend_1h": {"color": "#10b981", "type": "bar"},
-            },
-        },
+        "subplots": {}
     }
 
     # =========================================================================

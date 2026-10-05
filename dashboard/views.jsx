@@ -7,7 +7,7 @@ import {
   DailyBars, WinLossDonut, ColHead, Segmented, Chip, Btn, SearchInput, MobileRowCard, 
   MobilePositionCard, MobileTradeCard, MobileSignalCard, applySort, getCurrency, PairLabel
 } from './components.jsx';
-import { formatExchangeName, forceExit, deleteLock, fetchWhitelist, fetchPlotConfig, fetchChartCandles, fetchAllPairSignals, fetchVersion, fetchStrategies } from './api.jsx';
+import { formatExchangeName, forceExit, deleteLock, fetchWhitelist, fetchPlotConfig, fetchChartCandles, fetchAllPairSignals, fetchVersion, fetchStrategies, startBot, stopBot, fetchSysInfo, loadConfig, fetchLogs, forceEnter } from './api.jsx';
 
 // Tab views: Overview, Positions, Trades, Performance.
 // All views receive data as props from the App's data context.
@@ -462,7 +462,7 @@ function OverviewView({ data, setTab, isMobile, goToChart, goToTrade }) {
       <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0,
                     gridTemplateColumns: isMobile ? "1fr" : "300px 1fr" }}>
         <Card title="Bot status">
-          {bot ? <BotStatus bot={bot} trades={trades} locks={locks} setTab={setTab} goToTrade={goToTrade}/> : <div style={{ flex: 1, display: "grid", placeItems: "center" }}><span className="muted" style={{ fontSize: 13 }}>Loading…</span></div>}
+          {bot ? <BotStatus bot={bot} trades={trades} locks={locks} setTab={setTab} goToTrade={goToTrade} baseUrl={data?.baseUrl || loadConfig()?.url || ""} refresh={data?.refresh}/> : <div style={{ flex: 1, display: "grid", placeItems: "center" }}><span className="muted" style={{ fontSize: 13 }}>Loading…</span></div>}
         </Card>
         <Card title={`Active positions · ${filtered.length}`}
               sub={bot ? `${bot.usedSlots} of ${bot.openSlots} slots used` : "—"}
@@ -632,7 +632,75 @@ function humanizeLockReason(raw) {
   return tidy || r;
 }
 
-function BotStatus({ bot, trades, locks = [], setTab, goToTrade }) {
+function BotStatus({ bot, trades, locks = [], setTab, goToTrade, baseUrl: propBaseUrl, refresh }) {
+  const baseUrl = propBaseUrl || loadConfig()?.url || "";
+  const [actionLoading, setActionLoading] = vUseState(false);
+  const isRunning = (bot?.status || "running").toLowerCase() === "running";
+
+  const handleToggle = async () => {
+    if (actionLoading) return;
+    if (!window.confirm(isRunning ? "Are you sure you want to stop the trading bot?" : "Are you sure you want to start the trading bot?")) return;
+    try {
+      setActionLoading(true);
+      if (isRunning) {
+        await stopBot(baseUrl);
+      } else {
+        await startBot(baseUrl);
+      }
+      if (refresh) await refresh();
+    } catch (err) {
+      console.error(`Failed to ${isRunning ? "stop" : "start"} bot:`, err);
+      alert(`Failed to ${isRunning ? "stop" : "start"} bot: ${err?.message || "Unknown error"}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const { data: sysData } = useQuery({
+    queryKey: ['ft_sysinfo', baseUrl],
+    queryFn: () => fetchSysInfo(baseUrl),
+    refetchInterval: 30000,
+    enabled: !!baseUrl,
+  });
+
+  let cpuPct = null;
+  if (sysData) {
+    if (typeof sysData.cpu_avg === 'number') {
+      cpuPct = sysData.cpu_avg;
+    } else if (typeof sysData.cpu_pct === 'number') {
+      cpuPct = sysData.cpu_pct;
+    } else if (Array.isArray(sysData.cpu_pct) && sysData.cpu_pct.length > 0) {
+      const sum = sysData.cpu_pct.reduce((acc, v) => acc + (Number(v) || 0), 0);
+      cpuPct = sum / sysData.cpu_pct.length;
+    } else if (typeof sysData.cpu === 'number') {
+      cpuPct = sysData.cpu;
+    } else if (Array.isArray(sysData.cpu_load) && sysData.cpu_load.length > 0) {
+      const firstItem = sysData.cpu_load[0];
+      if (typeof firstItem === 'object' && firstItem !== null && typeof firstItem.pct === 'number') {
+        const sum = sysData.cpu_load.reduce((acc, v) => acc + (Number(v?.pct) || 0), 0);
+        cpuPct = sum / sysData.cpu_load.length;
+      } else {
+        const first = Number(firstItem);
+        if (!isNaN(first)) cpuPct = first <= 1 ? first * 100 : first;
+      }
+    } else if (typeof sysData.cpu_load === 'number') {
+      cpuPct = sysData.cpu_load <= 1 ? sysData.cpu_load * 100 : sysData.cpu_load;
+    }
+  }
+
+  let ramPct = null;
+  if (sysData) {
+    if (typeof sysData.ram_pct === 'number') ramPct = sysData.ram_pct;
+    else if (typeof sysData.ram === 'number') ramPct = sysData.ram;
+    else if (typeof sysData.memory_pct === 'number') ramPct = sysData.memory_pct;
+    else if (typeof sysData.used_ram === 'number' && typeof sysData.sys_ram === 'number' && sysData.sys_ram > 0) {
+      ramPct = (sysData.used_ram / sysData.sys_ram) * 100;
+    }
+  }
+
+  const clampedCpu = cpuPct != null ? Math.min(100, Math.max(0, cpuPct)) : 0;
+  const clampedRam = ramPct != null ? Math.min(100, Math.max(0, ramPct)) : 0;
+
   const slotPct = bot.openSlots > 0 ? (bot.usedSlots / bot.openSlots) * 100 : 0;
   // Sort by close time descending so "Recent activity" actually shows the most
   // recently closed trades (Freqtrade's /trades response isn't guaranteed sorted).
@@ -647,13 +715,16 @@ function BotStatus({ bot, trades, locks = [], setTab, goToTrade }) {
   const lockBg    = hasGlobalLock ? "var(--down-soft)" : "var(--up-soft)";
   const lockLine  = hasGlobalLock ? "var(--down-line)" : "var(--up-line)";
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18, height: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <StatusDot kind="up" pulse/>
+        <StatusDot kind={isRunning ? "up" : "down"} pulse={isRunning}/>
         <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
-          <span style={{ fontWeight: 600, fontSize: 14 }}>Running</span>
+          <span style={{ fontWeight: 600, fontSize: 14 }}>{isRunning ? "Running" : "Stopped"}</span>
           <span className="muted" style={{ fontSize: 12.5 }}>{bot.exchange} · {bot.mode}</span>
         </div>
+        <Btn size="sm" tone={isRunning ? "danger" : "accent"} disabled={actionLoading} onClick={handleToggle}>
+          {isRunning ? "Stop" : "Start"}
+        </Btn>
         <button
           type="button"
           onClick={() => setTab && setTab("locks")}
@@ -674,6 +745,21 @@ function BotStatus({ bot, trades, locks = [], setTab, goToTrade }) {
           <Mini label="Slots" value={`${bot.usedSlots} / ${bot.openSlots}`} mono/>
           <div style={{ height: 4, background: "var(--panel-3)", borderRadius: 99, overflow: "hidden", marginTop: 6 }}>
             <div style={{ width: slotPct + "%", height: "100%", background: "linear-gradient(90deg, var(--accent), var(--up))" }}/>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 16 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Mini label="CPU" value={cpuPct != null ? `${Math.round(cpuPct)}%` : "—"} mono/>
+          <div style={{ height: 4, background: "var(--panel-3)", borderRadius: 99, overflow: "hidden", marginTop: 6 }}>
+            <div style={{ width: clampedCpu + "%", height: "100%", background: clampedCpu >= 90 ? "var(--down)" : "linear-gradient(90deg, var(--accent), var(--up))" }}/>
+          </div>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Mini label="RAM" value={ramPct != null ? `${Math.round(ramPct)}%` : "—"} mono/>
+          <div style={{ height: 4, background: "var(--panel-3)", borderRadius: 99, overflow: "hidden", marginTop: 6 }}>
+            <div style={{ width: clampedRam + "%", height: "100%", background: clampedRam >= 90 ? "var(--down)" : "linear-gradient(90deg, var(--accent), var(--up))" }}/>
           </div>
         </div>
       </div>
@@ -973,6 +1059,8 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                 <SplitRow color="var(--accent)" label="Profit Factor" count={s.profitFactor.toFixed(2)} sub="gross win ÷ gross loss" />
                 <SplitRow color="var(--up)" label="Expectancy" count={fmtSignedUsd((s.avgWin * s.winRate + s.avgLoss * s.lossRate) / 100)} sub="avg per trade" />
                 <SplitRow color="var(--muted)" label="Avg Win / Loss" count={`${fmtUsd(s.avgWin)} / ${fmtUsd(Math.abs(s.avgLoss))}`} sub="winning vs losing" />
+                <SplitRow color="var(--up)" label="Max Win Streak" count={s.maxWinStreak != null ? `${s.maxWinStreak} trades` : "—"} sub="consecutive wins" />
+                <SplitRow color="var(--down)" label="Max Loss Streak" count={s.maxLossStreak != null ? `${s.maxLossStreak} trades` : "—"} sub="consecutive losses" />
               </div>
             </div>
           )}
@@ -1026,6 +1114,15 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
           {s ? <BestWorst summary={s} goToChart={goToChart}/> : <div className="skeleton" style={{ height: 80, width: "100%" }}/>}
         </Card>
       </div>
+
+      {/* ROW 4: Pair Performance Leaderboard */}
+      <Card title="Pair Performance Leaderboard" sub="Performance breakdown aggregated by trading pair" pad={false}>
+        {loading || !s ? (
+          <div className="skeleton" style={{ height: 160, width: "100%" }}/>
+        ) : (
+          <PairPerformanceTable stats={s.PAIR_STATS || s.pairStats || []} goToChart={goToChart}/>
+        )}
+      </Card>
 
     </div>
   );
@@ -1093,6 +1190,59 @@ function StrategyTable({ stats }) {
               </td>
               <td style={TD}>
                 <BarTrace v={s.pnl} max={maxPnl}/>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PairPerformanceTable({ stats = [], goToChart }) {
+  const [sort, setSort] = vUseState({ key: "pnl", dir: "desc" });
+  const rows = vUseMemo(() => applySort(stats, sort), [stats, sort]);
+  const maxPnl = Math.max(...(stats || []).map(p => Math.abs(p.pnl || 0)), 1);
+
+  if (!stats || stats.length === 0) {
+    return (
+      <div style={{ padding: "24px 18px" }}>
+        <span className="muted" style={{ fontSize: 13 }}>No closed trade data available for pair performance.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ overflow: "visible", flex: 1 }}>
+      <table style={TABLE_STYLE}>
+        <thead>
+          <tr style={{ background: "var(--panel)", position: "sticky", top: 0, zIndex: 1 }}>
+            <ColHead sortKey="pair" sort={sort} setSort={setSort}>Pair</ColHead>
+            <ColHead sortKey="trades" sort={sort} setSort={setSort} align="right">Trades</ColHead>
+            <ColHead sortKey="winRate" sort={sort} setSort={setSort} align="right">Win rate</ColHead>
+            <ColHead sortKey="avgPct" sort={sort} setSort={setSort} align="right">Avg %</ColHead>
+            <ColHead sortKey="pnl" sort={sort} setSort={setSort} align="right">P&amp;L</ColHead>
+            <ColHead style={{ minWidth: 120 }}></ColHead>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(item => (
+            <tr key={item.pair}>
+              <td style={TD}>
+                <PairLabel pair={item.pair} size={22} onClick={goToChart}/>
+              </td>
+              <td style={{ ...TD, textAlign: "right", color: "var(--text-2)" }} className="num">{item.trades}</td>
+              <td style={{ ...TD, textAlign: "right" }} className="num">{(item.winRate ?? 0).toFixed(1)}%</td>
+              <td style={{ ...TD, textAlign: "right" }}>
+                <span className="num" style={{ color: pnlColor(item.avgPct) }}>{fmtPct(item.avgPct)}</span>
+              </td>
+              <td style={{ ...TD, textAlign: "right" }}>
+                <span className="num" style={{ fontWeight: 600, color: pnlColor(item.pnl) }}>
+                  {fmtSignedUsd(item.pnl)}
+                </span>
+              </td>
+              <td style={TD}>
+                <BarTrace v={item.pnl} max={maxPnl}/>
               </td>
             </tr>
           ))}
@@ -1231,25 +1381,30 @@ function getEntrySignal(c) {
 function SignalsView({ data, baseUrl, isMobile, goToChart }) {
   const stratName = data?.bot?.strategy || data?.strats?.[0] || null;
   const timeframe = data?.bot?.timeframe || "4h";
+  const effectiveBaseUrl = baseUrl || (typeof loadConfig === 'function' ? loadConfig()?.url : '') || data?.baseUrl || '';
+  const [buyingPair, setBuyingPair] = vUseState(null);
+
+  const rawStake = data?.bot?.defaultStakeAmount ?? data?.rawConfig?.stake_amount ?? data?.config?.stake_amount;
+  const defaultStake = (typeof rawStake === 'number' && rawStake > 0) ? rawStake : (typeof rawStake === 'string' && !isNaN(Number(rawStake)) && Number(rawStake) > 0) ? Number(rawStake) : null;
 
   const [signals, setSignals] = vUseState({
     loading: true, rows: [], plotCfg: null, lastUpdated: null, error: null,
   });
 
   const refresh = React.useCallback(async () => {
-    if (!baseUrl) return;
+    if (!effectiveBaseUrl) return;
     setSignals(s => ({ ...s, loading: true, error: null }));
     try {
       const [pairs, plotCfg] = await Promise.all([
-        fetchWhitelist(baseUrl),
-        fetchPlotConfig(baseUrl),
+        fetchWhitelist(effectiveBaseUrl),
+        fetchPlotConfig(effectiveBaseUrl),
       ]);
-      const rows = await fetchAllPairSignals(baseUrl, pairs, timeframe);
+      const rows = await fetchAllPairSignals(effectiveBaseUrl, pairs, timeframe);
       setSignals({ loading: false, rows, plotCfg, lastUpdated: Date.now(), error: null });
     } catch (e) {
       setSignals(s => ({ ...s, loading: false, error: e.message || "Failed to load signals" }));
     }
-  }, [baseUrl, timeframe]);
+  }, [effectiveBaseUrl, timeframe]);
 
   React.useEffect(() => {
     refresh();
@@ -1257,6 +1412,38 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
     const id = setInterval(refresh, 60_000);
     return () => clearInterval(id);
   }, [refresh]);
+
+  const handleForceBuy = React.useCallback(async (pairOrEvent, maybeEventOrPair) => {
+    let pair = pairOrEvent;
+    let e = maybeEventOrPair;
+    if (typeof pairOrEvent === 'object' && pairOrEvent?.stopPropagation) {
+      e = pairOrEvent;
+      pair = maybeEventOrPair;
+    }
+    if (e) {
+      if (e.stopPropagation) e.stopPropagation();
+      if (e.preventDefault) e.preventDefault();
+    }
+    if (!effectiveBaseUrl) {
+      alert("Bot API URL is not configured.");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to force enter (buy) ${pair}?`)) {
+      return;
+    }
+    setBuyingPair(pair);
+    try {
+      await forceEnter(effectiveBaseUrl, pair, "long", defaultStake);
+      await refresh();
+      if (typeof data?.refresh === 'function') {
+        await data.refresh();
+      }
+    } catch (err) {
+      alert(`Failed to force enter ${pair}: ${err?.message || "Force enter failed"}`);
+    } finally {
+      setBuyingPair(null);
+    }
+  }, [effectiveBaseUrl, defaultStake, refresh, data]);
 
   const signalDefs = vUseMemo(
     () => buildSignalDefs(signals.plotCfg, signals.rows),
@@ -1365,7 +1552,15 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
           </div>
         ) : isMobile ? (
           <div style={{ padding: "0 14px" }}>
-            {sorted.map(r => <MobileSignalCard key={r.pair} r={r} onPairClick={goToChart}/>)}
+            {sorted.map(r => (
+              <MobileSignalCard
+                key={r.pair}
+                r={r}
+                onPairClick={goToChart}
+                onForceBuy={handleForceBuy}
+                isBuying={buyingPair === r.pair}
+              />
+            ))}
           </div>
         ) : (
           <div style={{ overflow: "visible" }}>
@@ -1382,10 +1577,20 @@ function SignalsView({ data, baseUrl, isMobile, goToChart }) {
                       w={def.type === "price" ? 130 : 110}/>
                   ))}
                   <SignalHeaderCell label="Signal" align="right" w={140}/>
+                  <SignalHeaderCell label="Action" align="right" w={110}/>
                 </tr>
               </thead>
               <tbody>
-                {sorted.map(r => <SignalRow key={r.pair} r={r} goToChart={goToChart}/>)}
+                {sorted.map(r => (
+                  <SignalRow
+                    key={r.pair}
+                    r={r}
+                    goToChart={goToChart}
+                    onForceBuy={handleForceBuy}
+                    isBuying={buyingPair === r.pair}
+                    totalCols={4 + signalDefs.length}
+                  />
+                ))}
               </tbody>
             </table>
           </div>
@@ -1419,13 +1624,28 @@ function SignalHeaderCell({ label, sub, align, w }) {
   );
 }
 
-function SignalRow({ r, goToChart }) {
+function SignalRow({ r, goToChart, onForceBuy, isBuying, totalCols = 4 }) {
   if (!r.ok) {
     return (
       <tr>
         <td style={TD}><PairLabel pair={r.pair} size={22} onClick={goToChart}/></td>
-        <td colSpan={99} style={{ ...TD, color: "var(--muted)" }}>
+        <td colSpan={Math.max(1, totalCols - 2)} style={{ ...TD, color: "var(--muted)" }}>
           — {r.error || "no candle data"}
+        </td>
+        <td style={{ ...TD, textAlign: "right" }}>
+          <Btn
+            size="sm"
+            tone="accent"
+            disabled={isBuying}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (e.preventDefault) e.preventDefault();
+              if (onForceBuy) onForceBuy(r.pair, e);
+            }}
+            title={`Force enter ${r.pair}`}
+          >
+            {isBuying ? "Buying…" : "Force Buy"}
+          </Btn>
         </td>
       </tr>
     );
@@ -1442,6 +1662,21 @@ function SignalRow({ r, goToChart }) {
       {r.cells.map(cell => <SignalCell key={cell.key} cell={cell} row={r}/>)}
       <td style={{ ...TD, textAlign: "right" }}>
         <Chip tone={summaryTone}>{summaryText}</Chip>
+      </td>
+      <td style={{ ...TD, textAlign: "right" }}>
+        <Btn
+          size="sm"
+          tone="accent"
+          disabled={isBuying}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (e.preventDefault) e.preventDefault();
+            if (onForceBuy) onForceBuy(r.pair, e);
+          }}
+          title={`Force enter ${r.pair}`}
+        >
+          {isBuying ? "Buying…" : "Force Buy"}
+        </Btn>
       </td>
     </tr>
   );
@@ -2580,7 +2815,7 @@ Object.assign(window, {
 
 export {
   OverviewView, ChartView, SignalsView, TradesView, PerformanceView, LocksView,
-  StrategiesView, RiskView, SettingsView
+  StrategiesView, RiskView, SettingsView, LogsView
 };
 
 
@@ -2841,7 +3076,15 @@ function SettingsView({ data, baseUrl, isMobile, compactNav, setCompactNav }) {
     enabled: !!baseUrl,
   });
 
-  const { bot } = data;
+  const { data: stratData, isLoading: stratLoading, isError: stratError } = useQuery({
+    queryKey: ['strategies', baseUrl],
+    queryFn: () => fetchStrategies(baseUrl),
+    enabled: !!baseUrl,
+  });
+  const activeStrategy = data?.bot?.strategy || data?.strats?.[0] || null;
+  const stratList = stratData?.strategies || [];
+
+  const { bot } = data || {};
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 800 }}>
@@ -2899,6 +3142,342 @@ function SettingsView({ data, baseUrl, isMobile, compactNav, setCompactNav }) {
             <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>API URL</div>
             <div style={{ fontSize: 14, fontFamily: "var(--mono)", color: "var(--text-2)", wordBreak: "break-all" }}>{baseUrl}</div>
           </div>
+        </div>
+      </Card>
+
+      <Card title="Available Strategies" sub="Strategies loaded on this Freqtrade instance">
+        {stratLoading ? (
+          <div className="skeleton" style={{ height: 60, width: "100%" }}/>
+        ) : stratError ? (
+          <div style={{ color: "var(--down)", fontSize: 13.5 }}>Failed to load strategies</div>
+        ) : (!stratList || stratList.length === 0) ? (
+          <div className="muted" style={{ fontSize: 13.5 }}>No strategies reported by bot.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {stratList.map(name => {
+              const isActive = name === activeStrategy;
+              return (
+                <div
+                  key={name}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 14px",
+                    background: isActive ? "rgba(42,208,123,.06)" : "var(--bg-2)",
+                    border: `1px solid ${isActive ? "var(--up-line)" : "var(--border)"}`,
+                    borderRadius: 8,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontWeight: 600, fontSize: 14 }}>{name}</span>
+                  </div>
+                  {isActive ? (
+                    <Chip tone="up">Active</Chip>
+                  ) : (
+                    <span className="muted" style={{ fontSize: 12 }}>Available</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                            LOGS VIEW
+// ════════════════════════════════════════════════════════════════════════════
+
+function LogsView({ baseUrl: propBaseUrl, isMobile }) {
+  const baseUrl = propBaseUrl || loadConfig()?.url || "";
+  const [limit, setLimit] = vUseState(200);
+  const [filterLevel, setFilterLevel] = vUseState("all");
+  const logContainerRef = useRef(null);
+
+  const { data: logsData, isLoading, isError, refetch } = useQuery({
+    queryKey: ['logs', baseUrl, limit],
+    queryFn: () => fetchLogs(baseUrl, limit),
+    enabled: !!baseUrl,
+    refetchInterval: 5000,
+  });
+
+  const parsedLogs = vUseMemo(() => {
+    const raw = logsData?.logs || [];
+    return raw.map((entry, idx) => {
+      if (Array.isArray(entry)) {
+        return {
+          id: idx,
+          timestamp: entry[0] || "",
+          code: entry[1],
+          logger: entry[2] || "",
+          level: (entry[3] || "INFO").toUpperCase(),
+          message: entry[4] || "",
+        };
+      } else if (typeof entry === "string") {
+        const match = entry.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?)\s*-\s*([^\s-]+)\s*-\s*([A-Z]+)\s*-\s*(.*)$/);
+        if (match) {
+          return {
+            id: idx,
+            timestamp: match[1],
+            logger: match[2],
+            level: match[3].toUpperCase(),
+            message: match[4],
+          };
+        }
+        let level = "INFO";
+        if (/ERROR|CRITICAL/i.test(entry)) level = "ERROR";
+        else if (/WARN/i.test(entry)) level = "WARNING";
+        else if (/DEBUG/i.test(entry)) level = "DEBUG";
+        return { id: idx, timestamp: "", logger: "", level, message: entry };
+      } else if (entry && typeof entry === "object") {
+        return {
+          id: idx,
+          timestamp: entry.timestamp || entry.time || entry.date || "",
+          logger: entry.logger || entry.name || "",
+          level: (entry.level || entry.levelname || "INFO").toUpperCase(),
+          message: entry.message || entry.msg || JSON.stringify(entry),
+        };
+      }
+      return { id: idx, timestamp: "", logger: "", level: "INFO", message: String(entry) };
+    });
+  }, [logsData]);
+
+  const filteredLogs = vUseMemo(() => {
+    if (filterLevel === "all") return parsedLogs;
+    const target = filterLevel.toUpperCase();
+    return parsedLogs.filter(item => {
+      const lvl = item.level;
+      if (target === "WARNING") return lvl === "WARNING" || lvl === "WARN";
+      if (target === "ERROR") return lvl === "ERROR" || lvl === "CRITICAL";
+      return lvl === target;
+    });
+  }, [parsedLogs, filterLevel]);
+
+  useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [filteredLogs.length]);
+
+  const getBadgeStyle = (level) => {
+    const lvl = String(level || "").toUpperCase();
+    if (lvl.includes("ERR") || lvl.includes("CRIT")) {
+      return {
+        bg: "var(--down-soft)",
+        fg: "var(--down)",
+        border: "1px solid var(--down-line)",
+      };
+    }
+    if (lvl.includes("WARN")) {
+      return {
+        bg: "rgba(255,183,74,.12)",
+        fg: "var(--warn)",
+        border: "1px solid rgba(255,183,74,.32)",
+      };
+    }
+    if (lvl.includes("INFO")) {
+      return {
+        bg: "var(--accent-soft)",
+        fg: "var(--accent)",
+        border: "1px solid var(--accent-line)",
+      };
+    }
+    return {
+      bg: "var(--panel-2)",
+      fg: "var(--muted)",
+      border: "1px solid var(--border)",
+    };
+  };
+
+  const levelOptions = [
+    { id: "all", label: "All" },
+    { id: "INFO", label: "INFO" },
+    { id: "WARNING", label: "WARNING" },
+    { id: "ERROR", label: "ERROR" },
+  ];
+
+  const limitOptions = [50, 100, 200, 500];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 1200, width: "100%" }}>
+      <Card
+        title="Bot Engine Logs"
+        sub={baseUrl ? `Real-time log buffer from ${baseUrl}` : "Real-time log buffer"}
+        right={
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="muted" style={{ fontSize: 12, fontFamily: "var(--mono)" }}>
+              {filteredLogs.length} {filteredLogs.length === 1 ? "line" : "lines"}
+            </span>
+            <Btn
+              size="sm"
+              tone="ghost"
+              icon="refresh"
+              onClick={() => refetch()}
+              title="Refresh logs"
+            />
+          </div>
+        }
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Toolbar */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 12,
+            paddingBottom: 12,
+            borderBottom: "1px solid var(--border)",
+          }}>
+            {/* Filter pills */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <span className="muted" style={{ fontSize: 12, marginRight: 4 }}>Filter:</span>
+              {levelOptions.map(opt => {
+                const active = filterLevel === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setFilterLevel(opt.id)}
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: 999,
+                      border: active ? "1px solid var(--accent)" : "1px solid var(--border)",
+                      background: active ? "var(--accent-soft)" : "var(--panel-2)",
+                      color: active ? "var(--accent)" : "var(--text-2)",
+                      fontSize: 12,
+                      fontWeight: active ? 600 : 500,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      transition: "all .15s ease",
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Line limit selector */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span className="muted" style={{ fontSize: 12, marginRight: 2 }}>Lines:</span>
+              {limitOptions.map(opt => {
+                const active = limit === opt;
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setLimit(opt)}
+                    style={{
+                      padding: "3px 9px",
+                      borderRadius: 6,
+                      border: active ? "1px solid var(--border-2)" : "1px solid transparent",
+                      background: active ? "var(--panel-3)" : "transparent",
+                      color: active ? "var(--text)" : "var(--muted)",
+                      fontSize: 12,
+                      fontWeight: active ? 600 : 500,
+                      cursor: "pointer",
+                      fontFamily: "var(--mono)",
+                      transition: "all .15s ease",
+                    }}
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Log Stream Container */}
+          {filteredLogs.length === 0 ? (
+            <div style={{
+              display: "grid",
+              placeItems: "center",
+              padding: "60px 20px",
+              color: "var(--muted)",
+              fontSize: 14,
+              fontFamily: "var(--mono)",
+              background: "var(--bg-2)",
+              borderRadius: 8,
+              border: "1px dashed var(--border)",
+            }}>
+              {isLoading ? "Fetching logs..." : "No logs available or bot offline"}
+            </div>
+          ) : (
+            <div
+              ref={logContainerRef}
+              style={{
+                background: "var(--bg-2)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                padding: "10px 12px",
+                fontFamily: "var(--mono)",
+                fontSize: 12,
+                maxHeight: isMobile ? "calc(100vh - 280px)" : "600px",
+                minHeight: 320,
+                overflowY: "auto",
+                overflowX: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+              }}
+            >
+              {filteredLogs.map(item => {
+                const badge = getBadgeStyle(item.level);
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: "flex",
+                      flexDirection: isMobile ? "column" : "row",
+                      alignItems: isMobile ? "flex-start" : "flex-start",
+                      gap: isMobile ? 3 : 8,
+                      padding: "4px 6px",
+                      borderRadius: 4,
+                      lineHeight: 1.5,
+                      wordBreak: "break-word",
+                      background: "transparent",
+                      transition: "background .1s",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
+                      {item.timestamp && (
+                        <span style={{ color: "var(--muted)", flexShrink: 0, fontSize: 11 }}>
+                          {item.timestamp}
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          flexShrink: 0,
+                          padding: "0 5px",
+                          borderRadius: 3,
+                          fontSize: 10.5,
+                          fontWeight: 600,
+                          background: badge.bg,
+                          color: badge.fg,
+                          border: badge.border,
+                          letterSpacing: ".02em",
+                        }}
+                      >
+                        [{item.level}]
+                      </span>
+                      {item.logger && (
+                        <span style={{ color: "var(--text-2)", flexShrink: 0, fontWeight: 500 }}>
+                          {item.logger}:
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ color: "var(--text)", flex: isMobile ? "none" : 1, width: isMobile ? "100%" : "auto", whiteSpace: "pre-wrap" }}>
+                      {item.message}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </Card>
     </div>

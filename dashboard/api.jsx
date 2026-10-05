@@ -115,7 +115,15 @@ async function ftFetch(baseUrl, path, opts = {}, _retried = false) {
     return ftFetch(baseUrl, path, opts, true);
   }
   if (res.status === 401) throw Object.assign(new Error("Unauthorized"), { code: 401 });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const errJson = await res.json();
+      detail = errJson?.detail || errJson?.status || errJson?.error || "";
+    } catch {}
+    const msg = detail ? `${res.status}: ${detail}` : `${res.status} ${res.statusText}`;
+    throw new Error(msg);
+  }
   return res.json();
 }
 
@@ -226,6 +234,53 @@ function buildSummary(profit, trades, positions, fiatRate) {
     };
   }).sort((a, b) => b.pnl - a.pnl);
   const sorted = closedTrades.slice().sort((a, b) => b.pnlAbs - a.pnlAbs);
+
+  // Pair performance aggregation
+  const pairs = [...new Set(closedTrades.map(t => t.pair).filter(Boolean))];
+  const PAIR_STATS = pairs.map(p => {
+    const pts = closedTrades.filter(t => t.pair === p);
+    const pwins = pts.filter(t => t.pnlAbs > 0).length;
+    const plosses = pts.filter(t => t.pnlAbs <= 0).length;
+    const pnl = pts.reduce((a, t) => a + t.pnlAbs, 0);
+    const totalVolume = pts.reduce((a, t) => a + Math.abs(t.entry * t.size), 0);
+    const avgPct = pts.length ? pts.reduce((a, t) => a + t.pnlPct, 0) / pts.length : 0;
+    const winRate = pts.length ? (pwins / pts.length) * 100 : 0;
+    return {
+      pair: p,
+      name: p,
+      trades: pts.length,
+      wins: pwins,
+      losses: plosses,
+      winRate,
+      pnl,
+      avgPct,
+      totalVolume,
+    };
+  }).sort((a, b) => b.pnl - a.pnl);
+
+  // Streak calculations (chronological order)
+  const chronTrades = [...closedTrades].sort((a, b) => (a.closedAt || 0) - (b.closedAt || 0));
+  let maxWinStreak = 0;
+  let maxLossStreak = 0;
+  let curWin = 0;
+  let curLoss = 0;
+
+  for (const t of chronTrades) {
+    if (t.pnlAbs > 0) {
+      curWin++;
+      curLoss = 0;
+      if (curWin > maxWinStreak) maxWinStreak = curWin;
+    } else {
+      curLoss++;
+      curWin = 0;
+      if (curLoss > maxLossStreak) maxLossStreak = curLoss;
+    }
+  }
+
+  const currentStreak = {
+    type: curWin > 0 ? "win" : curLoss > 0 ? "loss" : "none",
+    count: Math.max(curWin, curLoss)
+  };
   
   const unrealizedPnl = positions.reduce((a, p) => a + p.pnlAbs, 0);
   
@@ -243,6 +298,13 @@ function buildSummary(profit, trades, positions, fiatRate) {
     bestStrategy: STRATEGY_STATS[0] ?? null,
     worstStrategy: STRATEGY_STATS[STRATEGY_STATS.length - 1] ?? null,
     STRATEGY_STATS,
+    maxWinStreak,
+    maxLossStreak,
+    currentStreak,
+    PAIR_STATS,
+    pairStats: PAIR_STATS,
+    bestPair: PAIR_STATS[0] ?? null,
+    worstPair: PAIR_STATS[PAIR_STATS.length - 1] ?? null,
   };
 }
 
@@ -283,7 +345,7 @@ function buildBot(config, balance, positions, fiatRate) {
 
   return {
     name: config?.bot_name ?? "freqtrade",
-    status: "running",
+    status: (config?.state || "running").toLowerCase(),
     exchange: formatExchangeName(config?.exchange),
     mode: config?.dry_run ? "Dry" : "Live",
     stake: stakeCurr,
@@ -297,6 +359,8 @@ function buildBot(config, balance, positions, fiatRate) {
     uptime: "—",
     timeframe: config?.timeframe ?? "4h",
     strategy: config?.strategy ?? null,
+    forceEntryEnabled: config?.force_entry_enable ?? false,
+    defaultStakeAmount: config?.stake_amount ?? null,
   };
 }
 
@@ -551,9 +615,58 @@ async function fetchStrategies(baseUrl) {
   return ftFetch(baseUrl, "/api/v1/strategies").catch(() => ({ strategies: [] }));
 }
 
+async function fetchLogs(baseUrl, limit = 100) {
+  const qs = limit ? `?limit=${limit}` : "";
+  return ftFetch(baseUrl, `/api/v1/logs${qs}`).catch(() => ({ log_count: 0, logs: [] }));
+}
+
+async function fetchSysInfo(baseUrl) {
+  return ftFetch(baseUrl, "/api/v1/sysinfo").catch(() => null);
+}
+
+async function startBot(baseUrl) {
+  return ftFetch(baseUrl, "/api/v1/start", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" }
+  });
+}
+
+async function stopBot(baseUrl) {
+  return ftFetch(baseUrl, "/api/v1/stop", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" }
+  });
+}
+
+async function forceEnter(baseUrl, pairOrOptions, side = "long", stakeamount = null) {
+  let body;
+  if (typeof pairOrOptions === "object" && pairOrOptions !== null) {
+    const opts = pairOrOptions;
+    body = {
+      pair: opts.pair,
+      side: opts.side || "long",
+      ...(opts.stakeamount != null ? { stakeamount: Number(opts.stakeamount) } : {}),
+      ...(opts.stake_amount != null ? { stakeamount: Number(opts.stake_amount) } : {}),
+      ...(opts.price != null ? { price: Number(opts.price) } : {}),
+      ...(opts.ordertype ? { ordertype: opts.ordertype } : {}),
+      ...(opts.entry_tag ? { entry_tag: opts.entry_tag } : {})
+    };
+  } else {
+    body = { pair: pairOrOptions, side: side || "long" };
+    if (stakeamount != null) body.stakeamount = Number(stakeamount);
+  }
+  return ftFetch(baseUrl, "/api/v1/forceenter", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+}
+
 export {
   POLL_INTERVAL, loadConfig, saveConfig, clearConfig, loadBots, saveBots, addBot, removeBot,
   mapPosition, mapTrade, mapReason, buildEquity, buildSummary, EXCHANGE_DISPLAY_NAMES,
   formatExchangeName, buildBot, useFreqtradeData, login, forceExit, deleteLock,
-  fetchPairCandles, fetchAllPairSignals, fetchWhitelist, fetchChartCandles, fetchPlotConfig, fetchVersion, fetchStrategies
+  fetchPairCandles, fetchAllPairSignals, fetchWhitelist, fetchChartCandles, fetchPlotConfig,
+  fetchVersion, fetchStrategies,
+  fetchLogs, fetchSysInfo, startBot, stopBot, forceEnter
 };

@@ -150,6 +150,12 @@ const Icon = ({ name, size = 16, style: s, ...rest }) => {
     case "lock":      return <svg {...common}><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>;
     case "unlock":    return <svg {...common}><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 014-4 4 4 0 014 3"/></svg>;
     case "candles":   return <svg {...common}><line x1="4" y1="5" x2="4" y2="19"/><rect x="2" y="8" width="4" height="7" rx="0.5"/><line x1="12" y1="3" x2="12" y2="21"/><rect x="10" y="6" width="4" height="9" rx="0.5"/><line x1="20" y1="6" x2="20" y2="18"/><rect x="18" y="9" width="4" height="6" rx="0.5"/></svg>;
+    case "terminal":  return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", flexShrink: 0, ...s }} {...rest}>
+        <polyline points="4 17 10 11 4 5"/>
+        <line x1="12" y1="19" x2="20" y2="19"/>
+      </svg>
+    );
     default: return <svg {...common}/>;
   }
 };
@@ -918,18 +924,36 @@ function MobileTradeCard({ t, onPairClick, highlight }) {
 }
 
 // ── Mobile signal card ────────────────────────────────────────────────────────
-function MobileSignalCard({ r, onPairClick }) {
+function MobileSignalCard({ r, onPairClick, onForceBuy, isBuying }) {
   if (!r.ok) {
     return (
       <div
         onClick={onPairClick ? () => onPairClick(r.pair) : undefined}
         style={{
-          display: "flex", alignItems: "center", gap: 10, padding: "10px 0",
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 0",
           borderBottom: "1px solid var(--border)",
           cursor: onPairClick ? "pointer" : "default",
         }}>
-        <PairToken pair={r.pair} size={32}/>
-        <span className="muted" style={{ fontSize: 12 }}>No candle data</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, overflow: "hidden" }}>
+          <PairToken pair={r.pair} size={32}/>
+          <span className="muted" style={{ fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {r.pair} · No candle data
+          </span>
+        </div>
+        {onForceBuy && (
+          <Btn
+            size="sm"
+            tone="accent"
+            disabled={isBuying}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (e.preventDefault) e.preventDefault();
+              if (onForceBuy) onForceBuy(r.pair, e);
+            }}
+          >
+            {isBuying ? "..." : "Force Buy"}
+          </Btn>
+        )}
       </div>
     );
   }
@@ -946,9 +970,28 @@ function MobileSignalCard({ r, onPairClick }) {
       }}>
       <PairToken pair={r.pair} size={34}/>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-          <span style={{ fontWeight: 600, fontSize: 14 }}>{r.pair}</span>
-          <Chip tone={summaryTone}>{summaryText}</Chip>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3, gap: 8 }}>
+          <span style={{ fontWeight: 600, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {r.pair}
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <Chip tone={summaryTone}>{summaryText}</Chip>
+            {onForceBuy && (
+              <Btn
+                size="sm"
+                tone={r.ready ? "accent" : "default"}
+                disabled={isBuying}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (e.preventDefault) e.preventDefault();
+                  onForceBuy(r.pair, e);
+                }}
+                title={`Force enter ${r.pair}`}
+              >
+                {isBuying ? "..." : "Force Buy"}
+              </Btn>
+            )}
+          </div>
         </div>
         <div className="muted" style={{ fontSize: 11.5 }}>
           {r.close != null ? `Close: ${fmtPrice(r.close)}` : "—"}
