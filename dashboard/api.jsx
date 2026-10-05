@@ -436,6 +436,7 @@ function useFreqtradeData(baseUrl) {
       return { trades, balance, config, locksRes };
     },
     refetchInterval: () => 60000,
+    refetchOnWindowFocus: false,
     enabled: !!baseUrl,
   });
 
@@ -449,7 +450,8 @@ function useFreqtradeData(baseUrl) {
       if (!baseUrl) return null;
       return ftFetch(baseUrl, "/api/v1/daily?timescale=3650").catch(() => null);
     },
-    refetchInterval: 60000,
+    refetchInterval: () => 60000,
+    refetchOnWindowFocus: false,
     enabled: !!baseUrl,
   });
 
