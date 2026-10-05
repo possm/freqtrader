@@ -26,24 +26,24 @@ class MomentumDip(IStrategy):
     max_entry_position_adjustment = 0
 
     # Hyperopt Spaces
-    buy_rsi = IntParameter(15, 35, default=26, space='buy', optimize=True)
-    sell_rsi = IntParameter(60, 85, default=85, space='sell', optimize=True)
+    buy_rsi = IntParameter(15, 35, default=16, space='buy', optimize=True)
+    sell_rsi = IntParameter(60, 85, default=63, space='sell', optimize=True)
 
 
     minimal_roi = {
-        "0": 0.226,
-        "36": 0.074,
-        "215": 0.059,
-        "533": 0
+        "0": 0.305,
+        "100": 0.118,
+        "271": 0.054,
+        "603": 0
     }
     
-    stoploss = -0.148
+    stoploss = -0.255
 
     # Trailing stop parameters:
     trailing_stop = True
-    trailing_stop_positive = 0.037
-    trailing_stop_positive_offset = 0.048
-    trailing_only_offset_is_reached = True
+    trailing_stop_positive = 0.114
+    trailing_stop_positive_offset = 0.214
+    trailing_only_offset_is_reached = False
 
     # Visualisatie instellingen voor FreqUI / Dashboard
     plot_config = {
