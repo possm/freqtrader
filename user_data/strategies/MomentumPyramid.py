@@ -121,7 +121,9 @@ class MomentumPyramid(IStrategy):
                 p_candles = p_df[p_df['date'] <= current_time]
                 if len(p_candles) > 0:
                     p_roc = p_candles.iloc[-1].get('roc_3d_1h', 0)
-                    if not pd.isna(p_roc) and p_roc > max_roc:
+                    # Alleen vergelijken met andere munten die OOK een geldig koopsignaal hebben
+                    p_enter = p_candles.iloc[-1].get('enter_long', 0)
+                    if p_enter == 1 and not pd.isna(p_roc) and p_roc > max_roc:
                         max_roc = p_roc
                         
         if current_roc < max_roc:
