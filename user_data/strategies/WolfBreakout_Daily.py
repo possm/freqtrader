@@ -18,10 +18,10 @@ class WolfBreakout_Daily(IStrategy):
     # Hyperopted Parameters (ROI, Stoploss, Trailing) - V3 WINNING
     # -------------------------------------------------------------
     minimal_roi = {
-        "0": 0.185,
-        "8862": 0.127,
-        "23074": 0.064,
-        "54320": 0
+        "0": 0.254,
+        "8792": 0.164,
+        "25363": 0.094,
+        "47490": 0
     }
 
     stoploss = -0.142

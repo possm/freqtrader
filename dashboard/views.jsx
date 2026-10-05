@@ -2926,7 +2926,7 @@ function StrategiesView({ data, baseUrl, isMobile }) {
                   <List>
                     <li><strong>Stoploss:</strong> Harde grens op -14,2%.</li>
                     <li><strong>Trailing Stop:</strong> Activeert bij +7,9% winst en volgt dan strak met -2,0% marge.</li>
-                    <li><strong>ROI:</strong> Directe exit bij +18,5%. Na 6d: +12,7%. Na 16d: +6,4%. Na 37,7d: Break-even (0%).</li>
+                    <li><strong>ROI:</strong> Directe exit bij +25,4%. Na 6d: +16,4%. Na 17d: +9,4%. Na 33d: Break-even (0%).</li>
                   </List>
                 </div>
               ),
