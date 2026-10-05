@@ -62,30 +62,46 @@
             "enableRateLimit": true
         },
         "pair_whitelist": [
-            "AAVE/USDC",
-            "ADA/USDC",
-            "ARB/USDC",
-            "BTC/USDC",
-            "ETH/USDC",
-            "FET/USDC",
-            "HBAR/USDC",
-            "INJ/USDC",
-            "KAS/USDC",
-            "LINK/USDC",
-            "NEAR/USDC",
-            "OP/USDC",
-            "POL/USDC",
-            "RENDER/USDC",
-            "SOL/USDC",
-            "STX/USDC",
-            "SUI/USDC",
-            "TIA/USDC"
+            ".*/USDC"
         ],
-        "pair_blacklist": []
+        "pair_blacklist": [
+            "USDT/USDC",
+            "USDE/USDC",
+            "USDD/USDC",
+            "DAI/USDC",
+            "TUSD/USDC",
+            "FDUSD/USDC",
+            "PYUSD/USDC",
+            "EUR/USDC",
+            "EURT/USDC",
+            "GBP/USDC",
+            ".*DOWN/USDC",
+            ".*UP/USDC",
+            ".*BULL/USDC",
+            ".*BEAR/USDC"
+        ]
     },
     "pairlists": [
         {
-            "method": "StaticPairList"
+            "method": "VolumePairList",
+            "number_assets": 50,
+            "sort_key": "quoteVolume",
+            "refresh_period": 86400
+        },
+        {
+            "method": "AgeFilter",
+            "min_days_listed": 14
+        },
+        {
+            "method": "PrecisionFilter"
+        },
+        {
+            "method": "PriceFilter",
+            "low_price_ratio": 0.001
+        },
+        {
+            "method": "ShuffleFilter",
+            "seed": 42
         }
     ],
     "telegram": {
