@@ -15,14 +15,14 @@ class MomentumPyramid(IStrategy):
     INTERFACE_VERSION = 3
     
     # 1m timeframe voor tick-like rapid evaluation
-    timeframe = '1m'
+    timeframe = '5m'
     
     # Max 4999 candles voor Bybit 1m timeframe (Freqtrade limit is 5x exchange API limit)
     # 4999 candles = ~3.4 dagen. (We kunnen daardoor max een 3-day ROC gebruiken).
     startup_candle_count = 4999
 
-    position_adjustment_enable = True
-    max_entry_position_adjustment = 3
+    position_adjustment_enable = False
+    max_entry_position_adjustment = 0
 
     minimal_roi = {
         "0": 100.0
@@ -66,19 +66,25 @@ class MomentumPyramid(IStrategy):
         return dataframe
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # Prijs trend op 1m (snel)
+        # Prijs trend op 5m (snel)
         dataframe['ema_short'] = ta.EMA(dataframe, timeperiod=5)
+        dataframe['ema_long'] = ta.EMA(dataframe, timeperiod=20)
         dataframe['price_rising'] = dataframe['close'] > dataframe['ema_short']
+        
+        # Volume breakout
+        dataframe['volume_mean_5m'] = ta.SMA(dataframe['volume'], timeperiod=12)
+        dataframe['volume_breakout'] = dataframe['volume'] > (dataframe['volume_mean_5m'] * 1.5)
 
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
-                # Gebruik de indicatoren van de 1h grafiek (automatisch _1h achtervoegsel)
                 (dataframe['roc_3d_1h'] > 0) &
                 (dataframe['volume_rising_1h'] == True) &
-                (dataframe['price_rising'] == True)
+                (dataframe['ema_short'] > dataframe['ema_long']) &
+                (dataframe['price_rising'] == True) &
+                (dataframe['volume_breakout'] == True)
             ),
             'enter_long'] = 1
 
@@ -90,7 +96,7 @@ class MomentumPyramid(IStrategy):
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, entry_tag: str | None,
                             side: str, **kwargs) -> bool:
-        """ Cross-pair analyse: Koop uitsluitend de munt met hoogste smoothed ROC. """
+        """ Waterval kruisanalyse: Pak alleen de sterkste munt, tenzij al in bezit. Maximaal afzakken tot #3. """
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         if dataframe is None or len(dataframe) == 0:
             return False
@@ -100,12 +106,17 @@ class MomentumPyramid(IStrategy):
             return False
             
         current_roc = current_candles.iloc[-1].get('roc_3d_1h', 0)
-        
         if pd.isna(current_roc):
             return False
 
         whitelist = self.dp.current_whitelist()
-        max_roc = current_roc
+        
+        # Haal open trades op om te kijken welke munten we al bezitten
+        from freqtrade.persistence import Trade
+        open_trades = Trade.get_open_trades()
+        open_pairs = [t.pair for t in open_trades]
+
+        better_coins_count = 0
         
         for p in whitelist:
             if p == pair:
@@ -116,10 +127,18 @@ class MomentumPyramid(IStrategy):
                 p_candles = p_df[p_df['date'] <= current_time]
                 if len(p_candles) > 0:
                     p_roc = p_candles.iloc[-1].get('roc_3d_1h', 0)
-                    if not pd.isna(p_roc) and p_roc > max_roc:
-                        max_roc = p_roc
+                    
+                    if not pd.isna(p_roc) and p_roc > current_roc:
+                        better_coins_count += 1
                         
-        if current_roc < max_roc:
+                        # Als de betere munt NIET in bezit is, en NIET in cooldown zit, 
+                        # betekent dit dat er een vrij, sterker alternatief op de markt is.
+                        # Dan mogen we DEZE huidige munt dus NIET kopen!
+                        if p not in open_pairs and not PairLocks.is_pair_locked(p, current_time):
+                            return False
+                            
+        # Zelfs als alle betere munten bezet zijn, zakken we maximaal af tot de absolute #3 van de markt
+        if better_coins_count >= 3:
             return False
             
         return True
@@ -133,19 +152,12 @@ class MomentumPyramid(IStrategy):
             
         last_candle = dataframe.iloc[-1].squeeze()
 
-        # Exit gebaseerd op de 1h trend (minder ruis!)
-        if last_candle.get('momentum_fading_1h', False) or not last_candle.get('volume_rising_1h', True):
-            lock_time = datetime.now(timezone.utc) + timedelta(hours=4)
-            PairLocks.lock_pair(pair, lock_time, "Momentum_or_volume_drop")
-            return "fading_momentum_or_volume"
+        # Exit als de 5m trend breekt (EMA short kruist onder EMA long)
+        if last_candle.get('ema_short') < last_candle.get('ema_long'):
+            # Lock pair for 1 hour to prevent immediate re-entry
+            lock_time = current_time + timedelta(hours=1)
+            PairLocks.lock_pair(pair, lock_time, "Trend_Reversal")
+            return "5m_trend_reversal"
 
         return None
 
-    def adjust_trade_position(self, trade: 'Trade', current_time: datetime, current_rate: float,
-                              current_profit: float, min_stake: float | None,
-                              max_stake: float, current_candle: dict, **kwargs) -> float | None:
-        """ Pyramiding """
-        if current_profit > 0.02 and current_candle['price_rising'] and not current_candle.get('momentum_fading_1h', True):
-            return trade.stake_amount
-
-        return None
