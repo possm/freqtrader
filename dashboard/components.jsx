@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
-import { createChart, CrosshairMode } from 'lightweight-charts';
+import { createChart, CrosshairMode, BaselineSeries, ColorType } from 'lightweight-charts';
 import { loadConfig, forceExit } from "./api.jsx";
 
 
@@ -379,262 +379,116 @@ function StatusDot({ kind = "up", pulse = false }) {
 
 // ── Equity chart ─────────────────────────────────────────────────────────────
 function EquityChart({ data, height = 260, fiatRatio = 0, fiatSymbol = "" }) {
-  const wrapRef = useRef(null);
-  const [w, setW] = useState(800);
-  const [hover, setHover] = useState(null);
+  const chartContainerRef = useRef();
 
-  useLayoutEffect(() => {
-    if (!wrapRef.current) return;
-    const ro = new ResizeObserver(() => setW(wrapRef.current.clientWidth));
-    ro.observe(wrapRef.current);
-    return () => ro.disconnect();
-  }, []);
+  useEffect(() => {
+    if (!data || data.length === 0) return;
+    if (!chartContainerRef.current) return;
+
+    chartContainerRef.current.innerHTML = "";
+
+    const chart = createChart(chartContainerRef.current, {
+      layout: { 
+        background: { type: "solid", color: "transparent" }, 
+        textColor: "#8b8e9b"
+      },
+      grid: { 
+        vertLines: { visible: false }, 
+        horzLines: { color: "rgba(255,255,255,0.04)" } 
+      },
+      width: Math.max(chartContainerRef.current.clientWidth, 300),
+      height: height,
+      timeScale: {
+        timeVisible: true,
+        borderVisible: false,
+        rightOffset: 0,
+        fixLeftEdge: true,
+        fixRightEdge: true,
+      },
+      rightPriceScale: {
+        borderVisible: false,
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+      }
+    });
+
+    const baselineSeries = chart.addSeries(BaselineSeries, {
+      baseValue: { type: 'price', price: 0 }, // Will be updated
+      topFillColor1: 'rgba(38, 166, 154, 0.28)',
+      topFillColor2: 'rgba(38, 166, 154, 0.05)',
+      topLineColor: 'rgba(38, 166, 154, 1)',
+      bottomFillColor1: 'rgba(239, 83, 80, 0.05)',
+      bottomFillColor2: 'rgba(239, 83, 80, 0.28)',
+      bottomLineColor: 'rgba(239, 83, 80, 1)',
+      lineWidth: 2,
+      priceFormat: { 
+        type: "custom", 
+        formatter: (price) => {
+          if (fiatRatio > 0 && fiatSymbol) {
+             const fiat = price * fiatRatio;
+             const f_price = new Intl.NumberFormat("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(price);
+             const f_fiat = new Intl.NumberFormat("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(fiat);
+             // In lightweight charts, the crosshair label will dynamically stretch to fit this string
+             return `$${f_price} ≈ ${fiatSymbol === 'EUR' ? '€' : fiatSymbol}${f_fiat}`;
+          }
+          return `$${price.toFixed(2)}`;
+        },
+        minMove: 0.01 
+      },
+    });
+
+    const seenLine = new Set();
+    const lineData = data.filter(d => d.time && !seenLine.has(d.time) && seenLine.add(d.time)).map(d => ({
+      time: d.time,
+      value: d.value
+    }));
+    lineData.sort((a, b) => a.time - b.time);
+
+    if (lineData.length > 0) {
+      const startVal = lineData[0].value;
+      baselineSeries.applyOptions({
+         baseValue: { type: 'price', price: startVal }
+      });
+      baselineSeries.createPriceLine({
+        price: startVal,
+        color: '#6c757d',
+        lineWidth: 1,
+        lineStyle: 2, // Dashed
+        axisLabelVisible: true,
+        title: 'Start',
+      });
+    }
+
+    baselineSeries.setData(lineData);
+    chart.timeScale().fitContent();
+
+    const handleResize = () => {
+      if (chartContainerRef.current) {
+        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
+      }
+    };
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      chart.remove();
+    };
+  }, [data, height]);
 
   if (!data || data.length < 2) return (
-    <div ref={wrapRef} style={{ width: "100%", height, display: "grid", placeItems: "center" }}>
+    <div style={{ width: "100%", height, display: "grid", placeItems: "center" }}>
       <span className="muted" style={{ fontSize: 13 }}>No equity data</span>
     </div>
   );
 
-  const plotData = data; // Left = Oldest, Right = Newest
-
-  const pad = { l: 62, r: 28, t: 14, b: 28 }; // increased pad.r from 16 to 28
-  const innerW = Math.max(0, w - pad.l - pad.r);
-  const innerH = height - pad.t - pad.b;
-  const min = Math.min(...plotData.map(d => Math.min(d.v, d.v + (d.unrealized || 0))));
-  const max = Math.max(...plotData.map(d => Math.max(d.v, d.v + (d.unrealized || 0))));
-  const yPad = (max - min) * 0.08 || max * 0.05;
-  const yMin = min - yPad, yMax = max + yPad;
-
-  const xs = (i) => pad.l + (i / (plotData.length - 1)) * innerW;
-  const ys = (v) => pad.t + innerH - ((v - yMin) / (yMax - yMin)) * innerH;
-
-  const line = plotData.map((d, i) => `${i ? "L" : "M"}${xs(i).toFixed(2)} ${ys(d.v).toFixed(2)}`).join(" ");
-  const area = line + ` L${xs(plotData.length - 1).toFixed(2)} ${pad.t + innerH} L${xs(0).toFixed(2)} ${pad.t + innerH} Z`;
-  const yTicks = Array.from({ length: 5 }, (_, i) => yMin + (i / 4) * (yMax - yMin));
-
-  const fmtDateLabel = (dateStr) => {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
-    return d.toLocaleDateString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { month: "short", day: "numeric" });
-  };
-
-  const onMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const x = clientX - rect.left;
-    // We allow hovering slightly into the right padding to catch the live unrealized point
-    const i = Math.max(0, Math.min(plotData.length - 1, Math.round(((x - pad.l) / innerW) * (plotData.length - 1))));
-    
-    // If hovering way off to the right, just lock to the last point
-    if (x >= pad.l && x <= w - 8) {
-      // Find exact X of the point, but if it's the last point and it has unrealized, offset it
-      let px = xs(i);
-      let py = ys(plotData[i].v);
-      if (i === plotData.length - 1 && plotData[i].unrealized && x > px) {
-        px += 14;
-        py = ys(plotData[i].v + plotData[i].unrealized);
-      }
-      setHover({ i, x: px, y: py, isLive: (i === plotData.length - 1 && x > xs(i)) });
-    }
-    else setHover(null);
-  };
-
-  // newest is last (right)
-  const up = plotData[plotData.length - 1].v >= plotData[0].v;
-  const c = up ? "var(--up)" : "var(--down)";
-  const today = plotData[plotData.length - 1];
-  const hasUnrealized = !!today.unrealized;
-  const nextX = xs(plotData.length - 1) + 14;
-  const nextY = ys(today.v + today.unrealized);
-
-  return (
-    <div ref={wrapRef} style={{ width: "100%", position: "relative" }}>
-      <svg width={w} height={height} onMouseMove={onMove} onMouseLeave={() => setHover(null)} onTouchMove={onMove} onTouchStart={onMove}>
-        <defs>
-          <linearGradient id="eq-fill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor={c} stopOpacity=".22"/>
-            <stop offset="100%" stopColor={c} stopOpacity="0"/>
-          </linearGradient>
-        </defs>
-        {yTicks.map((v, i) => (
-          <g key={i}>
-            <line x1={pad.l} x2={w - 12} y1={ys(v)} y2={ys(v)} stroke="var(--border)" />
-            <text x={pad.l - 8} y={ys(v) + 4} textAnchor="end" fontSize="11.5" fill="var(--muted)" fontFamily="var(--mono)">
-              {_currencySymbol}{Math.round(v).toLocaleString()}
-            </text>
-          </g>
-        ))}
-        {[0, .33, .66, 1].map((t, i) => {
-          const idx = Math.round(t * (plotData.length - 1));
-          const label = idx === plotData.length - 1 ? "today" : fmtDateLabel(plotData[idx].date);
-          return (
-            <text key={i} x={xs(idx)} y={height - 8} textAnchor="middle" fontSize="11.5" fill="var(--muted)">
-              {label}
-            </text>
-          );
-        })}
-        <path d={area} fill="url(#eq-fill)" />
-        <path d={line} stroke={c} strokeWidth="2" fill="none" strokeLinecap="round"/>
-        {hasUnrealized && (
-          <g>
-            <path d={`M ${xs(plotData.length - 1)},${ys(today.v)} C ${xs(plotData.length - 1)+6},${ys(today.v)} ${nextX-6},${nextY} ${nextX},${nextY}`} 
-                  fill="none" stroke={pnlColor(today.unrealized)} 
-                  strokeWidth="2.5" strokeDasharray="4 4" />
-            <circle cx={nextX} cy={nextY} r="3.5" fill="var(--bg)" stroke={pnlColor(today.unrealized)} strokeWidth="2.5"/>
-            <circle cx={nextX} cy={nextY} r="6" fill={pnlColor(today.unrealized)} opacity="0.2"/>
-          </g>
-        )}
-        {hover && (
-          <g>
-            <line x1={hover.x} x2={hover.x} y1={pad.t} y2={pad.t + innerH} stroke="var(--border-3)" strokeDasharray="2 3"/>
-            <circle cx={hover.x} cy={hover.y} r="4" fill="var(--bg)" stroke={hover.isLive ? (pnlColor(today.unrealized)) : c} strokeWidth="2"/>
-          </g>
-        )}
-      </svg>
-      {hover && (
-        <div style={{
-          position: "absolute",
-          left: Math.min(w - 180, Math.max(0, hover.x + 12)), 
-          top: Math.max(8, hover.y - ((hover.isLive || plotData[hover.i].unrealized) ? 90 : 42)),
-          background: "var(--panel-3)", border: "1px solid var(--border-2)",
-          borderRadius: 8, padding: "8px 12px", fontSize: 12.5,
-          pointerEvents: "none", boxShadow: "0 6px 20px rgba(0,0,0,.4)",
-          whiteSpace: "nowrap", zIndex: 10
-        }}>
-          <div className="muted" style={{ fontSize: 11.5, marginBottom: 4 }}>
-            {hover.i === plotData.length - 1 ? (hover.isLive ? "live (net)" : "today (closed)") : fmtDateLabel(plotData[hover.i].date)}
-          </div>
-          {plotData[hover.i].unrealized ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
-                <span className="muted">Balance</span>
-                <span className="num" style={{ fontWeight: 600 }}>{fmtUsd(plotData[hover.i].v, 0)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
-                <span className="muted">Unrealized</span>
-                <span className="num" style={{ fontWeight: 600, color: pnlColor(plotData[hover.i].unrealized) }}>
-                  {plotData[hover.i].unrealized >= 0 ? "+" : ""}{fmtUsd(plotData[hover.i].unrealized, 0)}
-                </span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginTop: 3, paddingTop: 3, borderTop: "1px dashed var(--border)" }}>
-                <span className="muted">Equity</span>
-                <span className="num" style={{ fontWeight: 600 }}>
-                  {fmtUsd(plotData[hover.i].v + plotData[hover.i].unrealized, 0)}
-                  {fiatRatio ? <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 6 }}>≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: fiatSymbol, maximumFractionDigits: 0}).format((plotData[hover.i].v + plotData[hover.i].unrealized) * fiatRatio)}</span> : null}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="num" style={{ fontWeight: 600 }}>
-              {fmtUsd(plotData[hover.i].v, 0)}
-              {fiatRatio ? <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 6 }}>≈ {new Intl.NumberFormat("en-US", {style: "currency", currency: fiatSymbol, maximumFractionDigits: 0}).format(plotData[hover.i].v * fiatRatio)}</span> : null}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  return <div ref={chartContainerRef} style={{ width: "100%", height: `${height}px`, overflow: "hidden" }} />;
 }
 
-// ── Daily P&L bars ────────────────────────────────────────────────────────────
-function DailyBars({ data, height = 200 }) {
-  const wrapRef = useRef(null);
-  const [w, setW] = useState(600);
-  const [hover, setHover] = useState(null);
-
-  useLayoutEffect(() => {
-    if (!wrapRef.current) return;
-    const ro = new ResizeObserver(() => setW(wrapRef.current.clientWidth));
-    ro.observe(wrapRef.current);
-    return () => ro.disconnect();
-  }, []);
-  
-  if (!data || data.length === 0) return <div ref={wrapRef} style={{ width: "100%", height }}/>;
-  
-  const pad = { l: 52, r: 8, t: 10, b: 22 };
-  const innerW = Math.max(0, w - pad.l - pad.r);
-  const innerH = height - pad.t - pad.b;
-  const max = Math.max(...data.map(d => Math.abs(d.v))) || 1;
-  const yMax = max * 1.1;
-  const ys = (v) => pad.t + innerH / 2 - (v / yMax) * (innerH / 2);
-  const barW = innerW / data.length - 3;
-
-  const fmtDateLabel = (dateStr) => {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
-    return d.toLocaleDateString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { month: "short", day: "numeric" });
-  };
-
-  const onMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const x = clientX - rect.left;
-    const i = Math.max(0, Math.min(data.length - 1, Math.floor(((x - pad.l) / innerW) * data.length)));
-    if (x >= pad.l && x <= w - pad.r) {
-      setHover({ i, x: pad.l + (i / data.length) * innerW + barW / 2 });
-    }
-    else setHover(null);
-  };
-
-  return (
-    <div ref={wrapRef} style={{ width: "100%", position: "relative" }}>
-      <svg width={w} height={height} onMouseMove={onMove} onMouseLeave={() => setHover(null)} onTouchMove={onMove} onTouchStart={onMove}>
-        <line x1={pad.l} x2={w - pad.r} y1={pad.t + innerH / 2} y2={pad.t + innerH / 2} stroke="var(--border-2)" />
-        {[yMax, 0, -yMax].map((v, i) => (
-          <text key={i} x={pad.l - 6} y={ys(v) + 3.5} textAnchor="end" fontSize="11" fill="var(--muted)" fontFamily="var(--mono)">
-            {v === 0 ? "0" : (v > 0 ? "+" : "−") + _currencySymbol + Math.round(Math.abs(v))}
-          </text>
-        ))}
-        {data.map((d, i) => {
-          const x = pad.l + (i / data.length) * innerW + 1.5;
-          const zero = pad.t + innerH / 2;
-          const y = d.v >= 0 ? ys(d.v) : zero;
-          const h = Math.max(1, Math.abs(ys(d.v) - zero));
-          const c = pnlColor(d.v);
-
-          return (
-            <g key={i}>
-              <rect x={x} y={y} width={Math.max(2, barW)} height={h} rx="1.5" fill={c} opacity={Math.abs(d.v) / max * 0.55 + 0.45}/>
-            </g>
-          );
-        })}
-        {[0, .5, 1].map((t, i) => {
-          const idx = Math.round(t * (data.length - 1));
-          const d = data[idx];
-          const label = d.daysAgo === 0 ? "today" : (d.date ? fmtDateLabel(d.date) : `${d.daysAgo}d`);
-          return (
-            <text key={i} x={pad.l + (idx / data.length) * innerW + barW / 2}
-                  y={height - 6} textAnchor="middle" fontSize="11" fill="var(--muted)">
-              {label}
-            </text>
-          );
-        })}
-        {hover && (
-          <line x1={hover.x} x2={hover.x} y1={pad.t} y2={pad.t + innerH} stroke="var(--border-3)" strokeDasharray="2 3"/>
-        )}
-      </svg>
-      {hover && (
-        <div style={{
-          position: "absolute",
-          left: Math.min(w - 180, Math.max(0, hover.x + 12)), 
-          top: Math.max(8, pad.t + innerH / 2 - 42),
-          background: "var(--panel-3)", border: "1px solid var(--border-2)",
-          borderRadius: 8, padding: "8px 12px", fontSize: 12.5,
-          pointerEvents: "none", boxShadow: "0 6px 20px rgba(0,0,0,.4)",
-          whiteSpace: "nowrap", zIndex: 10
-        }}>
-          <div className="muted" style={{ fontSize: 11.5, marginBottom: 4 }}>
-            {data[hover.i].daysAgo === 0 ? "today" : fmtDateLabel(data[hover.i].date)}
-          </div>
-          <div className="num" style={{ fontWeight: 600 }}>{fmtUsd(data[hover.i].v, 0)}</div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Win/Loss donut ────────────────────────────────────────────────────────────
 function WinLossDonut({ wins, losses, size = 132, stroke = 14 }) {
   const total = wins + losses || 1;
   const winFrac = wins / total;
@@ -1022,7 +876,7 @@ Object.assign(window, {
   setCurrency, getCurrency,
   sparkSeries, mulberry32, hashStr,
   Icon, PairToken, PairLabel, Card, PnlPill, TableStack, Sparkline, StatusDot,
-  EquityChart, DailyBars, WinLossDonut,
+  EquityChart, WinLossDonut,
   ColHead, Segmented, Chip, Btn, SearchInput, KpiCard, applySort,
   useBreakpoint,
   MobilePositionCard, MobileTradeCard, MobileSignalCard,
@@ -1032,6 +886,6 @@ export {
   useBreakpoint, STAKE_SYMBOLS, setCurrency, getCurrency, fmtMoney, pnlColor, pnlTone,
   fmtPrice, fmtCompact, fmtDuration, fmtTimeAgo, fmtTime, mulberry32, hashStr, sparkSeries,
   Icon, PAIR_COLORS, PairToken, PairLabel, Card, PnlPill, TableStack, Sparkline, StatusDot,
-  EquityChart, DailyBars, WinLossDonut, ColHead, Segmented, Chip, Btn, SearchInput, KpiCard,
+  EquityChart, WinLossDonut, ColHead, Segmented, Chip, Btn, SearchInput, KpiCard,
   MobileRowCard, MobilePositionCard, MobileTradeCard, MobileSignalCard, applySort
 };

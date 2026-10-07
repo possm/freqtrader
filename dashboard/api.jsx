@@ -448,7 +448,11 @@ function useFreqtradeData(baseUrl) {
     queryKey: ['ft_daily', baseUrl],
     queryFn: async () => {
       if (!baseUrl) return null;
-      return ftFetch(baseUrl, "/api/v1/daily?timescale=3650").catch(() => null);
+      const [daily, hist] = await Promise.all([
+         ftFetch(baseUrl, "/api/v1/daily?timescale=3650").catch(() => null),
+         ftFetch(baseUrl, "/api/v1/historic_balance").catch(() => null)
+      ]);
+      return { daily, hist };
     },
     refetchInterval: () => 60000,
     refetchOnWindowFocus: false,
@@ -483,7 +487,8 @@ function useFreqtradeData(baseUrl) {
     
     const trades = slowData?.trades ?? null;
     const balance = slowData?.balance ?? null;
-    const daily = dailyData ?? null;
+    const daily = dailyData?.daily ?? null;
+    const historicBalance = dailyData?.hist ?? null;
     const config = slowData?.config ?? null;
     const locksRes = slowData?.locksRes ?? null;
 
@@ -503,7 +508,28 @@ function useFreqtradeData(baseUrl) {
     const bot = buildBot(config, balance, positions, fiatRate);
     bot.startBalance = (bot.balance ?? 0) - unrealizedPnl - (summary.totalPnl ?? 0);
     setCurrency(bot.stake);
-    const equity = buildEquity(daily?.data ?? [], bot.balance, summary.totalPnl, unrealizedPnl);
+    let equity = [];
+    if (historicBalance && historicBalance.data && historicBalance.columns) {
+      const tsIdx = historicBalance.columns.indexOf("__date_ts");
+      const valIdx = historicBalance.columns.indexOf("total_quote");
+      if (tsIdx !== -1 && valIdx !== -1) {
+         equity = historicBalance.data.map(row => ({
+            time: Math.floor(row[tsIdx] / 1000),
+            value: row[valIdx]
+         }));
+         // Sort just in case
+         equity.sort((a, b) => a.time - b.time);
+      }
+    }
+    // Append the current live total as the final point, just like FreqUI does
+    if (equity.length > 0 && bot.balance != null) {
+       equity.push({
+          time: Math.floor(Date.now() / 1000),
+          value: bot.balance
+       });
+       // Use the very first wallet snapshot as the absolute truth for start balance
+       bot.startBalance = equity[0].value;
+    }
     const strats = [...new Set([...allTrades].reverse().map(t => t.strategy).filter(Boolean))];
     
     const locksArr = Array.isArray(locksRes?.locks) ? locksRes.locks : (Array.isArray(locksRes) ? locksRes : []);

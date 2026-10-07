@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   useBreakpoint, Card, Icon, PairToken, TableStack, pnlColor, pnlTone, fmtMoney, fmtPrice, 
   fmtCompact, fmtDuration, fmtTimeAgo, fmtTime, KpiCard, StatusDot, PnlPill, EquityChart, 
-  DailyBars, WinLossDonut, ColHead, Segmented, Chip, Btn, SearchInput, MobileRowCard, 
+  WinLossDonut, ColHead, Segmented, Chip, Btn, SearchInput, MobileRowCard, 
   MobilePositionCard, MobileTradeCard, MobileSignalCard, applySort, getCurrency, PairLabel
 } from './components.jsx';
 import { formatExchangeName, forceExit, deleteLock, fetchWhitelist, fetchPlotConfig, fetchChartCandles, fetchAllPairSignals, fetchVersion, fetchStrategies, startBot, stopBot, fetchSysInfo, loadConfig, fetchLogs, forceEnter } from './api.jsx';
@@ -960,14 +960,28 @@ function TradesView({ data, isMobile, goToChart, focusTradeId, clearFocus }) {
 
 function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart }) {
   const { equity, daily, summary, bot, trades, positions, loading } = data;
-
   const s = summary;
+  
+  // Revert back to strict Trade-based profit to maintain mathematical consistency with Closed + Unrealized
+  const trueNetPnl = (s?.totalPnl || 0) + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0);
+  const fiatRatio = bot?.balance > 0 ? (bot?.fiatValue || 0) / bot.balance : 0;
   
   const filteredEquity = vUseMemo(() => {
     if (!equity || equity.length === 0) return [];
     if (timeRange === "All") return equity;
-    const days = timeRange === "24h" ? 2 : timeRange === "7d" ? 8 : timeRange === "30d" ? 31 : equity.length;
-    return equity.slice(-Math.min(days, equity.length));
+    
+    const now = Date.now() / 1000;
+    const days = timeRange === "24h" ? 1 : timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : 9999;
+    const cutoff = now - (days * 24 * 3600);
+    
+    let filtered = equity.filter(d => d.time >= cutoff);
+    if (filtered.length > 0 && equity.length > 0 && filtered[0].time > cutoff) {
+       const before = equity.filter(d => d.time < cutoff);
+       if (before.length > 0) {
+          filtered.unshift(before[before.length - 1]);
+       }
+    }
+    return filtered;
   }, [equity, timeRange]);
 
   const filteredDaily = vUseMemo(() => {
@@ -980,7 +994,7 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
   const balDeltas = vUseMemo(() => {
     if (!equity || equity.length < 2) return [];
     const todayObj = equity[equity.length - 1];
-    const today = todayObj.v + (todayObj.unrealized || 0);
+    const today = todayObj.value;
 
     return [
       { label: "24h", days: 2 },
@@ -988,22 +1002,29 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
       { label: "30d", days: 31 },
       { label: "180d", days: 181 },
       { label: "1y", days: 366 },
-      { label: "All", days: equity.length }
+      { label: "All", days: 'all' }
     ].map(r => {
-      let d = Math.min(r.days, equity.length);
-      const pastObj = equity[equity.length - d];
-      if (!pastObj) return null;
-      const past = pastObj.v;
+      if (r.days === 'all') {
+        const past = bot?.startBalance || equity[0].value;
+        const diff = today - past;
+        return { label: r.label, diff, pct: past ? (diff / past) * 100 : 0 };
+      }
+      if (equity.length < r.days) {
+        return { label: r.label, diff: null, pct: null };
+      }
+      const pastObj = equity[equity.length - r.days];
+      if (!pastObj) return { label: r.label, diff: null, pct: null };
+      const past = pastObj.value;
       const diff = today - past;
       return { label: r.label, diff, pct: past ? (diff / past) * 100 : 0 };
     }).filter(Boolean);
-  }, [equity]);
+  }, [equity, bot?.startBalance]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)", minHeight: 0, minWidth: 0 }}>
       
       {/* ROW 1: Hero & Health */}
-      <div style={{ display: "grid", gap: "var(--gap)", minWidth: 0, gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr" }}>
+      <div style={{ display: "grid", gap: "var(--gap)", minWidth: 0, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
         
         {/* FINANCIALS */}
         <Card title="Financial Performance" sub="All-time bottom line" style={{ flex: 1 }}>
@@ -1013,12 +1034,12 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 24, paddingBottom: 20, borderBottom: "1px solid var(--border-2)", marginBottom: 16 }}>
                 <div style={{ minWidth: 0 }}>
                   <div className="muted" style={{ fontSize: 12, marginBottom: 6, textTransform: "uppercase", letterSpacing: ".05em", fontWeight: 600 }}>Current Profit</div>
-                  <div className="num" style={{ fontSize: 34, fontWeight: 600, color: pnlColor(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)), letterSpacing: "-.02em", lineHeight: 1.1, wordBreak: "break-word" }}>
-                    {fmtSignedUsd(s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0))}
+                  <div className="num" style={{ fontSize: 34, fontWeight: 600, color: pnlColor(trueNetPnl), letterSpacing: "-.02em", lineHeight: 1.1, wordBreak: "break-word" }}>
+                    {fmtSignedUsd(trueNetPnl)}
                   </div>
                   <div style={{ fontSize: 15, color: "var(--muted)", fontWeight: 500, marginTop: 4 }}>
-                    {s.totalAllFiat != null && `≈ ${new Intl.NumberFormat("en-US", {style: "currency", currency: bot?.fiatSymbol || "EUR"}).format(s.totalAllFiat)} `}
-                    {bot?.startBalance > 0 && `(${fmtPct(((s.totalPnl + (positions?.reduce((a,p)=>a+p.pnlAbs,0)||0)) / bot.startBalance) * 100)})`}
+                    {fiatRatio > 0 && `≈ ${new Intl.NumberFormat("en-US", {style: "currency", currency: bot?.fiatSymbol || "EUR"}).format(trueNetPnl * fiatRatio)} `}
+                    {bot?.startBalance > 0 && `(${fmtPct((trueNetPnl / bot.startBalance) * 100)})`}
                   </div>
                 </div>
 
@@ -1067,22 +1088,15 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
         </Card>
       </div>
 
-      {/* ROW 2: Charts */}
+      {/* ROW 2: Charts & Deltas */}
       <div style={{ display: "grid", gap: "var(--gap)", minHeight: 0, gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr" }}>
-        <Card title="Equity curve" 
-              sub={`Wallet value over time${bot?.fiatValue != null ? ` (≈ ${new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)})` : ""}`}
+        <Card title="Wallet History & P&L" 
+              sub={`Combined equity curve and daily profit${bot?.fiatValue != null ? ` (≈ ${new Intl.NumberFormat("en-US", {style: "currency", currency: bot.fiatSymbol || "EUR"}).format(bot.fiatValue)})` : ""}`}
               right={<Segmented value={timeRange} options={["24h","7d","30d","All"]} onChange={setTimeRange} size="sm"/>}
-              style={{ flex: 1 }}>
-          <EquityChart data={filteredEquity} height={isMobile ? 160 : 200} fiatRatio={bot?.balance ? (bot?.fiatValue || 0) / bot.balance : 0} fiatSymbol={bot?.fiatSymbol || "EUR"}/>
+              style={{ flex: 1, overflow: "hidden" }}>
+          <EquityChart data={filteredEquity} height={isMobile ? 220 : 260} fiatRatio={bot?.balance ? (bot?.fiatValue || 0) / bot.balance : 0} fiatSymbol={bot?.fiatSymbol || "EUR"} />
         </Card>
-        <Card title="Daily P&L" sub={timeRange === "All" ? "All time" : timeRange === "30d" ? "Last 30 days" : timeRange === "7d" ? "Last 7 days" : "Last 24 hours"} style={{ flex: 1 }}>
-          <DailyBars data={filteredDaily} height={isMobile ? 140 : 200}/>
-        </Card>
-      </div>
 
-      {/* ROW 3: History & Extremes */}
-      <div style={{ display: "grid", gap: "var(--gap)", minWidth: 0, gridTemplateColumns: isMobile ? "1fr" : "1fr 2fr" }}>
-        {/* BALANCE DELTAS */}
         <Card title="Historical Delta" sub="Rolling portfolio change" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {loading || !equity ? <div className="skeleton" style={{ height: 132, width: "100%" }}/> : (
             <div style={{ overflowX: "auto", flex: 1 }}>
@@ -1098,10 +1112,12 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
                   {balDeltas.map(d => (
                     <tr key={d.label}>
                       <td style={{ ...TD, height: 32 }}>{d.label}</td>
-                      <td style={{ ...TD, textAlign: "right", height: 32 }} className="num">
-                        <span style={{ color: pnlColor(d.diff) }}>{fmtSignedUsd(d.diff)}</span>
+                      <td style={{ ...TD, textAlign: "right", height: 32, color: d.diff === null ? "var(--muted)" : "inherit" }} className="num">
+                        {d.diff === null ? "—" : <span style={{ color: pnlColor(d.diff) }}>{fmtSignedUsd(d.diff)}</span>}
                       </td>
-                      <td style={{ ...TD, textAlign: "right", height: 32 }} className="num">{fmtPct(d.pct)}</td>
+                      <td style={{ ...TD, textAlign: "right", height: 32, color: d.pct === null ? "var(--muted)" : "inherit" }} className="num">
+                        {d.pct === null ? "—" : fmtPct(d.pct)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1109,7 +1125,10 @@ function PerformanceView({ data, timeRange, setTimeRange, isMobile, goToChart })
             </div>
           )}
         </Card>
+      </div>
 
+      {/* ROW 3: Extremes */}
+      <div style={{ display: "flex", gap: "var(--gap)", minWidth: 0 }}>
         <Card title="Best & worst trades" sub="Outliers in trading history" style={{ flex: 1 }}>
           {s ? <BestWorst summary={s} goToChart={goToChart}/> : <div className="skeleton" style={{ height: 80, width: "100%" }}/>}
         </Card>

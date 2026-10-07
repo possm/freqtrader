@@ -52,6 +52,7 @@ class SneakyPivotStrategy(IStrategy):
     # Hyperoptable parameters
     buy_wick_multiplier = DecimalParameter(1.0, 3.0, default=1.5, space="buy", optimize=True)
     buy_range_tolerance = DecimalParameter(0.005, 0.03, default=0.01, space="buy", optimize=True)
+    sell_target_modifier = DecimalParameter(0.95, 0.999, default=0.99, space="sell", optimize=True)
 
     def informative_pairs(self):
         pairs = self.dp.current_whitelist()
@@ -107,10 +108,11 @@ class SneakyPivotStrategy(IStrategy):
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # Custom exit: if we reach the previous day's high (range top) on a close basis
         range_high = dataframe[f'prev_day_high_{self.informative_timeframe}']
+        target_high = range_high * self.sell_target_modifier.value
         
         dataframe.loc[
             (
-                (dataframe['close'] >= range_high) &
+                (dataframe['close'] >= target_high) &
                 (dataframe['volume'] > 0)
             ),
             'exit_long'] = 1
@@ -124,8 +126,9 @@ class SneakyPivotStrategy(IStrategy):
         last_candle = dataframe.iloc[-1].squeeze()
         
         prev_day_high = last_candle[f'prev_day_high_{self.informative_timeframe}']
+        target_high = prev_day_high * self.sell_target_modifier.value
         
-        if current_rate >= prev_day_high:
+        if current_rate >= target_high:
             return "reached_range_high"
         
         return None
