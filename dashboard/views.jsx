@@ -137,43 +137,79 @@ function ExpandedPosition({ p, slDist, tpDist }) {
   const pos = p.pnlAbs >= 0;
   const series = vUseMemo(() => sparkSeries(p.entry, p.current, 80, p.id + "x"), [p.id, p.entry, p.current]);
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "20px 24px", display: "grid", gridTemplateColumns: "1.6fr 1.1fr 1fr", gap: 32, borderTop: "1px solid var(--border)" }}>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase" }}>Trend (last 6h)</span>
+    <div style={{ display: "flex", flexDirection: "column", background: "var(--panel-2)", borderTop: "1px solid var(--border)" }}>
+      {/* 1. Ribbon (Header) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16, padding: "16px 24px", borderBottom: "1px solid var(--border-2)", background: "var(--panel)" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600, letterSpacing: ".05em" }}>Direction</span>
+          <div style={{ marginTop: 2 }}><Chip tone={p.side === "long" ? "up" : "down"} icon={p.side === "long" ? "up" : "down"} raw>{p.side.toUpperCase()}</Chip></div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600, letterSpacing: ".05em" }}>Opened</span>
+          <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text)" }}>{fmtTime(p.openedAt)}</span>
+          <span style={{ fontSize: 11, color: "var(--dim)" }}>{fmtDuration(Date.now() - p.openedAt)} ago</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600, letterSpacing: ".05em" }}>Position Size</span>
+          <span style={{ fontSize: 14, fontFamily: "var(--mono)", color: "var(--text)" }}>{fmtUsd(p.notional)}</span>
+          <span style={{ fontSize: 11, color: "var(--dim)", fontFamily: "var(--mono)" }}>{`${p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })} ${p.pair.split("/")[0]}`}</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600, letterSpacing: ".05em" }}>Entry Price</span>
+          <span style={{ fontSize: 14, fontFamily: "var(--mono)", color: "var(--text)" }}>{fmtPrice(p.entry)}</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600, letterSpacing: ".05em" }}>Current Mark</span>
+          <span style={{ fontSize: 14, fontFamily: "var(--mono)", color: pnlColor(p.pnlPct), fontWeight: 600 }}>{fmtPrice(p.current)}</span>
+        </div>
+      </div>
+
+      {/* 2. Middle Body */}
+      <div style={{ display: "flex", flexWrap: "wrap", borderBottom: "1px solid var(--border-2)" }}>
+        
+        {/* Risk Management (Left) */}
+        <div style={{ flex: "1.5 1 400px", padding: "24px", borderRight: "1px solid var(--border-2)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 12 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".05em", color: "var(--muted)", textTransform: "uppercase" }}>Risk Management</span>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600 }}>Risk / Reward</div>
+              <div style={{ fontSize: 14, fontFamily: "var(--mono)", color: "var(--text)", fontWeight: 600 }}>{(Math.abs(slDist) > 0 ? Math.abs(tpDist) / Math.abs(slDist) : 0).toFixed(2)}</div>
+            </div>
           </div>
-          <div style={{ flex: 1, minHeight: 0 }}>
+          
+          <SLTPBars p={p} />
+          
+          <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+            <div style={{ flex: 1, padding: "12px", background: "var(--panel)", border: "1px solid var(--border-2)", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600 }}>Dist. to Stop</span>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--down)", fontWeight: 600 }}>{slDist.toFixed(2)}%</span>
+            </div>
+            {p.tsTrigger != null && (
+              <div style={{ flex: 1, padding: "12px", background: "var(--panel)", border: "1px solid rgba(41, 182, 246, 0.2)", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600 }}>Dist. to Trail</span>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--accent)", fontWeight: 600 }}>{p.tsTrigger > p.current ? '+' : ''}{(((p.tsTrigger - p.current) / p.current) * 100).toFixed(2)}%</span>
+              </div>
+            )}
+            <div style={{ flex: 1, padding: "12px", background: "var(--panel)", border: "1px solid var(--border-2)", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", fontWeight: 600 }}>Dist. to Target</span>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--up)", fontWeight: 600 }}>{tpDist > 0 ? '+' : ''}{tpDist.toFixed(2)}%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Chart (Right) */}
+        <div style={{ flex: "1 1 250px", padding: "24px", display: "flex", flexDirection: "column", background: "var(--panel-2)" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".05em", color: "var(--muted)", textTransform: "uppercase", marginBottom: 16 }}>Trend (Last 6H)</span>
+          <div style={{ flex: 1, minHeight: 140 }}>
             <PositionPriceChart p={p} series={series}/>
           </div>
         </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase", marginBottom: -2 }}>Position Details</span>
-          <KV label="Opened" value={fmtTime(p.openedAt)} sub={fmtDuration(Date.now() - p.openedAt) + " ago"}/>
-          <KV label="Direction" value={<Chip tone={p.side === "long" ? "up" : "down"} icon={p.side === "long" ? "up" : "down"}>{p.side.toUpperCase()}</Chip>} raw/>
-          <KV label="Entry Price" value={fmtPrice(p.entry)} mono/>
-          <KV label="Current Price" value={fmtPrice(p.current)} mono valueColor={pnlColor(p.pnlPct)}/>
-          <KV label="Position Size" value={fmtUsd(p.notional)} sub={`${p.size.toLocaleString(typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US", { maximumFractionDigits: 4 })} ${p.pair.split("/")[0]}`} mono/>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase", marginBottom: -2 }}>Risk Management</span>
-          <div style={{ marginBottom: 4 }}>
-            <SLTPBars p={p}/>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
-            <KV label="Risk / Reward" value={(Math.abs(slDist) > 0 ? tpDist / Math.abs(slDist) : 0).toFixed(2)} mono />
-            <KV label="Distance to Stop Loss" value={`${slDist.toFixed(2)}%`} valueColor="var(--down)" mono />
-            <KV label="Distance to Target" value={`+${tpDist.toFixed(2)}%`} valueColor="var(--up)" mono />
-          </div>
-        </div>
       </div>
-      
-      {/* Order execution history view */}
+
+      {/* 3. Order Execution History */}
       {p.orders && p.orders.length > 0 && (
-        <div style={{ padding: "0 24px 24px", display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: ".02em", color: "var(--muted)", textTransform: "uppercase", marginBottom: 12 }}>
+        <div style={{ padding: "24px", display: "flex", flexDirection: "column", background: "var(--panel)" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".05em", color: "var(--muted)", textTransform: "uppercase", marginBottom: 12 }}>
             {p.entries > 1 ? `DCA / Grid Layers (${p.entries} entries)` : "Order History"}
           </span>
           <div style={{ background: "var(--bg)", border: "1px solid var(--border-2)", borderRadius: 8, overflow: "hidden" }}>
@@ -224,46 +260,54 @@ function SLTPBars({ p }) {
   const lo = Math.min(p.sl, p.entry, p.current) * 0.997;
   const hi = Math.max(p.tp, p.entry, p.current, showTs ? p.tsTrigger : p.entry) * 1.003;
   const range = hi - lo || 1;
-  const pct = (v) => ((v - lo) / range) * 100;
+  const pct = (v) => Math.max(0, Math.min(100, ((v - lo) / range) * 100));
+
   return (
-    <div>
-      <div style={{ position: "relative", height: 6, background: "var(--panel-3)", borderRadius: 999, overflow: "hidden" }}>
+    <div style={{ position: "relative", paddingTop: 20, paddingBottom: 36 }}>
+      {/* Background Track */}
+      <div style={{ position: "absolute", left: 0, right: 0, top: 24, height: 10, background: "var(--bg)", borderRadius: 999, overflow: "hidden", border: "1px solid var(--border-2)" }}>
+        {/* Fill */}
         <div style={{
-          position: "absolute", left: `${pct(p.sl)}%`, right: `${100 - pct(p.tp)}%`, top: 0, bottom: 0,
-          background: "linear-gradient(90deg, var(--down-soft), var(--accent-soft), var(--up-soft))",
+          position: "absolute", left: `${pct(p.sl)}%`, right: `${100 - pct(p.current)}%`, top: 0, bottom: 0,
+          background: "linear-gradient(90deg, rgba(239,83,80,0.3), rgba(38,166,154,0.3), rgba(41,182,246,0.6))",
+          borderRadius: 999
         }}/>
-        <SLTick x={pct(p.sl)} color="var(--down)" />
-        <SLTick x={pct(p.entry)} color="var(--muted)" />
-        {showTs && <SLTick x={pct(p.tsTrigger)} color="var(--accent)" />}
-        <SLTick x={pct(p.current)} color={pnlColor(p.pnlAbs)} big />
-        <SLTick x={pct(p.tp)} color="var(--up)" />
       </div>
-      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: showTs ? "1fr 1fr 1fr 1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 4, fontSize: 11.5 }}>
-        <SLStop label="STOP"   v={p.sl}      color="var(--down)"                                  align="left"/>
-        <SLStop label="ENTRY"  v={p.entry}   color="var(--muted)"                                 align="center"/>
-        <SLStop label="MARK"   v={p.current} color={pnlColor(p.pnlAbs)} align="center"/>
-        {showTs && <SLStop label="TRAIL-ON" v={p.tsTrigger} color="var(--accent)" align="center"/>}
-        <SLStop label="TARGET" v={p.tp}      color="var(--up)"                                    align="right"/>
-      </div>
+
+      {/* STOP */}
+      <div style={{ position: "absolute", left: `${pct(p.sl)}%`, top: 24, height: 10, width: 3, background: "var(--down)", borderRadius: 2, transform: "translateX(-50%)", zIndex: 10 }} />
+      <div style={{ position: "absolute", left: `${pct(p.sl)}%`, top: 4, transform: "translateX(-50%)", fontSize: 10, fontWeight: 700, color: "var(--down)", letterSpacing: ".05em" }}>STOP</div>
+      <div style={{ position: "absolute", left: `${pct(p.sl)}%`, top: 38, transform: "translateX(-50%)", fontSize: 11, fontFamily: "var(--mono)", color: "var(--down)" }}>{fmtPrice(p.sl)}</div>
+
+      {/* ENTRY */}
+      <div style={{ position: "absolute", left: `${pct(p.entry)}%`, top: 24, height: 10, width: 3, background: "var(--muted)", borderRadius: 2, transform: "translateX(-50%)", zIndex: 10 }} />
+      <div style={{ position: "absolute", left: `${pct(p.entry)}%`, top: 4, transform: "translateX(-50%)", fontSize: 10, fontWeight: 700, color: "var(--muted)", letterSpacing: ".05em" }}>ENTRY</div>
+      <div style={{ position: "absolute", left: `${pct(p.entry)}%`, top: 38, transform: "translateX(-50%)", fontSize: 11, fontFamily: "var(--mono)", color: "var(--muted)" }}>{fmtPrice(p.entry)}</div>
+
+      {/* TRAIL-ON */}
+      {showTs && (
+        <>
+          <div style={{ position: "absolute", left: `${pct(p.tsTrigger)}%`, top: 24, height: 10, width: 3, background: "var(--accent)", borderRadius: 2, transform: "translateX(-50%)", zIndex: 10, boxShadow: "0 0 8px rgba(41,182,246,0.6)" }} />
+          <div style={{ position: "absolute", left: `${pct(p.tsTrigger)}%`, top: 4, transform: "translateX(-50%)", fontSize: 10, fontWeight: 700, color: "var(--accent)", letterSpacing: ".05em" }}>TRAIL-ON</div>
+          <div style={{ position: "absolute", left: `${pct(p.tsTrigger)}%`, top: 38, transform: "translateX(-50%)", fontSize: 11, fontFamily: "var(--mono)", color: "var(--accent)" }}>{fmtPrice(p.tsTrigger)}</div>
+        </>
+      )}
+
+      {/* TARGET */}
+      <div style={{ position: "absolute", left: `${pct(p.tp)}%`, top: 24, height: 10, width: 3, background: "var(--up)", borderRadius: 2, transform: "translateX(-50%)", zIndex: 10 }} />
+      <div style={{ position: "absolute", left: `${pct(p.tp)}%`, top: 4, transform: "translateX(-50%)", fontSize: 10, fontWeight: 700, color: "var(--up)", letterSpacing: ".05em" }}>TARGET</div>
+      <div style={{ position: "absolute", left: `${pct(p.tp)}%`, top: 38, transform: "translateX(-50%)", fontSize: 11, fontFamily: "var(--mono)", color: "var(--up)" }}>{fmtPrice(p.tp)}</div>
+
+      {/* MARK */}
+      <div style={{ position: "absolute", left: `${pct(p.current)}%`, top: 20, height: 18, width: 5, background: "white", borderRadius: 3, transform: "translateX(-50%)", zIndex: 20, boxShadow: "0 0 6px white" }} />
+      <div style={{ position: "absolute", left: `${pct(p.current)}%`, top: 2, transform: "translateX(-50%)", fontSize: 9, fontWeight: 700, color: "white", background: "var(--bg)", padding: "1px 4px", borderRadius: 4, border: "1px solid var(--border)", zIndex: 20 }}>MARK</div>
+      <div style={{ position: "absolute", left: `${pct(p.current)}%`, top: 42, transform: "translateX(-50%)", fontSize: 11, fontWeight: 700, color: "white", background: "var(--panel)", padding: "2px 5px", borderRadius: 4, border: "1px solid var(--border)", zIndex: 20 }}>{fmtPrice(p.current)}</div>
+
     </div>
   );
 }
-function SLTick({ x, color, big }) {
-  return <span style={{
-    position: "absolute", left: `calc(${x}% - ${big ? 5 : 3}px)`,
-    top: big ? -3 : -1, bottom: big ? -3 : -1, width: big ? 10 : 6,
-    borderRadius: 99, background: color,
-    boxShadow: big ? `0 0 0 3px ${color}33` : "none",
-  }}/>;
-}
-function SLStop({ label, v, color, align }) {
-  return (
-    <div style={{ textAlign: align, color: "var(--muted)" }}>
-      <div style={{ fontSize: 10.5, letterSpacing: ".08em" }}>{label}</div>
-      <div className="num" style={{ color, fontSize: 12.5, fontWeight: 600 }}>{fmtPrice(v)}</div>
-    </div>
-  );
-}
+
+
 
 function PositionPriceChart({ p, series }) {
   const wrapRef = React.useRef(null);
