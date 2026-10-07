@@ -321,7 +321,7 @@ function PositionPriceChart({ p, series }) {
   const h = 180, pad = { l: 56, r: 12, t: 10, b: 22 };
   const innerW = Math.max(0, w - pad.l - pad.r);
   const innerH = h - pad.t - pad.b;
-  const allVals = [...series, p.sl, p.tp];
+  const allVals = [...series, p.sl, p.tp, ...(p.tsTrigger ? [p.tsTrigger] : [])];
   const min = Math.min(...allVals), max = Math.max(...allVals);
   const yPad = (max - min) * 0.06;
   const yMin = min - yPad, yMax = max + yPad;
@@ -331,6 +331,14 @@ function PositionPriceChart({ p, series }) {
   const c = pnlColor(p.pnlPct);
   const line = series.map((v, i) => `${i ? "L" : "M"}${xs(i)} ${ys(v)}`).join(" ");
   const area = line + ` L${xs(series.length-1)} ${pad.t + innerH} L${xs(0)} ${pad.t + innerH} Z`;
+
+  const linesToDraw = [
+    { v: p.tp, c: "var(--up)", l: "TP" },
+    ...(p.tsTrigger != null ? [{ v: p.tsTrigger, c: "var(--accent)", l: "TRAIL-ON", dashed: true }] : []),
+    { v: p.entry, c: "var(--muted)", l: "ENTRY", dashed: true },
+    { v: p.sl, c: "var(--down)", l: "SL" }
+  ];
+
   return (
     <div ref={wrapRef} style={{ width: "100%" }}>
       <svg width={w} height={h}>
@@ -340,7 +348,7 @@ function PositionPriceChart({ p, series }) {
             <stop offset="100%" stopColor={c} stopOpacity="0"/>
           </linearGradient>
         </defs>
-        {[{ v: p.tp, c: "var(--up)", l: "TP" }, { v: p.entry, c: "var(--muted)", l: "ENTRY", dashed: true }, { v: p.sl, c: "var(--down)", l: "SL" }].map((b, i) => (
+        {linesToDraw.map((b, i) => (
           <g key={i}>
             <line x1={pad.l} x2={w - pad.r} y1={ys(b.v)} y2={ys(b.v)} stroke={b.c} strokeWidth="1" opacity={b.dashed ? .5 : .7} strokeDasharray={b.dashed ? "3 3" : "none"}/>
             <text x={pad.l - 8} y={ys(b.v) + 3.5} textAnchor="end" fontSize="11" fill={b.c} fontFamily="var(--mono)">{fmtPrice(b.v)}</text>
