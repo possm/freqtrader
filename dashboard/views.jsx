@@ -220,8 +220,9 @@ function KV({ label, value, sub, mono, raw, valueColor }) {
 }
 
 function SLTPBars({ p }) {
+  const showTs = p.tsTrigger != null;
   const lo = Math.min(p.sl, p.entry, p.current) * 0.997;
-  const hi = Math.max(p.tp, p.entry, p.current) * 1.003;
+  const hi = Math.max(p.tp, p.entry, p.current, showTs ? p.tsTrigger : p.entry) * 1.003;
   const range = hi - lo || 1;
   const pct = (v) => ((v - lo) / range) * 100;
   return (
@@ -233,13 +234,15 @@ function SLTPBars({ p }) {
         }}/>
         <SLTick x={pct(p.sl)} color="var(--down)" />
         <SLTick x={pct(p.entry)} color="var(--muted)" />
+        {showTs && <SLTick x={pct(p.tsTrigger)} color="var(--accent)" />}
         <SLTick x={pct(p.current)} color={pnlColor(p.pnlAbs)} big />
         <SLTick x={pct(p.tp)} color="var(--up)" />
       </div>
-      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4, fontSize: 11.5 }}>
+      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: showTs ? "1fr 1fr 1fr 1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 4, fontSize: 11.5 }}>
         <SLStop label="STOP"   v={p.sl}      color="var(--down)"                                  align="left"/>
         <SLStop label="ENTRY"  v={p.entry}   color="var(--muted)"                                 align="center"/>
         <SLStop label="MARK"   v={p.current} color={pnlColor(p.pnlAbs)} align="center"/>
+        {showTs && <SLStop label="TRAIL-ON" v={p.tsTrigger} color="var(--accent)" align="center"/>}
         <SLStop label="TARGET" v={p.tp}      color="var(--up)"                                    align="right"/>
       </div>
     </div>
