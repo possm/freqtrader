@@ -134,9 +134,16 @@ function mapPosition(t) {
   const size = t.amount ?? 0;
   const pnlAbs = t.profit_abs ?? 0;
   const pnlPct = (t.profit_ratio ?? 0) * 100;
-  const sl = t.stop_loss_abs ?? t.initial_stop_loss_abs ?? (entry * 0.97);
-  // Freqtrade doesn't expose TP directly; derive from min_roi[0] or fall back to 3%
-  const tp = t.min_roi_timeoutted ?? (entry * 1.03);
+  const sl = t.stop_loss_abs ?? t.initial_stop_loss_abs ?? (t.is_short ? entry * 1.03 : entry * 0.97);
+  
+  // Freqtrade doesn't expose TP directly in /trades. Use strategy-specific fallbacks.
+  let tpFallbackPct = 0.03;
+  if (t.strategy && t.strategy.includes("WolfBreakout_Daily")) {
+    tpFallbackPct = 0.254;
+  }
+  const tpFallback = t.is_short ? (entry * (1 - tpFallbackPct)) : (entry * (1 + tpFallbackPct));
+  const tp = t.min_roi_timeoutted ?? tpFallback;
+
   const spark = sparkSeries(entry, current, 40, String(t.trade_id));
   return {
     id: String(t.trade_id),
