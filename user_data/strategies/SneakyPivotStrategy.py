@@ -34,14 +34,14 @@ class SneakyPivotStrategy(IStrategy):
 
     # Minimal ROI designed for the strategy.
     minimal_roi = {
-        "0": 0.15,
-        "60": 0.05,
-        "120": 0.02,
-        "240": 0
+        "0": 0.293,
+        "51": 0.105,
+        "136": 0.018,
+        "461": 0
     }
 
     # Stoploss:
-    stoploss = -0.05
+    stoploss = -0.307
     
     # Trailing stop:
     trailing_stop = True
@@ -50,9 +50,9 @@ class SneakyPivotStrategy(IStrategy):
     trailing_only_offset_is_reached = True
 
     # Hyperoptable parameters
-    buy_wick_multiplier = DecimalParameter(1.0, 3.0, default=1.5, space="buy", optimize=True)
-    buy_range_tolerance = DecimalParameter(0.005, 0.03, default=0.01, space="buy", optimize=True)
-    sell_target_modifier = DecimalParameter(0.95, 0.999, default=0.99, space="sell", optimize=True)
+    buy_wick_multiplier = DecimalParameter(1.0, 3.0, default=1.74, space="buy", optimize=True)
+    buy_range_tolerance = DecimalParameter(0.005, 0.03, default=0.029, space="buy", optimize=True)
+    sell_target_modifier = DecimalParameter(0.95, 0.999, default=0.963, space="sell", optimize=True)
 
     def informative_pairs(self):
         pairs = self.dp.current_whitelist()
