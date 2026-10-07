@@ -138,11 +138,15 @@ function mapPosition(t) {
   
   // Freqtrade doesn't expose TP directly in /trades. Use strategy-specific fallbacks.
   let tpFallbackPct = 0.03;
+  let tsOffsetPct = null;
   if (t.strategy && t.strategy.includes("WolfBreakout_Daily")) {
     tpFallbackPct = 0.254;
+    tsOffsetPct = 0.071;
   }
   const tpFallback = t.is_short ? (entry * (1 - tpFallbackPct)) : (entry * (1 + tpFallbackPct));
   const tp = t.min_roi_timeoutted ?? tpFallback;
+  
+  const tsTrigger = tsOffsetPct ? (t.is_short ? entry * (1 - tsOffsetPct) : entry * (1 + tsOffsetPct)) : null;
 
   const spark = sparkSeries(entry, current, 40, String(t.trade_id));
   return {
@@ -154,7 +158,7 @@ function mapPosition(t) {
     stakeAmount: t.stake_amount ?? (entry * size),
     notional: current * size,
     openedAt: t.open_timestamp,
-    sl, tp, pnlAbs, pnlPct, spark,
+    sl, tp, tsTrigger, pnlAbs, pnlPct, spark,
     orders: t.orders || [],
     entries: t.nr_of_successful_entries ?? t.nr_of_successful_buys ?? 1,
     exits: t.nr_of_successful_exits ?? t.nr_of_successful_sells ?? 0,
