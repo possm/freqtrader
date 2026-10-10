@@ -352,7 +352,17 @@ function buildBot(config, balance, positions, fiatRate) {
     if (c) avail = c.bot_owned ?? c.free;
   }
 
-  const balTotal = balance?.total_bot ?? balance?.total ?? 0;
+  let balTotal = 0;
+  if (balance?.currencies && Array.isArray(balance.currencies)) {
+    const botCurrencies = balance.currencies.filter(x => x.is_bot_managed !== false);
+    if (botCurrencies.length > 0) {
+      balTotal = botCurrencies.reduce((sum, x) => sum + (x.est_stake ?? x.balance ?? 0), 0);
+    } else {
+      balTotal = balance?.total ?? 0;
+    }
+  } else {
+    balTotal = balance?.total ?? 0;
+  }
 
   return {
     name: config?.bot_name ?? "freqtrade",
@@ -363,7 +373,7 @@ function buildBot(config, balance, positions, fiatRate) {
     openSlots: maxSlots < 0 ? 99 : maxSlots,
     usedSlots: positions.length,
     balance: balTotal,
-    fiatValue: fiatRate ? balTotal * fiatRate : (balance?.value_bot || balance?.value || null),
+    fiatValue: fiatRate ? balTotal * fiatRate : (balance?.total && balance?.value != null ? (balance.value / balance.total) * balTotal : (balance?.value ?? null)),
     fiatSymbol: balance?.symbol ?? "EUR",
     available: avail,
     allocated: positions.reduce((a, p) => a + (p.stakeAmount || 0), 0),
